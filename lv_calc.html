@@ -1,0 +1,2930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Playground</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+:root{--bg:#0a0c10;--panel:#0f1318;--border:#1e2530;--border-bright:#2e3d50;--accent:#00c8ff;--accent2:#ff6b35;--accent3:#7fff6b;--text:#c8d8e8;--text-dim:#5a7080;--text-bright:#e8f4ff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;min-height:100vh;}
+
+/* ── HEADER ── */
+header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:16px;background:rgba(0,0,0,.3);flex-wrap:wrap;}
+header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;}
+
+/* ── PAGE NAV ── */
+.page-nav{display:flex;gap:2px;margin-right:8px;}
+.nav-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:7px 16px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.nav-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold;}
+
+/* ── THEME UI ── */
+.theme-wrap{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.theme-wrap label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;}
+#theme-select{background:rgba(0,0,0,.35);border:1px solid var(--border-bright);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;cursor:pointer;}
+.th-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
+.th-btn:hover{border-color:var(--accent);color:var(--accent);}
+.th-btn.g{border-color:var(--accent3);color:var(--accent3);}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px 16px;}
+.page.active{display:block;}
+.two-col{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;}
+.two-col>div{min-width:0;}
+
+/* ── SECTION LABEL ── */
+.sl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── PANEL ── */
+.panel{background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:12px;overflow:hidden;}
+
+/* ── INPUTS ── */
+.cfg-row{display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;row-gap:10px;}
+.cfg-item{display:inline-flex;flex-direction:column;gap:5px;align-items:flex-start;flex-shrink:0;}
+.cfg-item label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;}
+input[type=number].field,input[type=text].field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;width:100px;-moz-appearance:textfield;}
+input[type=number].field::-webkit-outer-spin-button,input[type=number].field::-webkit-inner-spin-button{-webkit-appearance:none;}
+input[type=number].field:focus,input[type=text].field:focus{outline:none;border-color:var(--accent);}
+select.field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;cursor:pointer;}
+select.field:focus{outline:none;border-color:var(--accent);}
+
+/* ── SEG CONTROL ── */
+.seg{display:inline-flex;border:none;background:none;align-self:flex-start;gap:5px;}
+.seg button{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:6px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.seg button.active{background:var(--accent);color:#000;}
+.seg button:hover:not(.active){background:var(--border-bright);color:var(--text);}
+
+/* ── MODE TOGGLE ── */
+.mode-tog{display:flex;border:1px solid var(--border-bright);overflow:hidden;margin-bottom:12px;}
+.mode-tog button{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 12px;cursor:pointer;transition:all .15s;border-right:1px solid var(--border-bright);letter-spacing:.1em;}
+.mode-tog button:last-child{border-right:none;}
+.mode-tog button.active{background:var(--accent);color:#000;font-weight:bold;}
+.mode-tog button:hover:not(.active){background:var(--border-bright);color:var(--text);}
+
+/* ── STAGE TABLE ── */
+.tscroll{overflow-x:auto;max-width:100%;padding-bottom:4px;margin-right:2px;}
+.stage-table{border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+.stage-table th{text-align:left;padding:5px 8px;color:var(--text-dim);font-size:10px;letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+.stage-table th.sh{text-align:center;color:var(--accent);font-size:11px;}
+.stage-table th.si{text-align:center;color:var(--accent);font-size:11px;opacity:.2;}
+.stage-table td{padding:4px 5px;border-bottom:1px solid var(--border);}
+.stage-table tr:last-child td{border-bottom:none;}
+.stage-table td.rl{color:var(--text-dim);font-size:10px;letter-spacing:.1em;padding-right:10px;white-space:nowrap;}
+.stage-table input[type=number]{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:4px 7px;width:88px;-moz-appearance:textfield;}
+.stage-table input[type=number]::-webkit-outer-spin-button,.stage-table input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+.stage-table input[type=number]:focus{outline:none;border-color:var(--accent);background:rgba(0,200,255,.04);}
+.s-active{opacity:1;}.s-inactive{opacity:.18;pointer-events:none;}
+
+/* ── STAGE COUNT ── */
+.stage-count-wrap{display:flex;flex-direction:column;gap:6px;width:fit-content;}
+.sci input{background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--accent);font-family:var(--mono);font-size:18px;padding:4px 8px;width:56px;text-align:center;-moz-appearance:textfield;}
+.sci input::-webkit-outer-spin-button,.sci input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.sci input:focus{outline:none;border-color:var(--accent);}
+.sci{display:flex;align-items:center;}
+
+/* ── ACTION BUTTONS ── */
+.act-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.act-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;box-sizing:border-box;line-height:1;}
+.act-btn:hover{border-color:var(--accent);color:var(--accent);}
+.act-btn.green{border-color:var(--accent3);color:var(--accent3);}
+.act-btn.green:hover{background:rgba(127,255,107,.07);}
+.act-btn.orange{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── VEHICLES PANEL ── */
+.search-bar{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:7px 10px;margin-bottom:8px;letter-spacing:.05em;}
+.search-bar:focus{outline:none;border-color:var(--accent);}
+.lv-list{height:340px;overflow-y:auto;border:1px solid var(--border);}
+.lv-list::-webkit-scrollbar{width:5px;}
+.lv-list::-webkit-scrollbar-thumb{background:var(--border-bright);}
+.lv-item{display:flex;align-items:stretch;border-bottom:1px solid var(--border);}
+.lv-item:last-child{border-bottom:none;}
+.lv-item-btn{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:8px 10px;cursor:pointer;text-align:left;line-height:1.5;transition:all .15s;}
+.lv-item-btn:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.lv-item-btn.active{color:var(--accent);background:rgba(0,200,255,.08);}
+.lv-item-btn.user-lv{color:var(--accent3);}
+.lv-item-btn.user-lv.active{background:rgba(127,255,107,.1);}
+.lv-item-btn.user-defined{color:var(--text-dim);border-left:2px dashed var(--border-bright);}
+.lv-del{background:transparent;border:none;border-left:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:0 10px;cursor:pointer;transition:all .15s;}
+.lv-del:hover{color:#ff4444;background:rgba(255,0,0,.07);}
+
+/* ── ORBIT CATEGORIES ── */
+.orbit-scroll{height:calc(100vh - 200px);min-height:400px;overflow-y:auto;}
+.orbit-scroll::-webkit-scrollbar{width:5px;}
+.orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
+.planet-section{margin-bottom:14px;}
+.planet-header{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid var(--border);margin-bottom:4px;cursor:pointer;user-select:none;}
+.planet-icon{font-size:14px;font-family:var(--mono);letter-spacing:0;}
+.planet-name{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
+.planet-chevron{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
+.planet-chevron.collapsed{transform:rotate(-90deg);}
+.planet-orbits{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.orbit-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:5px 7px;cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .15s;line-height:1.5;}
+.orbit-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.04);}
+.orbit-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
+.orbit-btn.user-orbit{border-style:dashed;color:var(--accent3);border-color:var(--accent3);}
+.orbit-btn.user-orbit.active{background:rgba(127,255,107,.1);}
+
+/* ── RESULTS ── */
+.calc-btn{width:100%;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;padding:14px;cursor:pointer;margin-bottom:8px;transition:all .2s;font-weight:bold;}
+.calc-btn:hover{filter:brightness(1.15);}
+.results-panel{background:var(--panel);border:1px solid var(--border);padding:16px;min-height:200px;}
+.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);gap:12px;}
+.result-row:last-child{border-bottom:none;}
+.result-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;flex:1;}
+.result-val{font-family:var(--mono);font-size:14px;color:var(--accent3);text-align:right;}
+.result-val.hl{font-size:22px;color:var(--accent);}
+.result-val.warn{color:var(--accent2);}
+.result-val.neg{color:#ff4444;}
+.dv-bar{height:3px;background:var(--border);margin:8px 0 12px;overflow:hidden;}
+.dv-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .6s;}
+.placeholder-msg{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:40px 0;letter-spacing:.1em;}
+.error-msg{font-family:var(--mono);font-size:11px;color:#ff6666;padding:8px 10px;border:1px solid rgba(255,80,80,.3);background:rgba(255,0,0,.05);margin-top:8px;}
+.breakdown-row{display:flex;justify-content:space-between;padding:4px 0;font-family:var(--mono);font-size:11px;color:var(--text-dim);border-bottom:1px solid rgba(30,37,48,.5);}
+.breakdown-row span:last-child{color:var(--text);}
+.note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;line-height:1.7;letter-spacing:.04em;}
+.escape-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--accent2);padding:2px 6px;margin-left:8px;}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--panel);border:1px solid var(--border-bright);width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;}
+.modal-close{background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:16px;cursor:pointer;padding:0 4px;}
+.modal-body{padding:16px;overflow-y:auto;flex:1;}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.modal textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical;min-height:300px;line-height:1.6;}
+.modal textarea:focus{outline:none;border-color:var(--accent);}
+.modal-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 16px;cursor:pointer;letter-spacing:.1em;transition:all .15s;}
+.modal-btn:hover{border-color:var(--accent);color:var(--accent);}
+.modal-btn.primary{border-color:var(--accent3);color:var(--accent3);}
+.modal input[type=text]{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:13px;padding:8px 12px;margin-bottom:10px;}
+.modal input[type=text]:focus{outline:none;border-color:var(--accent3);}
+.modal label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:5px;}
+.save-note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
+
+
+/* ── STAGE LIBRARY ── */
+.lib-panel{background:var(--panel);border:1px solid var(--border);padding:12px;margin-top:10px;}
+.lib-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:0;}
+.lib-toggle-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
+.lib-toggle-arrow.open{transform:rotate(90deg);}
+.lib-body{margin-top:10px;}
+.lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
+.lib-search:focus{outline:none;border-color:var(--accent);}
+.lib-cat{margin-bottom:8px;}
+.lib-cat-hdr{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:5px 0 5px 0;border-bottom:1px solid var(--border);margin-bottom:5px;}
+.lib-cat-hdr:hover .lib-cat-label{color:var(--text);}
+.lib-cat-chevron{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto;transition:transform .2s;}
+.lib-cat-chevron.open{transform:rotate(90deg);}
+.lib-user-stage-card{position:relative;}
+.lib-del-btn{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;line-height:1;padding:1px 3px;}
+.lib-del-btn:hover{color:#ff4444;}
+/* ── FILTERS ── */
+.filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.filter-toggle-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
+.filter-toggle-btn:hover,.filter-toggle-btn.active{border-color:var(--accent);color:var(--accent);}
+.filter-chip{background:rgba(0,200,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:3px 7px;display:flex;align-items:center;gap:4px;}
+.filter-chip-x{cursor:pointer;color:var(--accent);opacity:.7;}
+.filter-chip-x:hover{opacity:1;}
+.filter-panel{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:10px;margin-bottom:8px;}
+.filter-cat{margin-bottom:8px;}
+.filter-cat:last-child{margin-bottom:0;}
+.filter-cat-hdr{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:6px;padding:3px 0;user-select:none;}
+.filter-cat-hdr:hover{color:var(--text);}
+.filter-cat-chevron{font-size:8px;transition:transform .15s;}
+.filter-cat-chevron.open{transform:rotate(90deg);}
+.filter-opts{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-left:10px;}
+.filter-opt{font-family:var(--mono);font-size:9px;color:var(--text-dim);border:1px solid var(--border);padding:3px 8px;cursor:pointer;transition:all .15s;letter-spacing:.03em;user-select:none;}
+.filter-opt:hover{border-color:var(--text-dim);color:var(--text);}
+.filter-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.08);}
+/* Tag pills on cards */
+.card-tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;}
+.card-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:1px 4px;line-height:1.4;}
+
+.lib-cat-label{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+
+.lib-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;}
+
+/* stage-card replaced by slim version above */
+/* Drop targets */
+.stage-col-hover th{background:rgba(0,200,255,.12)!important;border-bottom-color:var(--accent)!important;}
+
+
+/* ── LAUNCH SITE SELECTOR ── */
+.site-region{margin-bottom:10px;}
+.site-region-label{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+.site-grid{display:flex;flex-wrap:wrap;gap:4px;}
+.site-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:4px 8px;cursor:pointer;transition:all .15s;letter-spacing:.04em;white-space:nowrap;}
+.site-btn:hover{border-color:var(--accent);color:var(--accent);}
+.site-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
+.site-note{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;letter-spacing:.04em;}
+.inc-tracked{font-family:var(--mono);font-size:8px;color:var(--accent3);letter-spacing:.05em;margin-top:3px;}
+
+/* ── RESULTS PAGE LAYOUT ── */
+.results-layout{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start;}
+.cases-panel{background:var(--panel);border:1px solid var(--border);padding:12px;}
+.cases-header{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.case-item{display:flex;align-items:stretch;gap:2px;margin-bottom:4px;}
+.case-btn{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:6px 8px;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4;}
+.case-btn:hover{border-color:var(--accent);color:var(--accent);}
+.case-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);}
+.case-btn .case-label{font-size:10px;color:inherit;}
+.case-btn .case-sub{font-size:8px;color:var(--text-dim);margin-top:2px;}
+.case-del{flex:none;width:22px;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-size:12px;cursor:pointer;padding:0;transition:all .15s;}
+.case-del:hover{border-color:#ff4444;color:#ff4444;}
+.cases-empty{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.05em;padding:8px 0;text-align:center;opacity:.6;}
+.case-actions{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+@media(max-width:900px){.results-layout{grid-template-columns:1fr;}}
+
+/* ── STAGE COMPOSITION VIEW ── */
+.comp-panel{display:flex;flex-direction:column;gap:0;}
+.comp-actions{display:flex;gap:6px;margin-bottom:10px;}
+.comp-stage-wrap{margin-bottom:0;}
+.comp-stage-label{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:1px;}
+.comp-card{background:var(--panel);border:1px solid var(--border);padding:7px 10px;transition:border-color .15s;cursor:default;}
+.comp-card.drop-hover{border-color:var(--accent);background:rgba(0,200,255,.06);}
+.comp-card.custom-stage{border-color:var(--border);opacity:.7;}
+.comp-card-name{font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.comp-card-name.unnamed{color:var(--text-dim);font-style:italic;}
+.comp-card-specs{display:flex;flex-wrap:wrap;gap:1px 10px;font-family:var(--mono);font-size:8px;color:var(--text-dim);line-height:1.6;}
+.comp-card-specs b{color:var(--text);}
+.comp-card-hint{display:none;}
+.comp-booster-wrap{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;}
+
+/* ── STYLED SCROLLBARS ── */
+/* Horizontal (lib-scroll card rows) */
+.lib-scroll::-webkit-scrollbar{height:5px;}
+.lib-scroll::-webkit-scrollbar-track{background:var(--border);margin:0 2px;}
+.lib-scroll::-webkit-scrollbar-thumb{background:var(--accent);opacity:.7;}
+.lib-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
+.lib-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
+
+/* Vertical (lib-body, comp-body, case list, lv-list) */
+.lib-body::-webkit-scrollbar,
+#comp-body::-webkit-scrollbar,
+.lv-list::-webkit-scrollbar,
+#case-list::-webkit-scrollbar,
+.orbit-scroll::-webkit-scrollbar{width:4px;}
+.lib-body::-webkit-scrollbar-track,
+#comp-body::-webkit-scrollbar-track,
+.lv-list::-webkit-scrollbar-track,
+#case-list::-webkit-scrollbar-track,
+.orbit-scroll::-webkit-scrollbar-track{background:var(--border);}
+.lib-body::-webkit-scrollbar-thumb,
+#comp-body::-webkit-scrollbar-thumb,
+.lv-list::-webkit-scrollbar-thumb,
+#case-list::-webkit-scrollbar-thumb,
+.orbit-scroll::-webkit-scrollbar-thumb{background:var(--accent);opacity:.7;}
+.lib-body::-webkit-scrollbar-thumb:hover,
+#comp-body::-webkit-scrollbar-thumb:hover,
+.lv-list::-webkit-scrollbar-thumb:hover,
+#case-list::-webkit-scrollbar-thumb:hover,
+.orbit-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
+.lib-body,.lv-list,#case-list,.orbit-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
+
+/* ── TOOLTIP ── */
+.info-tip{display:inline-flex;align-items:center;justify-content:center;
+  width:14px;height:14px;border-radius:50%;border:1px solid var(--text-dim);
+  font-family:var(--sans);font-size:9px;font-style:italic;font-weight:600;
+  line-height:1;color:var(--text-dim);cursor:default;
+  position:relative;margin-left:5px;flex-shrink:0;vertical-align:middle;}
+.info-tip:hover{border-color:var(--accent);color:var(--accent);}
+.info-tip .tip-text{display:none;position:fixed;
+  background:var(--panel);border:1px solid var(--accent);
+  color:var(--text);font-family:var(--mono);font-size:9px;padding:7px 10px;
+  white-space:nowrap;letter-spacing:.04em;pointer-events:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:99999;}
+.info-tip:hover .tip-text{display:block;}
+
+/* ── SLIM STAGE CARDS ── */
+.stage-card{flex:0 0 auto;width:130px;background:rgba(0,0,0,.3);border:1px solid var(--border);
+  padding:6px 8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;}
+.stage-card:hover{border-color:var(--accent);background:rgba(0,200,255,.05);}
+.stage-card:active{cursor:grabbing;}
+.stage-card.dragging{opacity:.4;border-style:dashed;}
+.stage-card.booster-card{border-color:color-mix(in srgb,var(--accent2) 50%,transparent);}
+.stage-card.booster-card:hover{border-color:var(--accent2);}
+.stage-card-name{font-family:var(--mono);font-size:10px;color:var(--text-bright);
+  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stage-card-mini{font-family:var(--mono);font-size:8px;color:var(--text-dim);line-height:1.5;}
+.stage-card-mini b{color:var(--text);}
+/* Stage detail modal body */
+.stage-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px;}
+.stage-detail-row{font-family:var(--mono);font-size:10px;}
+.stage-detail-row label{display:block;font-size:8px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px;}
+.stage-detail-row span{color:var(--text-bright);}
+.stage-detail-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.stage-detail-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:2px 6px;}
+/* Booster column highlight */
+.sh-booster-hover{background:color-mix(in srgb,var(--accent) 20%,transparent)!important;}
+.sh-booster{background:color-mix(in srgb,var(--accent) 10%,transparent)!important;border-left:2px solid var(--accent)!important;color:var(--accent)!important;}
+td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transparent)!important;background:color-mix(in srgb,var(--accent) 5%,transparent);}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rocket Playground</h1>
+  <nav class="page-nav">
+    <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
+    <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
+    <button class="nav-btn" id="nav-results" onclick="showPage('results')">Results</button>
+  </nav>
+  <div class="theme-wrap">
+    <label>Theme</label>
+    <select id="theme-select" onchange="applyTheme(this.value)">
+      <option value="perigee" selected>Perigee</option>
+      <option value="default">Default (Dark)</option>
+      <option value="spacex">SpaceX</option>
+      <option value="blueorigin">Blue Origin</option>
+    </select>
+    <button class="th-btn" onclick="openThemeEditor()">EDIT</button>
+    <button class="th-btn g" onclick="saveTheme()">SAVE Theme</button>
+    <label class="th-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadThemeFile(this)"></label>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ PAGE: VEHICLES -->
+<div id="page-vehicles" class="page active">
+
+  <!-- TOP: Composition (left) + Library (right), height-capped -->
+  <div style="display:grid;grid-template-columns:2fr 3fr;gap:14px;align-items:stretch;margin-bottom:14px;">
+
+    <!-- LEFT: Stage Composition + controls -->
+    <div style="display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div class="sl" style="margin-bottom:0;flex:1;">Stage Composition</div>
+        <button class="act-btn green" onclick="openSaveLVModal()">SAVE LV</button>
+        <button class="act-btn" onclick="openJSONModal()">{ } JSON</button>
+        <label class="act-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
+      </div>
+
+      <!-- Config controls: stage count, boosters, restartable, fairing jettison -->
+      <div class="cfg-row" style="margin-bottom:8px;flex-wrap:wrap;">
+        <div class="cfg-item">
+          <label style="display:flex;align-items:center;">Inline Stages<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text">Stages ignited one after another in sequence.<br>Each fires only after the previous stage separates.</span></span></label>
+          <div class="seg" id="stage-selector"></div>
+          <input type="hidden" id="stage-count-input" value="1">
+        </div>
+        <div class="cfg-item">
+          <label>Strap-on Boosters?</label>
+          <div class="seg" id="booster-toggle">
+            <button onclick="setBoosters(true)">Yes</button>
+            <button class="active" onclick="setBoosters(false)">No</button>
+          </div>
+        </div>
+        <div class="cfg-item" id="booster-count-wrap" style="display:none">
+          <label># Boosters</label>
+          <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
+        </div>
+        <div class="cfg-item">
+          <label>Restartable Upper?</label>
+          <div class="seg" id="restart-toggle">
+            <button onclick="setRestart(true)">Yes</button>
+            <button class="active" onclick="setRestart(false)">No</button>
+          </div>
+        </div>
+        <div class="cfg-item">
+          <label>Fairing Jettison</label>
+          <select class="field" id="fairing-jettison"><option value="0">Never</option></select>
+        </div>
+      </div>
+
+      <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;"></div>
+      <div id="preset-grid" style="display:none"></div>
+    </div>
+
+    <!-- RIGHT: Stage Library, same height cap -->
+    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div class="lib-toggle" onclick="toggleLibrary()">
+        <span class="sl" style="margin-bottom:0;flex:1;">Stage Library
+          <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
+            <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
+              <b>Click</b> any stage card for full specifications.<br>
+              <b>Drag</b> a stage to the Stage Composition area or a column header in the Stage Parameters table to add it to your rocket.<br>
+              <b>Dragging a Preset Vehicle</b> replaces all stages at once.
+            </span>
+          </span>
+        </span>
+        <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
+      </div>
+      <div class="lib-body" id="lib-body" style="flex:1;min-height:0;overflow-y:auto;">
+        <div style="display:flex;gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
+          <input class="lib-search" type="text" id="lib-search" placeholder="Search stages..." oninput="buildStageLibrary()" style="flex:1;min-width:120px;margin-bottom:0;">
+          <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="white-space:nowrap;">⊟ Filters</button>
+          <button class="act-btn green" onclick="openAddStageModal()" style="white-space:nowrap;">Make Stage</button>
+          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load Stage<input type="file" accept=".json" style="display:none" onchange="loadUserStageFile(this)"></label>
+        </div>
+        <div class="filter-bar" style="margin-bottom:4px;min-height:0;">
+          <div id="active-filter-chips"></div>
+          <button class="filter-toggle-btn" id="clear-filters-btn" onclick="clearAllFilters()" style="display:none;border-color:var(--accent2);color:var(--accent2);">Clear All</button>
+        </div>
+        <div id="filter-panel" style="display:none;"></div>
+        <div id="lib-content"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM: Stage Parameters -->
+  <div class="panel">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;flex-wrap:wrap;">
+      <div class="cfg-item" style="margin:0;">
+        <label>Fairing Mass (kg)</label>
+        <input type="number" class="field" id="fairing-mass" value="200" min="0">
+      </div>
+      <input type="hidden" id="payload-mass" value="0">
+    </div>
+
+    <div id="booster-inputs" style="display:none;margin-bottom:14px;">
+      <div class="sl" style="cursor:default;">Strap-on Boosters (per booster) <span style="font-size:8px;color:var(--text-dim);letter-spacing:.06em;font-weight:normal;">// drag from library</span></div>
+      <table class="stage-table" id="booster-table"
+        ondragover="event.preventDefault();event.dataTransfer.dropEffect='copy';this.style.background='rgba(0,200,255,.07)'"
+        ondragleave="this.style.background=''"
+        ondrop="this.style.background='';if(_draggingStage)applyBoosterData(_draggingStage)">
+        <thead><tr><th>Parameter</th><th class="sh">Booster</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">Dry Mass (kg)</td><td><input type="number" id="b_dry" value="500" min="0"></td></tr>
+          <tr><td class="rl">Propellant (kg)</td><td><input type="number" id="b_prop" value="5000" min="0"></td></tr>
+          <tr><td class="rl">Thrust (kN)</td><td><input type="number" id="b_thrust" value="400" min="0"></td></tr>
+          <tr><td class="rl">Isp (s)</td><td><input type="number" id="b_isp" value="265" min="1"></td></tr>
+          <tr><td class="rl">Residuals (%)</td><td><input type="number" id="b_res" value="2" min="0" max="20"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sl">Stage Parameters</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:6px;">
+      Drag from library → drop on column header &nbsp;|&nbsp; drop on strap-on table
+    </div>
+    <div class="tscroll">
+      <table class="stage-table" id="stage-table">
+        <thead><tr id="stage-header-row"><th>Parameter</th></tr></thead>
+        <tbody id="stage-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
+<div id="page-orbits" class="page">
+  <div class="two-col">
+
+    <!-- LEFT: Destination config -->
+    <div>
+      <div class="sl">Launch Site</div>
+      <div class="panel" style="padding-bottom:10px;">
+        <div id="site-selector-grid"></div>
+        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+        </div>
+        <div class="site-note" id="site-note"></div>
+        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+      </div>
+
+      <div class="sl">Destination</div>
+      <div class="panel">
+        <div class="mode-tog">
+          <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
+          <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+        </div>
+        <div id="dest-orbit">
+          <div class="cfg-row">
+            <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined()"></div>
+            <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined()"></div>
+            <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
+            <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100"></div>
+          </div>
+          <div class="cfg-item">
+            <label>Trajectory</label>
+            <div class="seg" id="traj-toggle">
+              <button onclick="setTraj('direct')">Direct</button>
+              <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
+              <button onclick="setTraj('optimal')">Optimal</button>
+            </div>
+          </div>
+        </div>
+        <div id="dest-escape" style="display:none;">
+          <div class="cfg-row">
+            <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined()"></div>
+            <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
+            <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100"></div>
+          </div>
+          <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
+        </div>
+      </div>
+
+      <div class="sl">User Orbits</div>
+      <div class="panel">
+        <div class="act-row" style="margin-top:0;">
+          <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+          <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".json" style="display:none" onchange="loadOrbitFile(this)"></label>
+        </div>
+        <div class="note" style="margin-top:8px;">Saved orbits appear in the panel under "User Defined". Delete them with the × button.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Orbit categories -->
+    <div>
+      <div class="sl">Orbits</div>
+      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:8px;">
+      <div class="orbit-scroll" id="orbit-categories"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: RESULTS -->
+<div id="page-results" class="page">
+  <button class="calc-btn" onclick="calculate()" style="margin-bottom:10px;">▶  CALCULATE PERFORMANCE</button>
+  <div class="results-layout">
+
+    <!-- LEFT: Cases panel -->
+    <div class="cases-panel">
+      <div class="cases-header">
+        <span>Performance Cases</span>
+      </div>
+      <div class="act-row" style="margin-bottom:8px;">
+        <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+      </div>
+      <div id="case-list">
+        <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+      </div>
+      <div class="case-actions">
+        <label class="act-btn" style="cursor:pointer;text-align:center;width:100%;box-sizing:border-box;">Load Vehicle File<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
+        <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled>Download All Cases</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results display -->
+    <div>
+      <div class="sl">Results</div>
+      <div class="results-panel" id="results-panel">
+        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target on the Orbits page, then calculate.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL: Save LV ── -->
+<div class="modal-overlay" id="modal-save-lv" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Save Launch Vehicle</span><button class="modal-close" onclick="closeModal('modal-save-lv')">✕</button></div>
+    <div class="modal-body">
+      <label>Vehicle Name</label>
+      <input type="text" id="lv-save-name" placeholder="e.g. My Rocket Mk1" maxlength="60">
+      <label>Notes (optional)</label>
+      <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
+      <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Save Orbit ── -->
+<div class="modal-overlay" id="modal-save-orbit" style="display:none">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><span class="modal-title">Save Orbit</span><button class="modal-close" onclick="closeModal('modal-save-orbit')">✕</button></div>
+    <div class="modal-body">
+      <label>Orbit Name</label>
+      <input type="text" id="orbit-save-name" placeholder="e.g. Staging Orbit" maxlength="60">
+      <label style="margin-top:10px;">Category</label>
+      <select class="field" id="orbit-save-category" style="width:100%;margin-bottom:8px;" onchange="onOrbitCategoryChange(this.value)">
+      </select>
+      <div id="orbit-new-cat-wrap" style="display:none;">
+        <label>New Category Name</label>
+        <input type="text" id="orbit-new-cat-name" placeholder="e.g. My Missions" maxlength="40">
+      </div>
+      <div class="save-note" style="margin-top:8px;">Orbit appears inside the selected category alongside presets. Also downloads a .json file.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-orbit')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveOrbit()">Save & Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: JSON editor ── -->
+<div class="modal-overlay" id="modal-json" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">View / Edit Vehicle JSON</span><button class="modal-close" onclick="closeModal('modal-json')">✕</button></div>
+    <div class="modal-body">
+      <textarea id="json-editor" spellcheck="false"></textarea>
+      <div id="json-error" class="error-msg" style="display:none;margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-json')">Cancel</button>
+      <button class="modal-btn primary" onclick="applyJSON()">Apply to Calculator</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Theme editor ── -->
+<div class="modal-overlay" id="modal-theme" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Theme Editor</span><button class="modal-close" onclick="closeModal('modal-theme')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:10px;">Edit CSS variable values. Apply to preview live.</div>
+      <textarea id="theme-editor" spellcheck="false"></textarea>
+      <div id="theme-error" class="error-msg" style="display:none;margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-theme')">Close</button>
+      <button class="modal-btn" onclick="applyThemeFromEditor()">▶ Apply</button>
+      <button class="modal-btn primary" onclick="saveThemeFromEditor()">DOWNLOAD</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL: Add/Save Stage ── -->
+<div class="modal-overlay" id="modal-add-stage" style="display:none">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Stage to Library</span>
+      <button class="modal-close" onclick="closeModal('modal-add-stage')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label>Stage Name</label>
+          <input type="text" id="stg-name" placeholder="e.g. My Upper Stage" maxlength="60" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label>Category</label>
+          <select class="field" id="stg-category" style="width:100%;margin-bottom:0;" onchange="onStageCatChange(this.value)">
+            <option value="Booster Stages">Booster Stages</option>
+            <option value="Upper Stages">Upper Stages</option>
+            <option value="Kick Stages">Kick Stages</option>
+            <option value="Side Boosters">Side Boosters</option>
+            <option value="__new__">[ New Category... ]</option>
+          </select>
+        </div>
+        <div id="stg-new-cat-wrap" style="display:none;grid-column:1/-1;">
+          <label>New Category Name</label>
+          <input type="text" id="stg-new-cat" placeholder="e.g. Custom Stages" maxlength="40" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label>Dry Mass (kg)</label>
+          <input type="number" id="stg-dry" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Propellant (kg)</label>
+          <input type="number" id="stg-prop" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Thrust (kN)</label>
+          <input type="number" id="stg-thrust" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Isp (s)</label>
+          <input type="number" id="stg-isp" placeholder="300" min="1" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Residuals (%)</label>
+          <input type="number" id="stg-res" value="2" min="0" max="20" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Engine(s)</label>
+          <input type="text" id="stg-engines" placeholder="e.g. 2× RL-10" maxlength="40" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Notes</label>
+          <input type="text" id="stg-note" placeholder="Propellants, mission context, etc." maxlength="120" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="stg-tags" placeholder="e.g. Liquid Oxygen / Kerosene, Restartable, 1970s" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="stg-is-booster" style="accent-color:var(--accent2);">
+          <label style="display:inline;letter-spacing:normal;text-transform:none;font-size:11px;color:var(--text);">Side Booster (populates strap-on booster section when dropped)</label>
+        </div>
+      </div>
+      <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-add-stage')">Cancel</button>
+      <button class="modal-btn" onclick="doAddStage(false)">Add to Library</button>
+      <button class="modal-btn primary" onclick="doAddStage(true)">Add & Save .json</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────
+const G0=9.80665,RE=6371.0,MU=398600.4418,OMEGA_E=7.2921150e-5;
+const MAX_STAGES=15;
+
+// ─── STATE ────────────────────────────────────
+let numStages=1,useBooster=false,restartable=false,trajectory='two-burn',destMode='orbit';
+let activePresetKey=null,activeOrbitKey=null;
+let userDefinedLV=false,userDefinedOrbit=false;
+let _suppressUD=false;
+let lastResult=null;
+const stageStore={};
+
+// ─── ROW DEFAULTS ─────────────────────────────
+const ROWS=[
+  {key:'dry',   label:'Dry Mass (kg)',   def:[8000,2000,500,200,100,50,30,20,15,10,8,6,5,4,3]},
+  {key:'prop',  label:'Propellant (kg)', def:[180000,35000,8000,2000,600,200,80,40,25,15,10,8,6,5,4]},
+  {key:'thrust',label:'Thrust (kN)',     def:[5000,600,100,30,10,4,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.5]},
+  {key:'isp',   label:'Isp (s)',         def:[290,345,380,290,285,280,275,270,268,265,265,265,265,265,265]},
+  {key:'res',   label:'Residuals (%)',   def:[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]},
+];
+
+// ─── BUILTIN PRESETS ──────────────────────────
+const BUILTIN_PRESETS=[
+  // ───── UNITED STATES ─────
+  {name:'Juno I',
+   stageNames:['Redstone','Sergeant (11×)','Sergeant (3×)','Sergeant (1×)'],
+   payload:14,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:370,perigee:370,inc:33},
+   tags:['Historical','Crewed'],
+   note:'Explorer 1 (1958). First US satellite. ~10 kg to 370 km.'},
+
+  {name:'Vanguard',
+   stageNames:['Vanguard S1','Vanguard S2','Vanguard S3'],
+   payload:1.5,fairingMass:50,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:660,perigee:660,inc:33},
+   tags:['Historical'],
+   note:'NRL 3-stage. Only 3 of 11 launches succeeded.'},
+
+  {name:'Thor-Able',
+   stageNames:['Thor DSV-2','Able (Thor-Able)'],
+   payload:90,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'escape',escape:{c3:0.1,decl:28.5,perigee:185},
+   tags:['Historical','Deep Space'],
+   note:'Pioneer lunar probes. LOX/RP-1 + NTO/UDMH.'},
+
+  {name:'Thor-Agena D',
+   stageNames:['Thor DSV-2','Agena D'],
+   payload:900,fairingMass:80,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:500,perigee:500,inc:28.5},
+   tags:['Historical'],
+   note:'Workhorse of the 1960s. LOX/RP-1 + IRFNA/UDMH. Discoverer/Corona recon.'},
+
+  {name:'Atlas-Agena D',
+   stageNames:['Atlas SLV-3','Agena D'],
+   payload:1700,fairingMass:100,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:500,perigee:500,inc:28.5},
+   tags:['Historical'],
+   note:'Mariner, Ranger, Lunar Orbiter missions.'},
+
+  {name:'Atlas-Centaur',
+   stageNames:['Atlas SLV-3','Centaur A'],
+   payload:3600,fairingMass:200,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Historical','Deep Space'],
+   note:'First LOX/LH2 upper stage in service. Surveyor, Pioneer.'},
+
+  {name:'Saturn I',
+   stageNames:['Saturn I S-I','Saturn S-IV'],
+   payload:10000,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:185,perigee:185,inc:28.5},
+   tags:['Historical'],
+   note:'SA-1 to SA-10. Tested Apollo hardware. ~10t LEO.'},
+
+  {name:'Saturn IB',
+   stageNames:['Saturn IB S-IB','Saturn IB S-IVB'],
+   payload:21000,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:185,perigee:185,inc:28.5},
+   tags:['Historical','Crewed'],
+   note:'Apollo 7, Skylab, ASTP. ~21t LEO.'},
+
+  {name:'Saturn V',
+   stageNames:['Saturn V S-IC','Saturn V S-II','Saturn V S-IVB'],
+   payload:118000,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:185,perigee:185,inc:28.5},
+   tags:['Historical','Crewed','Deep Space'],
+   note:'Apollo/Skylab. F-1 vac Isp 304s / J-2 421s. ~118t LEO.'},
+
+  {name:'Titan I',
+   stageNames:['Titan I Stage 1','Titan I Stage 2'],
+   payload:1800,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:34.7,azMin:150,azMax:220},mode:'orbit',orbit:{apogee:185,perigee:185,inc:34.7},
+   tags:['Historical'],
+   note:'Titan I ICBM-derived. Only LOX/RP-1 Titan.'},
+
+  {name:'Titan II GLV',
+   stageNames:['Titan II GLV S1','Titan II GLV S2'],
+   payload:3600,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:270,perigee:160,inc:28.9},
+   tags:['Historical','Crewed'],
+   note:'Gemini LV. LR-87 vac Isp 290s / LR-91 316s.'},
+
+  {name:'Titan IIIC',
+   stageNames:['Titan IIIC/D S1','Titan IIIC/D S2','Transtage'],
+   boosterName:'UA1205 SRB',boosterCount:2,
+   payload:13600,fairingMass:600,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:35786,perigee:185,inc:28.5},
+   tags:['Historical'],
+   note:'First Titan with SRBs. ~13.6t to GTO (reference). NTO/Aerozine-50.'},
+
+  {name:'Titan IIIE / Centaur',
+   stageNames:['Titan IIIE S1','Titan IIIE S2','Centaur D-1T'],
+   boosterName:'UA1205 SRB',boosterCount:2,
+   payload:722,fairingMass:400,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'escape',escape:{c3:98.5,decl:28.5,perigee:185},
+   tags:['Historical','Deep Space'],
+   note:'Voyager 1/2, Viking, Helios. C3=98.5 km²/s² (Voyager trajectory).'},
+
+  {name:'Scout G-1',
+   stageNames:['Algol III','Castor II','Antares 3A','Altair 3'],
+   payload:210,fairingMass:60,fairingJettison:3,boosterName:null,boosterCount:0,
+   site:{lat:37.8,azMin:150,azMax:225},mode:'orbit',orbit:{apogee:500,perigee:500,inc:90},
+   tags:['Historical'],
+   note:'All-solid 4-stage. ~210 kg to 500 km polar from Vandenberg.'},
+
+  {name:'Delta E',
+   stageNames:['Thor (Long Tank)','Delta-K'],
+   payload:900,fairingMass:80,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:800,perigee:800,inc:28.5},
+   tags:['Historical'],
+   note:'Extended Thor with Delta-K upper stage.'},
+
+  {name:'Delta II 7920',
+   stageNames:['Delta II S1','Delta-K'],
+   boosterName:'GEM-40',boosterCount:9,
+   payload:5100,fairingMass:200,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Historical'],
+   note:'9× GEM-40 strap-ons. GPS constellation workhorse. ~5.1t LEO.'},
+
+  {name:'Atlas V 401',
+   stageNames:['Atlas V CCB','Centaur III'],
+   payload:9800,fairingMass:1950,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Active'],
+   note:'Atlas V baseline. RD-180 + 2× RL-10. No SRBs, 4m fairing. ~9.8t LEO.'},
+
+  {name:'Atlas V 551',
+   stageNames:['Atlas V CCB','Centaur III'],
+   boosterName:'Atlas V SRB (AJ-60A)',boosterCount:5,
+   payload:18810,fairingMass:2316,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Active'],
+   note:'Atlas V heaviest config. 5× AJ-60A SRBs, 5m fairing. ~18.8t LEO.'},
+
+  {name:'Delta IV Medium',
+   stageNames:['Delta IV CBC','DCSS (Delta IV)'],
+   payload:9420,fairingMass:1680,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Historical'],
+   note:'Delta IV Medium. RS-68A + RL-10B-2. LOX/LH2 both stages. ~9.4t LEO.'},
+
+  {name:'Delta IV Heavy',
+   stageNames:['Delta IV CBC','DCSS (Delta IV)'],
+   boosterName:'Delta IV CBC',boosterCount:2,
+   payload:28790,fairingMass:2034,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Historical'],
+   note:'3× CBC cores + DCSS. ~28.8t LEO. Largest US launcher before SLS.'},
+
+  {name:'Falcon 9 Block 5',
+   stageNames:['Falcon 9 B5 S1','Falcon 9 MVac'],
+   payload:22800,fairingMass:1900,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:51.6},
+   tags:['Active','Reusable'],
+   note:'Expendable config. Merlin 1D+ vac Isp 311s / MVac 348s. ~22.8t LEO.'},
+
+  {name:'Falcon Heavy',
+   stageNames:['Falcon 9 B5 S1','Falcon 9 MVac'],
+   boosterName:'Falcon 9 B5 S1',boosterCount:2,
+   payload:63800,fairingMass:1900,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Active','Reusable'],
+   note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. Side boosters separate earlier.'},
+
+  {name:'Vulcan Centaur',
+   stageNames:['Vulcan S1','Centaur V'],
+   payload:27200,fairingMass:2500,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Active'],
+   note:'BE-4 (LOX/CH4) + Centaur V (LOX/LH2). ~27.2t LEO expendable.'},
+
+  {name:'New Glenn',
+   stageNames:['New Glenn S1','New Glenn S2'],
+   payload:45000,fairingMass:3500,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Active','Reusable'],
+   note:'Blue Origin. 7× BE-4 (LOX/CH4) + BE-3U (LOX/LH2). ~45t LEO expendable.'},
+
+  {name:'Antares 230+',
+   stageNames:['Antares S1','Castor 4A'],
+   payload:8000,fairingMass:200,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:37.8,azMin:40,azMax:100},mode:'orbit',orbit:{apogee:400,perigee:400,inc:51.6},
+   tags:['Active'],
+   note:'2× RD-181 first stage + Castor 30XL solid. ~8t to ISS orbit from Wallops.'},
+
+  {name:'Electron',
+   stageNames:['Electron S1','Electron S2'],
+   payload:300,fairingMass:40,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:-39.3,azMin:40,azMax:150},mode:'orbit',orbit:{apogee:500,perigee:500,inc:45},
+   tags:['Active'],
+   note:'Rocket Lab. 9× Rutherford + Vacuum Rutherford. ~300 kg to 500 km. Mahia Peninsula, NZ.'},
+
+  {name:'SLS Block 1',
+   stageNames:['SLS Core Stage','ICPS (SLS Block 1)'],
+   boosterName:'SLS 5-Seg SRB',boosterCount:2,
+   payload:95000,fairingMass:0,fairingJettison:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:185,perigee:185,inc:28.5},
+   tags:['Active','Crewed'],
+   note:'SLS Block 1. 4× RS-25 + 2× 5-seg SRB + ICPS. ~95t LEO. Artemis program.'},
+
+  {name:'SLS Block 1B',
+   stageNames:['SLS Core Stage','EUS (SLS Block 1B)'],
+   boosterName:'SLS 5-Seg SRB',boosterCount:2,
+   payload:105000,fairingMass:0,fairingJettison:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:185,perigee:185,inc:28.5},
+   tags:['Active','Crewed','Deep Space'],
+   note:'SLS Block 1B with Exploration Upper Stage. 4× RL-10C. ~105t LEO.'},
+
+  // ── Proposed / Exotic ──
+  {name:'Atlas / NOMAD',
+   stageNames:['Atlas SLV-3','NOMAD (G-1)'],
+   payload:1200,fairingMass:80,fairingJettison:2,boosterName:null,boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:500,perigee:500,inc:28.5},
+   tags:['Unbuilt','Exotic','Historical'],
+   note:'Proposed Atlas + NOMAD LF2/Hydrazine upper stage. Agena replacement that never flew. Stage masses estimated.'},
+
+  {name:'Titan III / CHARIOT',
+   stageNames:['Titan IIIC/D S1','Titan IIIC/D S2','CHARIOT'],
+   boosterName:'UA1205 SRB',boosterCount:2,
+   payload:15000,fairingMass:600,fairingJettison:2,
+   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:35786,perigee:185,inc:28.5},
+   tags:['Unbuilt','Exotic','Historical'],
+   note:'Titan IIIC with CHARIOT LF2 upper stage in place of Transtage. Never built. Stage masses estimated.'},
+
+  // ───── SOVIET UNION ─────
+  {name:'Vostok-K',
+   stageNames:['R-7 Blok A (core)','R-7 Blok E'],
+   boosterName:'R-7 Blok B/V/G/D',boosterCount:4,
+   payload:4700,fairingMass:0,fairingJettison:0,
+   site:{lat:45.9,azMin:40,azMax:100},mode:'orbit',orbit:{apogee:327,perigee:169,inc:65},
+   tags:['Historical','Crewed'],
+   note:'Vostok 1–6 (Gagarin). Blok E upper. ~4.7t to inclined LEO.'},
+
+  {name:'Soyuz-U',
+   stageNames:['R-7 Blok A (core)','Soyuz Blok I'],
+   boosterName:'R-7 Blok B/V/G/D',boosterCount:4,
+   payload:6850,fairingMass:0,fairingJettison:0,
+   site:{lat:45.9,azMin:40,azMax:100},mode:'orbit',orbit:{apogee:250,perigee:200,inc:51.6},
+   tags:['Historical','Crewed'],
+   note:'Most-launched rocket. 1973–2017. ~6.85t to ISS orbit.'},
+
+  {name:'Molniya-M',
+   stageNames:['R-7 Blok A (core)','Soyuz Blok I','Blok L (kick)'],
+   boosterName:'R-7 Blok B/V/G/D',boosterCount:4,
+   payload:1900,fairingMass:0,fairingJettison:0,
+   site:{lat:45.9,azMin:40,azMax:100},mode:'orbit',orbit:{apogee:39700,perigee:600,inc:63.4},
+   tags:['Historical'],
+   note:'Molniya HEO comms. 4-stage R-7 variant with Blok L. ~1.9t to Molniya.'},
+
+  {name:'Proton-K',
+   stageNames:['Proton Blok A','Proton Blok B','Proton Blok V'],
+   payload:21000,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:45.9,azMin:50,azMax:100},mode:'orbit',orbit:{apogee:200,perigee:200,inc:51.6},
+   tags:['Historical'],
+   note:'3-stage Proton. N2O4/UDMH. ~21t LEO. Salyut, Mir modules.'},
+
+  {name:'Proton-K / Blok D',
+   stageNames:['Proton Blok A','Proton Blok B','Proton Blok V','Blok D'],
+   payload:2100,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:45.9,azMin:50,azMax:100},mode:'escape',escape:{c3:8.7,decl:45,perigee:185},
+   tags:['Historical','Deep Space'],
+   note:'Mars/Venus probes. Blok D deep-space stage. LOX/Kero upper.'},
+
+  {name:'N1',
+   stageNames:['N1 Blok A','N1 Blok B','N1 Blok V','N1 Blok G (TLI)'],
+   payload:95000,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:45.9,azMin:50,azMax:100},mode:'orbit',orbit:{apogee:185,perigee:185,inc:51.6},
+   tags:['Historical','Never Succeeded'],
+   note:'Soviet Moon rocket. 30× NK-15. All 4 launches failed. ~95t design LEO.'},
+
+  {name:'Zenit-2',
+   stageNames:['Zenit S1','Zenit Blok II'],
+   payload:13740,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:45.9,azMin:50,azMax:100},mode:'orbit',orbit:{apogee:200,perigee:200,inc:51.6},
+   tags:['Historical'],
+   note:'RD-171 + RD-120. LOX/Kerosene. ~13.7t LEO. Baikonur.'},
+
+  {name:'Kosmos-3M',
+   stageNames:['Kosmos-3M S1','Kosmos-3M S2'],
+   payload:1500,fairingMass:0,fairingJettison:0,boosterName:null,boosterCount:0,
+   site:{lat:62.8,azMin:60,azMax:100},mode:'orbit',orbit:{apogee:800,perigee:800,inc:74},
+   tags:['Historical'],
+   note:'Workhorse small satellite launcher. N2O4/UDMH. 446 launches. ~1.5t.'},
+
+  {name:'Energia',
+   stageNames:['Energia Blok Ts'],
+   boosterName:'Energia Zenit SRB',boosterCount:4,
+   payload:100000,fairingMass:0,fairingJettison:0,
+   site:{lat:45.9,azMin:50,azMax:100},mode:'orbit',orbit:{apogee:200,perigee:200,inc:51.6},
+   tags:['Historical'],
+   note:'Buran/Polyus. 4× Zenit strap-ons + LOX/LH2 core. ~100t LEO (design).'},
+];
+// ─── ORBIT CATEGORIES ─────────────────────────
+// All C3 values are Earth-departure hyperbolic excess energy (km²/s²)
+// Injection burn computed via vis-viva: Vinj = √(Vesc² + C3) where Vesc²=2μ/r
+const ORBIT_CATEGORIES=[
+  {planet:'Earth', icon:'⊕', color:'#4a9fff', orbits:[
+    {name:'LEO 200 km',      mode:'orbit',apogee:200,  perigee:200,  inc:28.5,parking:185,incTracksLat:true,note:'Minimum stable LEO. Inclination = launch site latitude.'},
+    {name:'ISS',             mode:'orbit',apogee:418,  perigee:408,  inc:51.6,parking:185,note:'International Space Station. 51.6° for Russian site access.'},
+    {name:'Sun-Sync 700 km', mode:'orbit',apogee:700,  perigee:700,  inc:98.2,parking:185,note:'Sun-synchronous Earth observation. 98.2° retrograde.'},
+    {name:'Polar 800 km',    mode:'orbit',apogee:800,  perigee:800,  inc:90,  parking:185,note:'True polar. Full Earth coverage.'},
+    {name:'GPS / MEO',       mode:'orbit',apogee:20200,perigee:20200,inc:55,  parking:185,note:'GPS constellation. 12-hour period.'},
+    {name:'Molniya',         mode:'orbit',apogee:39700,perigee:600,  inc:63.4,parking:185,note:'HEO 12-hr. 63.4° freezes apsides. Soviet Arctic comms.'},
+    {name:'Tundra',          mode:'orbit',apogee:46300,perigee:17900,inc:63.4,parking:185,note:'24-hr HEO. Single-satellite Arctic coverage.'},
+    {name:'GTO',             mode:'orbit',apogee:35786,perigee:185,  inc:28.5,parking:185,incTracksLat:true,note:'Geostationary Transfer Orbit. Inclination = launch site latitude (or range safety minimum).'},
+    {name:'GEO',             mode:'orbit',apogee:35786,perigee:35786,inc:0,   parking:185,note:'Geostationary. 0° inc. Plane change combined at apogee.'},
+    {name:'Graveyard',       mode:'orbit',apogee:36086,perigee:36086,inc:0,   parking:185,note:'300 km above GEO per IADC guidelines.'},
+    {name:'Sun-Sync GTO',    mode:'orbit',apogee:35786,perigee:500,  inc:98.2,parking:185,note:'High-inclination GTO for SSO replenishment.'},
+  ]},
+  {planet:'Moon', icon:'☽', color:'#c0c0c0', orbits:[
+    {name:'Trans-Lunar Inj.', mode:'escape',c3:-1.9,  decl:28.5,perigee:185,note:'TLI from 185 km. C3≈−1.9 km²/s². ~3.14 km/s injection burn.'},
+    {name:'TLI (polar appr.)',mode:'escape',c3:-1.9,  decl:45,  perigee:185,note:'TLI for polar lunar approach. Higher departure declination.'},
+    {name:'Fast Lunar',       mode:'escape',c3:0.5,   decl:28.5,perigee:185,note:'Higher energy TLI for faster transit. ~3.26 km/s.'},
+  ]},
+  {planet:'Mars', icon:'♂', color:'#cc4433', orbits:[
+    {name:'Mars (min energy)',mode:'escape',c3:8.7,   decl:28.5,perigee:185,note:'Hohmann-like minimum energy. C3=8.7 km²/s². ~3.62 km/s.'},
+    {name:'Mars (fast)',      mode:'escape',c3:16.0,  decl:28.5,perigee:185,note:'~7 month transit. C3=16 km²/s². ~3.93 km/s.'},
+    {name:'Mars (opposition)',mode:'escape',c3:25.0,  decl:28.5,perigee:185,note:'Short-period opposition class. Higher C3 but shorter transit.'},
+  ]},
+  {planet:'Venus', icon:'♀', color:'#ffaa44', orbits:[
+    {name:'Venus (min energy)',mode:'escape',c3:6.3,  decl:28.5,perigee:185,note:'Minimum Hohmann to Venus. C3≈6.3 km²/s². ~3.54 km/s.'},
+    {name:'Venus (fast)',      mode:'escape',c3:12.0, decl:28.5,perigee:185,note:'Faster Venus transfer. C3≈12 km²/s².'},
+  ]},
+  {planet:'Mercury', icon:'☿', color:'#aa8866', orbits:[
+    {name:'Mercury (direct)', mode:'escape',c3:56.7, decl:28.5,perigee:185,note:'Direct Hohmann to Mercury. C3≈56.7 km²/s². Very high energy.'},
+  ]},
+  {planet:'Jupiter', icon:'♃', color:'#cc8844', orbits:[
+    {name:'Jupiter (direct)', mode:'escape',c3:77.4, decl:28.5,perigee:185,note:'Direct to Jupiter. C3≈77.4 km²/s². ~6.37 km/s injection.'},
+    {name:'Jupiter (Voyager)',mode:'escape',c3:98.5, decl:28.5,perigee:185,note:'Voyager 1 trajectory. C3=98.5 km²/s². Jupiter gravity assist to Saturn.'},
+  ]},
+  {planet:'Saturn', icon:'♄', color:'#ccbb88', orbits:[
+    {name:'Saturn (direct)',  mode:'escape',c3:105.7,decl:28.5,perigee:185,note:'Direct Hohmann to Saturn. C3≈105.7 km²/s².'},
+  ]},
+  {planet:'Uranus', icon:'♅', color:'#44cccc', orbits:[
+    {name:'Uranus (direct)',  mode:'escape',c3:127.5,decl:28.5,perigee:185,note:'Direct to Uranus. C3≈127.5 km²/s².'},
+  ]},
+  {planet:'Neptune', icon:'♆', color:'#4455cc', orbits:[
+    {name:'Neptune (direct)', mode:'escape',c3:135.9,decl:28.5,perigee:185,note:'Direct to Neptune. C3≈135.9 km²/s².'},
+  ]},
+  {planet:'Beyond', icon:'✦', color:'#9944cc', orbits:[
+    {name:'Solar Escape',     mode:'escape',c3:152.0,decl:28.5,perigee:185,note:'Solar system escape velocity. C3≈152 km²/s².'},
+    {name:'Earth Escape',     mode:'escape',c3:0.1,  decl:28.5,perigee:185,note:'Minimum Earth escape. C3≈0 km²/s². ~3.23 km/s.'},
+  ]},
+];
+
+let userLVs=[];
+let userOrbitsByCategory={}; // { categoryName: [{orbit}, ...] }
+let collapsedPlanets=new Set();
+
+// ─── PAGE NAVIGATION ──────────────────────────
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+}
+
+// ─── BUILD TABLE ──────────────────────────────
+function saveStoreFromDOM(){
+  for(let s=0;s<MAX_STAGES;s++){
+    if(!stageStore[s])stageStore[s]={};
+    ROWS.forEach(row=>{const el=document.getElementById(`s${s+1}_${row.key}`);if(el)stageStore[s][row.key]=el.value;});
+  }
+}
+
+function buildTable(){
+  _suppressUD=true;
+  const hr=document.getElementById('stage-header-row');
+  hr.innerHTML='<th style="white-space:nowrap;">Parameter</th>';
+
+  // ── Booster column before Stage 1 ──
+  if(useBooster){
+    const cnt=parseInt(document.getElementById('num-boosters')?.value)||0;
+    const bth=document.createElement('th');
+    bth.className='sh sh-booster';
+    bth.textContent=`Strap-on ×${cnt}`;
+    bth.title='Strap-on boosters — fire in parallel with Stage 1. Drop a stage here.';
+    bth.style.cursor='copy';
+    bth.addEventListener('dragover',e=>{e.preventDefault();bth.classList.add('sh-booster-hover');});
+    bth.addEventListener('dragleave',()=>{bth.classList.remove('sh-booster-hover');});
+    bth.addEventListener('drop',e=>{e.preventDefault();bth.classList.remove('sh-booster-hover');if(_draggingStage)applyBoosterData(_draggingStage);});
+    hr.appendChild(bth);
+  }
+
+  // ── Stage columns ──
+  for(let s=0;s<numStages;s++){
+    const th=document.createElement('th');
+    th.className='sh';
+    th.textContent=`Stage ${s+1}`;
+    th.style.cursor='copy';
+    th.title='Drop a stage from the library here';
+    const si=s;
+    th.addEventListener('dragover', e=>onColDragOver(e,si));
+    th.addEventListener('dragleave',e=>onColDragLeave(e,si));
+    th.addEventListener('drop',     e=>onColDrop(e,si));
+    hr.appendChild(th);
+  }
+
+  // ── Booster row values (read from DOM before rebuild wipes them) ──
+  const bDefaults={dry:500,prop:5000,thrust:400,isp:265,res:2};
+  const bVals={};
+  ['dry','prop','thrust','isp','res'].forEach(k=>{
+    const el=document.getElementById(`b_${k}`);
+    bVals[k]=el?el.value:bDefaults[k];
+  });
+
+  const tbody=document.getElementById('stage-tbody');
+  tbody.innerHTML='';
+  ROWS.forEach(row=>{
+    const tr=document.createElement('tr');
+    let html=`<td class="rl">${row.label}</td>`;
+    // Booster cell (before Stage 1)
+    if(useBooster){
+      html+=`<td class="s-active booster-cell"><input type="number" id="b_${row.key}" value="${bVals[row.key]??bDefaults[row.key]}" min="0" step="any" oninput="buildStageComposition();markLVUserDefined()"></td>`;
+    }
+    for(let s=0;s<numStages;s++){
+      const id=`s${s+1}_${row.key}`;
+      const val=(stageStore[s]&&stageStore[s][row.key]!==undefined)?stageStore[s][row.key]:row.def[s];
+      html+=`<td class="s-active"><input type="number" id="${id}" value="${val}" min="0" step="any"></td>`;
+    }
+    tr.innerHTML=html;
+    tbody.appendChild(tr);
+  });
+  const fj=document.getElementById('fairing-jettison');
+  const prev=fj.value;
+  fj.innerHTML='<option value="0">Never</option>';
+  for(let s=1;s<=numStages;s++){const o=document.createElement('option');o.value=s;o.textContent=`Stage ${s}`;fj.appendChild(o);}
+  fj.value=parseInt(prev)<=numStages?prev:Math.min(2,numStages);
+  buildStageButtons();
+  _suppressUD=false;
+  buildStageComposition();
+}
+
+function buildStageButtons(){
+  const sel=document.getElementById('stage-selector');
+  sel.innerHTML='';
+  // Minus
+  const minus=document.createElement('button');
+  minus.textContent='−';
+  minus.style.cssText='font-size:15px;padding:4px 10px;letter-spacing:0;';
+  minus.onclick=()=>{setStages(numStages-1);markLVUserDefined();};
+  sel.appendChild(minus);
+  // Stage number buttons
+  for(let s=1;s<=numStages;s++){
+    const btn=document.createElement('button');
+    btn.textContent=s;
+    btn.classList.toggle('active',s===numStages);
+    btn.onclick=()=>setStages(s);
+    sel.appendChild(btn);
+  }
+  // Plus
+  const plus=document.createElement('button');
+  plus.textContent='+';
+  plus.style.cssText='font-size:15px;padding:4px 10px;letter-spacing:0;';
+  plus.onclick=()=>{setStages(numStages+1);markLVUserDefined();};
+  sel.appendChild(plus);
+}
+
+// ─── CONTROLS ─────────────────────────────────
+function onStageCountInput(v){const n=Math.max(1,Math.min(MAX_STAGES,parseInt(v)||1));if(n!==numStages)setStages(n,false);}
+function setStages(n,updateInput=true){
+  n=Math.max(1,Math.min(MAX_STAGES,n));numStages=n;
+  if(updateInput)document.getElementById('stage-count-input').value=n;
+  _suppressUD=true;buildTable();
+}
+function setBoosters(val){
+  useBooster=val;
+  document.querySelectorAll('#booster-toggle button').forEach((b,i)=>b.classList.toggle('active',i===(val?0:1)));
+  document.getElementById('booster-count-wrap').style.display=val?'flex':'none';
+  _suppressUD=true;
+  buildTable();
+}
+function setRestart(val){restartable=val;document.querySelectorAll('#restart-toggle button').forEach((b,i)=>b.classList.toggle('active',i===(val?0:1)));}
+function setTraj(t){trajectory=t;document.querySelectorAll('#traj-toggle button').forEach((b,i)=>b.classList.toggle('active',['direct','two-burn','optimal'][i]===t));}
+function setDestMode(mode){
+  destMode=mode;
+  document.getElementById('dest-orbit').style.display=mode==='orbit'?'block':'none';
+  document.getElementById('dest-escape').style.display=mode==='escape'?'block':'none';
+  document.getElementById('mode-orbit-btn').classList.toggle('active',mode==='orbit');
+  document.getElementById('mode-escape-btn').classList.toggle('active',mode==='escape');
+}
+
+// ─── USER-DEFINED TRACKING ────────────────────
+function markOrbitUserDefined(){
+  if(activeOrbitKey!=='user_defined_orbit'){activeOrbitKey='user_defined_orbit';userDefinedOrbit=true;buildOrbitCategories();}
+}
+function markLVUserDefined(){
+  if(!_suppressUD&&activePresetKey!=='user_defined'){activePresetKey='user_defined';userDefinedLV=true;buildPresets();}
+}
+
+// ─── VEHICLES PANEL ───────────────────────────
+// Vehicle filter state
+let vehicleFilters={};
+let vehicleFilterOpen=false;
+const VEHICLE_FILTER_TREE={
+  'Propellant':['Liquid Oxygen / Liquid Hydrogen','Liquid Oxygen / Kerosene','Liquid Oxygen / Methane','Liquid Oxygen / Ethanol','Nitrogen Tetroxide / Aerozine-50','Nitrogen Tetroxide / UDMH','Inhibited Red Fuming Nitric Acid / UDMH','Liquid Fluorine / Hydrazine','Solid Propellant'],
+  'Payload Class':['Nano (<50 kg)','Small (<1 t)','Medium (1–10 t)','Heavy (10–50 t)','Super Heavy (>50 t)'],
+  'Era':['1940s','1950s','1960s','1970s','1980s','1990s-2000s','2010s+'],
+  'Origin':['American','Soviet / Russian','European'],
+  'Mission':['Crewed','Deep Space','Historical','Active','Unbuilt','Exotic'],
+};
+
+function vehicleMatchesFilters(tags){
+  return Object.entries(vehicleFilters).every(([cat,sel])=>{
+    if(!sel.size)return true;
+    return[...sel].some(t=>tags.includes(t));
+  });
+}
+
+function buildVehicleFilterPanel(){
+  const panel=document.getElementById('vehicle-filter-panel');
+  if(!panel)return;
+  panel.innerHTML='';
+  Object.entries(VEHICLE_FILTER_TREE).forEach(([cat,opts])=>{
+    const div=document.createElement('div');div.className='filter-cat';
+    const hdr=document.createElement('div');hdr.className='filter-cat-hdr';
+    const chev=document.createElement('span');chev.className='filter-cat-chevron open';chev.textContent='▶';
+    hdr.appendChild(chev);
+    const lbl=document.createElement('span');lbl.className='filter-cat-label';lbl.textContent=cat;hdr.appendChild(lbl);
+    const active=vehicleFilters[cat]?.size||0;
+    if(active){const b=document.createElement('span');b.style.cssText='font-family:var(--mono);font-size:8px;color:var(--accent);border:1px solid var(--accent);padding:1px 4px;margin-left:4px;';b.textContent=active;hdr.appendChild(b);}
+    let collapsed=false;
+    hdr.onclick=()=>{collapsed=!collapsed;row.style.display=collapsed?'none':'';chev.classList.toggle('open',!collapsed);};
+    div.appendChild(hdr);
+    const row=document.createElement('div');row.className='filter-opts';
+    opts.forEach(opt=>{
+      const active=vehicleFilters[cat]?.has(opt);
+      const btn=document.createElement('div');btn.className='filter-opt'+(active?' active':'');
+      btn.textContent=opt;
+      btn.onclick=()=>{
+        if(!vehicleFilters[cat])vehicleFilters[cat]=new Set();
+        vehicleFilters[cat].has(opt)?vehicleFilters[cat].delete(opt):vehicleFilters[cat].add(opt);
+        if(!vehicleFilters[cat].size)delete vehicleFilters[cat];
+        buildVehicleFilterPanel();updateVehicleFilterChips();buildPresets();
+      };
+      row.appendChild(btn);
+    });
+    div.appendChild(row);panel.appendChild(div);
+  });
+}
+
+function updateVehicleFilterChips(){
+  const chips=document.getElementById('vehicle-filter-chips');
+  if(!chips)return;
+  chips.innerHTML='';
+  let any=false;
+  Object.entries(vehicleFilters).forEach(([cat,tags])=>{
+    tags.forEach(tag=>{
+      any=true;
+      const chip=document.createElement('div');chip.className='filter-chip';
+      const chx2=document.createElement('span');chx2.className='filter-chip-x';chx2.textContent='×';const cc2=cat,tt2=tag;chx2.onclick=()=>removeVehicleFilter(cc2,tt2);chip.innerHTML=`<span>${tag}</span>`;chip.appendChild(chx2);
+      chips.appendChild(chip);
+    });
+  });
+  const clr=document.getElementById('vehicle-clear-filters');
+  if(clr)clr.style.display=any?'':'none';
+  const ftb=document.getElementById('vehicle-filter-btn');
+  if(ftb)ftb.classList.toggle('active',any||vehicleFilterOpen);
+}
+
+function removeVehicleFilter(cat,tag){
+  if(vehicleFilters[cat]){vehicleFilters[cat].delete(tag);if(!vehicleFilters[cat].size)delete vehicleFilters[cat];}
+  buildVehicleFilterPanel();updateVehicleFilterChips();buildPresets();
+}
+
+function toggleVehicleFilters(){
+  vehicleFilterOpen=!vehicleFilterOpen;
+  const p=document.getElementById('vehicle-filter-panel');
+  if(p)p.style.display=vehicleFilterOpen?'block':'none';
+  if(vehicleFilterOpen)buildVehicleFilterPanel();
+  const ftb=document.getElementById('vehicle-filter-btn');
+  if(ftb)ftb.classList.toggle('active',vehicleFilterOpen||Object.keys(vehicleFilters).length>0);
+}
+
+function buildPresets(){
+  const grid=document.getElementById('preset-grid');
+  const q=(document.getElementById('lv-search')?.value||'').toLowerCase();
+  grid.innerHTML='';
+
+  const addItem=(p,key,isUser,isDefined,onDel)=>{
+    const tags=isUser?(p.tags||[]):computeVehicleTags(p);
+    if(!vehicleMatchesFilters(tags))return;
+    const label=p.name||'Unnamed LV';
+    const subtext=isUser?'':(p.stageNames||[]).join(' + ');
+    const searchStr=(label+' '+subtext+' '+(p.note||'')+' '+tags.join(' ')).toLowerCase();
+    if(q&&!searchStr.includes(q))return;
+    const item=document.createElement('div');item.className='lv-item';
+    const btn=document.createElement('button');
+    btn.className='lv-item-btn'+(activePresetKey===key?' active':'')+(isUser?' user-lv':'')+(isDefined?' user-defined':'');
+    btn.onclick=isUser?()=>loadPreset(p,key):()=>loadPreset(p,key);
+    // Name + stage summary
+    const nameEl=document.createElement('div');nameEl.style.cssText='font-size:11px;';nameEl.textContent=label;
+    btn.appendChild(nameEl);
+    if(subtext){
+      const sub=document.createElement('div');
+      sub.style.cssText='font-size:8px;color:var(--text-dim);margin-top:2px;white-space:normal;line-height:1.4;';
+      sub.textContent=subtext;btn.appendChild(sub);
+    }
+    item.appendChild(btn);
+    if(onDel){const x=document.createElement('button');x.className='lv-del';x.textContent='×';x.title='Remove from list';x.onclick=onDel;item.appendChild(x);}
+    grid.appendChild(item);
+  };
+
+  BUILTIN_PRESETS.forEach((p,i)=>addItem(p,'builtin_'+i,false,false,null));
+  userLVs.forEach((lv,i)=>addItem(lv,'user_'+i,true,false,()=>{userLVs.splice(i,1);if(activePresetKey==='user_'+i)activePresetKey=null;buildPresets();}));
+  if(userDefinedLV)addItem({name:'[ User-Defined LV ]',tags:[]},'user_defined',false,true,null);
+}
+
+function loadPreset(p,key){
+  activePresetKey=key||null;userDefinedLV=false;
+  // Set stage name tracking BEFORE resolving
+  currentStageNames=new Array(15).fill(null);
+  currentBoosterName=null;
+  stageSaved=new Array(15).fill(false);
+  boosterSaved=false;
+  if(p.stageNames)p.stageNames.forEach((n,i)=>currentStageNames[i]=n);
+  if(p.boosterName)currentBoosterName=p.boosterName;
+  // Resolve stage names to data
+  const stageData=resolvePresetStages(p);
+  const boosterData=resolvePresetBooster(p);
+  const numStgs=stageData.length;
+  stageData.forEach((sd,si)=>{stageStore[si]={dry:String(sd.dry),prop:String(sd.prop),thrust:String(sd.thrust),isp:String(sd.isp),res:String(sd.res??2)};});
+  _suppressUD=true;setStages(numStgs);
+  const hasBoosters=!!boosterData;
+  setBoosters(hasBoosters);
+  if(hasBoosters){
+    const bd=boosterData;
+    ['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});
+    document.getElementById('num-boosters').value=bd.count||0;
+  }
+  if(p.payload!==undefined)document.getElementById('payload-mass').value=p.payload;
+  if(p.fairingMass!==undefined)document.getElementById('fairing-mass').value=p.fairingMass;
+  if(p.site){document.getElementById('site-lat').value=p.site.lat??28.5;document.getElementById('az-min').value=p.site.azMin??37;document.getElementById('az-max').value=p.site.azMax??112;matchSiteFromFields();}
+  setDestMode(p.mode||'orbit');
+  if(p.mode==='escape'&&p.escape){document.getElementById('c3').value=p.escape.c3;document.getElementById('decl').value=p.escape.decl;document.getElementById('escape-perigee').value=p.escape.perigee;}
+  else if(p.orbit){document.getElementById('apogee').value=p.orbit.apogee;document.getElementById('perigee').value=p.orbit.perigee;document.getElementById('inclination').value=p.orbit.inc;}
+  if(p.parkingAlt!==undefined)document.getElementById('parking-alt').value=p.parkingAlt;
+  if(p.trajectory)setTraj(p.trajectory);
+  setTimeout(()=>{const fj=document.getElementById('fairing-jettison');if(fj)fj.value=Math.min(p.fairingJettison??0,p.stages??1);},20);
+  lastResult=p.performanceResults||null;
+  const _spb=document.getElementById('save-case-btn');if(_spb)_spb.disabled=!lastResult;
+    const scBtn=document.getElementById('save-case-btn');if(scBtn)scBtn.disabled=!lastResult;
+  document.getElementById('results-panel').innerHTML=`<div class="placeholder-msg">// ${p.name||'LV'} loaded — click Results to calculate</div>${p.note?`<div class="note" style="margin:12px 0 0">${p.note}</div>`:''}`;
+  buildPresets();
+  buildStageComposition();
+}
+
+// ─── ORBIT CATEGORIES ─────────────────────────
+function buildOrbitCategories(){
+  const container=document.getElementById('orbit-categories');
+  container.innerHTML='';
+  const _oq=(document.getElementById('orbit-search')?.value||'').toLowerCase();
+
+  // Build list of all categories: built-in + any user-created ones not in built-ins
+  const builtinNames=new Set(ORBIT_CATEGORIES.map(c=>c.planet));
+  const userCatNames=Object.keys(userOrbitsByCategory).filter(k=>!builtinNames.has(k));
+
+  // Helper: render one orbit button (with optional delete)
+  const renderOrbit=(grid,o,key,onDel)=>{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;gap:2px;';
+    const btn=document.createElement('button');
+    btn.className='orbit-btn'+(onDel?' user-orbit':'')+(activeOrbitKey===key?' active':'');
+    btn.style.flex='1';
+    btn.innerHTML=`<b>${o.mode==='escape'?'↗ ':'⊙ '}${o.name}</b>`;
+    btn.title=o.note||'';
+    btn.onclick=()=>loadOrbitPreset(o,key);
+    wrap.appendChild(btn);
+    if(onDel){
+      const x=document.createElement('button');
+      x.className='orbit-btn';
+      x.style.cssText='flex:none;width:22px;padding:4px 3px;color:#ff4444;border-color:rgba(255,68,68,.4);font-size:13px;';
+      x.textContent='×';x.title='Remove from list';x.onclick=onDel;
+      wrap.appendChild(x);
+    }
+    grid.appendChild(wrap);
+  };
+
+  // Helper: render one planet section
+  const renderSection=(name,icon,color,builtinOrbits,userOrbitsInCat)=>{
+    const collapsed=_oq?false:collapsedPlanets.has(name); // auto-expand when searching
+    const hasContent=builtinOrbits.length+userOrbitsInCat.length>0||(name==='(current)'&&userDefinedOrbit);
+    if(!hasContent)return;
+    const sec=document.createElement('div');sec.className='planet-section';
+    const hdr=document.createElement('div');hdr.className='planet-header';
+    hdr.style.cssText=`border-left:3px solid ${color};`;
+    hdr.innerHTML=`<span class="planet-icon">${icon}</span><span class="planet-name" style="color:${color}">${name}</span><span class="planet-chevron${collapsed?' collapsed':''}">▼</span>`;
+    hdr.onclick=()=>{collapsedPlanets.has(name)?collapsedPlanets.delete(name):collapsedPlanets.add(name);buildOrbitCategories();};
+    sec.appendChild(hdr);
+    if(!collapsed){
+      const grid=document.createElement('div');grid.className='planet-orbits';
+      // Built-in orbits (no delete)
+      builtinOrbits.forEach((o,oi)=>{
+        const key=`orbit_${name}_${oi}`;
+        renderOrbit(grid,o,key,null);
+      });
+      // User orbits (with delete)
+      userOrbitsInCat.forEach((o,ui)=>{
+        const key=`uorbit_${name}_${ui}`;
+        renderOrbit(grid,o,key,()=>{
+          userOrbitsByCategory[name].splice(ui,1);
+          if(!userOrbitsByCategory[name].length)delete userOrbitsByCategory[name];
+          if(activeOrbitKey===key)activeOrbitKey=null;
+          buildOrbitCategories();
+        });
+      });
+      sec.appendChild(grid);
+    }
+    container.appendChild(sec);
+  };
+
+  // Render built-in categories (filtered by search)
+  ORBIT_CATEGORIES.forEach(cat=>{
+    const filtBuiltin=_oq?cat.orbits.filter(o=>o.name.toLowerCase().includes(_oq)||cat.planet.toLowerCase().includes(_oq)):cat.orbits;
+    const filtUser=_oq?(userOrbitsByCategory[cat.planet]||[]).filter(o=>o.name.toLowerCase().includes(_oq)):userOrbitsByCategory[cat.planet]||[];
+    renderSection(cat.planet,cat.icon,cat.color,filtBuiltin,filtUser);
+  });
+
+  // Render user-created categories (filtered by search)
+  userCatNames.forEach(name=>{
+    const filtUser=_oq?(userOrbitsByCategory[name]||[]).filter(o=>o.name.toLowerCase().includes(_oq)):userOrbitsByCategory[name]||[];
+    renderSection(name,'◆','var(--accent3)',[],filtUser);
+  });
+
+  // "Current Parameters" tracking button (unsaved edits)
+  if(userDefinedOrbit){
+    const sec=document.createElement('div');sec.className='planet-section';
+    const hdr=document.createElement('div');hdr.className='planet-header';
+    hdr.style.cssText='border-left:3px solid var(--text-dim);opacity:0.7;';
+    hdr.innerHTML=`<span class="planet-icon">✏</span><span class="planet-name">Unsaved</span>`;
+    sec.appendChild(hdr);
+    const grid=document.createElement('div');grid.className='planet-orbits';
+    const btn=document.createElement('button');
+    btn.className='orbit-btn user-orbit'+(activeOrbitKey==='user_defined_orbit'?' active':'');
+    btn.innerHTML='<b>Current Parameters</b>';
+    btn.title='Current unsaved orbit parameters';
+    btn.onclick=()=>{activeOrbitKey='user_defined_orbit';buildOrbitCategories();};
+    grid.appendChild(btn);
+    sec.appendChild(grid);container.appendChild(sec);
+  }
+}
+
+function loadOrbitPreset(o,key){
+  activeOrbitKey=key;userDefinedOrbit=false;
+  setDestMode(o.mode||'orbit');
+  if(o.mode==='escape'){
+    document.getElementById('c3').value=o.c3;
+    document.getElementById('decl').value=o.decl;
+    document.getElementById('escape-perigee').value=o.perigee??185;
+  } else {
+    document.getElementById('apogee').value=o.apogee;
+    document.getElementById('perigee').value=o.perigee;
+    // If incTracksLat, override with effective site inclination
+    const site=getCurrentSite();
+    const inc=o.incTracksLat&&site ? siteEffectiveInc(site) : o.inc;
+    document.getElementById('inclination').value=inc;
+    document.getElementById('parking-alt').value=o.parking??185;
+  }
+  buildOrbitCategories();
+  // Update tracked-inc note
+  const site=getCurrentSite();
+  if(site)updateIncTrackedNote(site);
+  else document.getElementById('inc-tracked-note').style.display='none';
+}
+
+// ─── SAVE / LOAD ORBITS ───────────────────────
+function saveUserOrbit(){
+  document.getElementById('orbit-save-name').value='';
+  // Populate category dropdown
+  const sel=document.getElementById('orbit-save-category');
+  sel.innerHTML='';
+  ORBIT_CATEGORIES.forEach(cat=>{
+    const o=document.createElement('option');o.value=cat.planet;o.textContent=cat.planet;sel.appendChild(o);
+  });
+  Object.keys(userOrbitsByCategory).filter(k=>!ORBIT_CATEGORIES.find(c=>c.planet===k)).forEach(k=>{
+    const o=document.createElement('option');o.value=k;o.textContent=k+' (custom)';sel.appendChild(o);
+  });
+  const newOpt=document.createElement('option');newOpt.value='__new__';newOpt.textContent='[ New Category... ]';sel.appendChild(newOpt);
+  document.getElementById('orbit-new-cat-wrap').style.display='none';
+  openModal('modal-save-orbit');
+  setTimeout(()=>document.getElementById('orbit-save-name').focus(),100);
+}
+
+function onOrbitCategoryChange(val){
+  document.getElementById('orbit-new-cat-wrap').style.display=val==='__new__'?'block':'none';
+}
+
+function doSaveOrbit(){
+  const name=document.getElementById('orbit-save-name').value.trim()||'My Orbit';
+  let cat=document.getElementById('orbit-save-category').value;
+  if(cat==='__new__'){
+    cat=document.getElementById('orbit-new-cat-name').value.trim()||'Custom';
+  }
+  const o=collectCurrentOrbit();o.name=name;o.note=o.note||'User-defined orbit.';
+  if(!userOrbitsByCategory[cat])userOrbitsByCategory[cat]=[];
+  const idx=userOrbitsByCategory[cat].length;
+  userOrbitsByCategory[cat].push(o);
+  downloadJSON({...o,_category:cat},(name+'.json').replace(/[^a-z0-9_.\-]/gi,'_').toLowerCase());
+  activeOrbitKey=`uorbit_${cat}_${idx}`;
+  userDefinedOrbit=false;
+  closeModal('modal-save-orbit');
+  buildOrbitCategories();
+}
+
+function collectCurrentOrbit(){
+  if(destMode==='escape')return{mode:'escape',c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')};
+  return{mode:'orbit',apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parking:gv('parking-alt')};
+}
+
+function loadOrbitFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const o=JSON.parse(e.target.result);
+      if(!o.mode){alert('Invalid orbit file: missing mode field.');return;}
+      const cat=o._category||'Custom';
+      if(!userOrbitsByCategory[cat])userOrbitsByCategory[cat]=[];
+      const idx=userOrbitsByCategory[cat].length;
+      userOrbitsByCategory[cat].push(o);
+      const key=`uorbit_${cat}_${idx}`;
+      loadOrbitPreset(o,key);
+    }catch(err){alert('Invalid orbit JSON: '+err.message);}
+  };
+  reader.readAsText(file);input.value='';
+}
+
+// ─── PHYSICS ──────────────────────────────────
+function circVel(alt){return Math.sqrt(MU/(RE+alt))*1000;}
+function rotVel(lat,azMin,azMax){
+  const Vm=OMEGA_E*RE*1000*Math.cos(lat*Math.PI/180);
+  let best=0;[azMin,azMax,90].forEach(az=>{const c=Vm*Math.cos((az-90)*Math.PI/180);if(c>best)best=c;});
+  return Math.max(0,Math.min(best,Vm));
+}
+function rocketEq(isp,m0,mf){return(mf<=0||m0<=mf)?0:G0*isp*Math.log(m0/mf);}
+function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
+
+function collectVehicle(){
+  saveStoreFromDOM();
+  const stages=[];
+  for(let s=0;s<numStages;s++)stages.push({dry:parseFloat(stageStore[s].dry)||0,prop:parseFloat(stageStore[s].prop)||0,thrust:parseFloat(stageStore[s].thrust)||0,isp:parseFloat(stageStore[s].isp)||1,res:parseFloat(stageStore[s].res)||0});
+  const booster=useBooster?{dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0}:null;
+  return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
+}
+
+// ─── CALCULATE ────────────────────────────────
+function calculate(){
+  saveStoreFromDOM();
+  const panel=document.getElementById('results-panel');
+  showPage('results');
+  try{
+    const fairingM=gv('fairing-mass');
+    const fairingJ=parseInt(document.getElementById('fairing-jettison').value);
+    const siteLat=gv('site-lat'),azMin=gv('az-min'),azMax=gv('az-max');
+    const stages=[];
+    for(let s=0;s<numStages;s++)stages.push({dry:gv(`s${s+1}_dry`),prop:gv(`s${s+1}_prop`),thrust:gv(`s${s+1}_thrust`),isp:parseFloat(document.getElementById(`s${s+1}_isp`).value)||1,res:gv(`s${s+1}_res`)});
+    let booster=null;
+    if(useBooster){
+      booster={dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0};
+      if(booster.count<1){panel.innerHTML='<div class="error-msg">// ERROR: Set booster count > 0.</div>';return;}
+    }
+
+    let parkingAlt,onOrbitDV=0,modeLabel;
+
+    if(destMode==='escape'){
+      const c3=gv('c3'),decl=gv('decl'),escPeri=gv('escape-perigee');
+      parkingAlt=escPeri;
+      const Vesc2=2*MU/(RE+parkingAlt);
+      if(c3<-Vesc2){panel.innerHTML=`<div class="error-msg">// ERROR: C3=${c3} km²/s² below minimum (${(-Vesc2).toFixed(1)}) for ${parkingAlt} km orbit.</div>`;return;}
+      const Vh=Math.sqrt(Vesc2+c3);
+      onOrbitDV=(Vh-Math.sqrt(MU/(RE+parkingAlt)))*1000;
+      const ds=Math.max(0,Math.abs(siteLat)-Math.abs(decl)-0.5);
+      if(ds>0){onOrbitDV+=2*circVel(parkingAlt)*Math.sin(ds*Math.PI/360);}
+      modeLabel=`C3 = ${c3} km²/s²`;
+    } else {
+      const apogee=gv('apogee'),perigee=gv('perigee'),inc=gv('inclination');
+      parkingAlt=gv('parking-alt');
+      const rPk=RE+parkingAlt,rAp=RE+apogee,rPe=RE+perigee;
+      const Vc_park=Math.sqrt(MU/rPk);
+      const vPeri=(rp,ra)=>Math.sqrt(2*MU*ra/(rp*(rp+ra)));
+      const vApo=(rp,ra)=>Math.sqrt(2*MU*rp/(ra*(rp+ra)));
+      const destIsCirc=Math.abs(apogee-perigee)<5;
+      const destIsPark=Math.abs(apogee-parkingAlt)<5&&Math.abs(perigee-parkingAlt)<5;
+      const needsPlane=inc<Math.abs(siteLat)-0.5;
+      const planeAngle=needsPlane?(Math.abs(siteLat)-inc)*Math.PI/180:0;
+      if(destIsPark){
+        onOrbitDV=0;
+      }else if(destIsCirc){
+        const dv1=Math.abs(vPeri(rPk,rAp)-Vc_park)*1000;
+        if(needsPlane&&apogee>10000){
+          const va=vApo(rPk,rAp)*1000,vc=Math.sqrt(MU/rAp)*1000;
+          onOrbitDV=dv1+Math.sqrt(va*va+vc*vc-2*va*vc*Math.cos(planeAngle));
+        }else{
+          onOrbitDV=dv1+Math.abs(Math.sqrt(MU/rAp)-vApo(rPk,rAp))*1000;
+          if(needsPlane)onOrbitDV+=2*Vc_park*1000*Math.sin(planeAngle/2);
+        }
+      }else{
+        const dv1=Math.abs(vPeri(rPk,rAp)-Vc_park)*1000;
+        const dv2=Math.abs(perigee-parkingAlt)<50?0:Math.abs(vApo(rPe,rAp)-vApo(rPk,rAp))*1000;
+        onOrbitDV=dv1+dv2;
+        if(needsPlane)onOrbitDV+=2*Vc_park*1000*Math.sin(planeAngle/2);
+      }
+      modeLabel=`${apogee}×${perigee} km @ ${inc}°`;
+    }
+
+    const Vcirc=circVel(parkingAlt),Vrot=rotVel(siteLat,azMin,azMax);
+    const Hp=parkingAlt;
+    const K3=429.9+1.602*Hp+1.224e-3*Hp*Hp,K4=2.328-9.687e-4*Hp;
+    let tThr=stages[0].thrust*1000;
+    if(useBooster&&booster)tThr+=booster.thrust*1000*booster.count;
+
+    function evalAtPayload(pay){
+      let spM=new Array(numStages).fill(0),abv=pay;
+      for(let s=numStages-1;s>=0;s--){spM[s]=abv+((fairingJ>0&&s<fairingJ)?fairingM:0);abv+=stages[s].dry+stages[s].prop;}
+      let sDVs=[],sBTs=[],tDV=0,tBT=0;
+      for(let s=0;s<numStages;s++){
+        const sd=stages[s],up=sd.prop*(1-sd.res/100),pa=spM[s];
+        const m0=sd.dry+up+pa,mf=sd.dry+pa;
+        if(m0<=0||mf<=0||m0<=mf){sDVs.push(0);sBTs.push(0);continue;}
+        const dv=rocketEq(sd.isp,m0,mf);
+        const mflow=(sd.thrust*1000)/(G0*sd.isp);
+        const bt=mflow>0?up/mflow:0;
+        sDVs.push(dv);sBTs.push(bt);tDV+=dv;tBT+=bt;
+      }
+      if(useBooster&&booster){
+        const nB=booster.count,s1=stages[0],pa0=spM[0];
+        const upB=booster.prop*(1-booster.res/100)*nB,upS1=s1.prop*(1-s1.res/100);
+        const mBW=(booster.dry+booster.prop)*nB,m0c=s1.dry+s1.prop+mBW+pa0;
+        const mfB=booster.thrust*1000*nB,mfS1=s1.thrust*1000;
+        const btB=upB/(mfB/G0/booster.isp);
+        const pc1=Math.min((mfS1/G0/s1.isp)*btB,upS1),mfc=m0c-upB-pc1;
+        const ieff=(booster.isp*(mfB/G0/booster.isp)+s1.isp*(mfS1/G0/s1.isp))/((mfB/G0/booster.isp)+(mfS1/G0/s1.isp));
+        const dvbp=rocketEq(ieff,m0c,mfc),rs1=upS1-pc1;
+        const m0s1a=mfc-booster.dry*nB,mfs1a=Math.max(m0s1a-rs1,s1.dry+pa0);
+        const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mfS1/G0/s1.isp,0.001);
+        sDVs[0]=dvbp+dvs1a;sBTs[0]=btB+bts1a;
+        tDV=sDVs.reduce((a,b)=>a+b,0);tBT=sBTs.reduce((a,b)=>a+b,0);
+      }
+      const tMas_=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingM+(useBooster&&booster?(booster.dry+booster.prop)*booster.count:0);
+      const A0_=tThr/Math.max(tMas_,1);
+      const avgIsp_=sBTs.reduce((a,bt,i)=>a+stages[i].isp*bt,0)/Math.max(tBT,1);
+      const T3s_=3*(1-Math.exp(-0.333*Vcirc/(G0*avgIsp_)))*G0*avgIsp_/Math.max(A0_,0.01);
+      const Tmix_=0.405*tBT+0.595*T3s_;
+      const DVpen_=K3+K4*Tmix_;
+      const DVasc_=Vcirc+DVpen_-Vrot;
+      const DVtot_=DVasc_+onOrbitDV;
+      const margin_=tDV-DVtot_;
+      return{sDVs,sBTs,tDV,tBT,tMas_,Tmix_,DVpen_,DVasc_,DVtot_,margin_};
+    }
+
+    let lo=0,hi=2000000,maxPay=0;
+    const r0=evalAtPayload(0);
+    if(r0.margin_>=0){
+      for(let i=0;i<40;i++){const mid=(lo+hi)/2;const rm=evalAtPayload(mid);if(rm.margin_>0)lo=mid;else hi=mid;if(hi-lo<1)break;}
+      maxPay=lo;
+    }
+
+    const res=evalAtPayload(maxPay);
+    const stageDVs=res.sDVs,stageBTs=res.sBTs;
+    const totDV=res.tDV,totBT=res.tBT;
+    const DVpen=res.DVpen_,DVasc=res.DVasc_,DVtot=res.DVtot_,DVmarg=res.margin_,Tmix=res.Tmix_,tMas=res.tMas_;
+    const feasible=r0.margin_>=-50;
+    const TWR=tThr/(tMas*G0);
+
+    lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,Tmix,stageDVs:[...stageDVs],destMode,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
+    const _spb2=document.getElementById('save-case-btn');if(_spb2)_spb2.disabled=false;
+
+    renderResults(lastResult);
+
+  }catch(e){panel.innerHTML=`<div class="error-msg">// CALCULATION ERROR: ${e.message}</div>`;console.error(e);}
+}
+
+function renderResults(r){
+  const panel=document.getElementById('results-panel');
+  if(!panel||!r)return;
+  const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,Tmix,stageDVs,destMode}=r;
+  const fD=v=>(v/1000).toFixed(3)+' km/s';
+  const fM=v=>Math.round(v).toLocaleString()+' kg';
+  const fS=v=>Math.round(v)+' s';
+  const dvMax=Math.max(...stageDVs,1);
+  const bars=stageDVs.map((dv,i)=>`<div style="margin-bottom:4px;"><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:2px;">STG ${i+1}</div><div class="dv-bar"><div class="dv-bar-fill" style="width:${Math.min(100,dv/dvMax*100)}%"></div></div></div>`).join('');
+  const bdown=stageDVs.map((dv,i)=>`<div class="breakdown-row"><span>Stage ${i+1}</span><span>${fD(dv)}</span></div>`).join('');
+  const badge=destMode==='escape'?'<span class="escape-badge">ESCAPE</span>':'';
+  panel.innerHTML=`
+    <div class="result-row"><span class="result-label">Target${badge}</span><span class="result-val" style="font-size:11px;color:var(--text-dim)">${modeLabel}</span></div>
+    <div class="result-row"><span class="result-label">Est. Max Payload</span><span class="result-val ${maxPay>0?'hl':'neg'}">${fM(maxPay)}</span></div>
+    <div class="result-row"><span class="result-label">Capacity Range (±10%)</span><span class="result-val" style="font-size:11px;">${maxPay>0?fM(maxPay*.9)+' – '+fM(maxPay*1.1):'—'}</span></div>
+    <div class="result-row"><span class="result-label">Mission Feasible?</span><span class="result-val ${feasible?'':'neg'}">${feasible?'✓ YES':'✗ NO'}</span></div>
+    <div class="result-row"><span class="result-label">Total ΔV Available</span><span class="result-val">${fD(totDV)}</span></div>
+    <div class="result-row"><span class="result-label">ΔV Required (ascent to park)</span><span class="result-val">${fD(DVasc)}</span></div>
+    <div class="result-row"><span class="result-label">ΔV Required (${destMode==='escape'?'injection':'on-orbit'})</span><span class="result-val">${fD(onOrbitDV)}</span></div>
+    <div class="result-row"><span class="result-label">ΔV Required (total)</span><span class="result-val">${fD(DVtot)}</span></div>
+    <div class="result-row"><span class="result-label">ΔV Margin</span><span class="result-val ${DVmarg>=0?'':'neg'}">${fD(DVmarg)}</span></div>
+    <div class="result-row"><span class="result-label">Ascent Penalty (ΔVpen)</span><span class="result-val warn">${fD(DVpen)}</span></div>
+    <div class="result-row"><span class="result-label">Earth Rotation Gain</span><span class="result-val">${fD(Vrot)}</span></div>
+    <div class="result-row"><span class="result-label">Launch T:W Ratio</span><span class="result-val ${TWR>=1.2?'':'neg'}">${TWR.toFixed(3)}</span></div>
+    <div class="result-row"><span class="result-label">Total Ascent Time</span><span class="result-val">${fS(totBT)}</span></div>
+    <div class="result-row"><span class="result-label">Mixed Ascent Time (Tmix)</span><span class="result-val">${fS(Tmix)}</span></div>
+    <div class="stage-breakdown" style="margin-top:14px;">
+      <div class="sl" style="margin-bottom:8px;">Stage ΔV Breakdown</div>
+      ${bars}${bdown}
+    </div>
+    <div class="note">Method: Townsend-Schilling (2009). RMS ~260 m/s; &lt;10% payload error.<br>${destMode==='escape'?'Escape: hyperbolic injection Vinj=√(Vesc²+C3).':'Orbit: verified Hohmann from parking orbit.'} Always use vacuum Isp.</div>`;
+}
+
+// ─── SAVE / LOAD LV ───────────────────────────
+function buildLVObject(name,note){
+  const v=collectVehicle();v.name=name||'Unnamed LV';v.note=note||'';
+  // Save stage names alongside data for composition view on load
+  v.stageNames=currentStageNames.slice(0,numStages).map((n,i)=>n||null);
+  if(currentBoosterName)v.boosterName=currentBoosterName;
+  v.performanceCases=[...performanceCases];
+  return v;
+}
+function downloadJSON(obj,filename){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
+function openSaveLVModal(){document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);}
+function doSaveLV(){
+  const name=document.getElementById('lv-save-name').value.trim()||'LV';
+  const note=document.getElementById('lv-save-note').value.trim();
+  const obj=buildLVObject(name,note);
+  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.json');
+  obj._sessionId=Date.now();userLVs.push(obj);buildPresets();closeModal('modal-save-lv');
+}
+function savePerformance(){openSaveCaseModal();} // legacy alias
+function loadLVFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVObject(obj);if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();}}catch(err){alert('Invalid LV JSON: '+err.message);}};
+  reader.readAsText(file);input.value='';
+}
+function applyLVObject(obj){
+  currentStageNames=new Array(15).fill(null);
+  currentBoosterName=null;
+  stageSaved=new Array(15).fill(false);
+  boosterSaved=false;
+  if(obj.stageNames)obj.stageNames.forEach((n,i)=>currentStageNames[i]=n);
+  if(obj.boosterName)currentBoosterName=obj.boosterName;
+  // ── Vehicle config ──
+  if(obj.stageData)obj.stageData.forEach((sd,si)=>{stageStore[si]={dry:String(sd.dry),prop:String(sd.prop),thrust:String(sd.thrust),isp:String(sd.isp),res:String(sd.res??2)};});
+  // Resolve stage names if present (new format)
+  if(obj.stageNames){
+    const resolved=resolvePresetStages(obj);
+    resolved.forEach((sd,si)=>{stageStore[si]={dry:String(sd.dry),prop:String(sd.prop),thrust:String(sd.thrust),isp:String(sd.isp),res:String(sd.res??2)};});
+    _suppressUD=true;setStages(resolved.length);
+    const bData=resolvePresetBooster(obj);
+    setBoosters(!!bData);
+    if(bData){['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bData[k]??0;});document.getElementById('num-boosters').value=bData.count||0;}
+  } else {
+    _suppressUD=true;setStages(obj.stages||1);
+    setBoosters(obj.boosters||false);
+    if(obj.boosters&&obj.boosterData){const bd=obj.boosterData;['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});document.getElementById('num-boosters').value=bd.count||0;}
+  }
+  if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
+  if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;
+  if(obj.site){document.getElementById('site-lat').value=obj.site.lat??28.5;document.getElementById('az-min').value=obj.site.azMin??37;document.getElementById('az-max').value=obj.site.azMax??112;matchSiteFromFields();}
+  setDestMode(obj.mode||'orbit');
+  if(obj.mode==='escape'&&obj.escape){document.getElementById('c3').value=obj.escape.c3??0;document.getElementById('decl').value=obj.escape.decl??28.5;document.getElementById('escape-perigee').value=obj.escape.perigee??185;}
+  else if(obj.orbit){document.getElementById('apogee').value=obj.orbit.apogee??400;document.getElementById('perigee').value=obj.orbit.perigee??400;document.getElementById('inclination').value=obj.orbit.inc??28.5;}
+  if(obj.parkingAlt!==undefined)document.getElementById('parking-alt').value=obj.parkingAlt;
+  if(obj.trajectory)setTraj(obj.trajectory);
+  setTimeout(()=>{const fj=document.getElementById('fairing-jettison');if(fj)fj.value=Math.min(obj.fairingJettison??0,obj.stages??1);},20);
+  // ── Performance cases ──
+  performanceCases=obj.performanceCases||[];
+  // If no cases but legacy single result, wrap it
+  if(!performanceCases.length&&obj.performanceResults){
+    performanceCases=[{label:(obj.name||'LV')+' — imported',timestamp:new Date().toISOString(),result:obj.performanceResults,config:{modeLabel:obj.performanceResults.modeLabel||''}}];
+  }
+  activeCaseIndex=performanceCases.length>0?performanceCases.length-1:null;
+  lastResult=activeCaseIndex!=null?performanceCases[activeCaseIndex].result:null;
+  buildCaseList();
+  const scBtn=document.getElementById('save-case-btn');if(scBtn)scBtn.disabled=!lastResult;
+  // Show last case result or placeholder
+  if(lastResult){renderResults(lastResult);}
+  else{const panel=document.getElementById('results-panel');if(panel)panel.innerHTML=`<div class="placeholder-msg">// ${obj.name||'LV'} loaded — no performance cases yet. Calculate to add one.</div>`;}
+  loadedVehicleName=obj.name||'';
+}
+function openJSONModal(){const obj=collectVehicle();if(lastResult)obj.performanceResults=lastResult;document.getElementById('json-editor').value=JSON.stringify(obj,null,2);document.getElementById('json-error').style.display='none';openModal('modal-json');}
+function applyJSON(){const txt=document.getElementById('json-editor').value;try{const obj=JSON.parse(txt);applyLVObject(obj);closeModal('modal-json');}catch(e){const err=document.getElementById('json-error');err.textContent='// JSON parse error: '+e.message;err.style.display='block';}}
+
+// ─── MODAL HELPERS ──────────────────────────────
+function openModal(id){document.getElementById(id).style.display='flex';}
+function closeModal(id){document.getElementById(id).style.display='none';}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.style.display='none';});
+
+// ─── THEMES ─────────────────────────────────────
+const BUILTIN_THEMES={
+  default:{name:'Default (Dark)',
+    '--bg':'#0a0c10','--panel':'#0f1318','--border':'#1e2530','--border-bright':'#2e3d50',
+    '--accent':'#00c8ff','--accent2':'#ff6b35','--accent3':'#7fff6b',
+    '--text':'#c8d8e8','--text-dim':'#5a7080','--text-bright':'#e8f4ff',
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
+  perigee:{name:'Perigee',
+    '--bg':'#3b393a','--panel':'#2e2c2d','--border':'#524f50','--border-bright':'#6e6b6c',
+    '--accent':'#88c657','--accent2':'#c6a057','--accent3':'#b0e080',
+    '--text':'#e7e8ea','--text-dim':'#a7a6a4','--text-bright':'#ffffff',
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
+  spacex:{name:'SpaceX',
+    '--bg':'#849199','--panel':'#6e7a82','--border':'#9aaab4','--border-bright':'#b8c8d4',
+    '--accent':'#015289','--accent2':'#ffffff','--accent3':'#ffffff',
+    '--text':'#ffffff','--text-dim':'#d0dde5','--text-bright':'#ffffff',
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
+  blueorigin:{name:'Blue Origin',
+    '--bg':'#0000fe','--panel':'#ffffff','--border':'#99aaff','--border-bright':'#0000fe',
+    '--accent':'#0000fe','--accent2':'#3333cc','--accent3':'#0000cc',
+    '--text':'#00008b','--text-dim':'#4444cc','--text-bright':'#000080',
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
+};;
+let customThemes={};
+let activeThemeKey='perigee';
+
+function getTheme(key){return customThemes[key]||BUILTIN_THEMES[key]||BUILTIN_THEMES.perigee;}
+function applyTheme(key){
+  activeThemeKey=key;
+  const t=getTheme(key);
+  Object.entries(t).forEach(([k,v])=>{if(k.startsWith('--'))document.documentElement.style.setProperty(k,v);});
+  document.body.style.backgroundImage='none';
+  const sel=document.getElementById('theme-select');
+  if(sel){for(const o of sel.options){if(o.value===key){sel.value=key;break;}}}
+}
+function rebuildThemeSelect(){
+  const sel=document.getElementById('theme-select');const cur=sel.value;sel.innerHTML='';
+  Object.entries(BUILTIN_THEMES).forEach(([k,t])=>{const o=document.createElement('option');o.value=k;o.textContent=t.name;sel.appendChild(o);});
+  Object.entries(customThemes).forEach(([k,t])=>{const o=document.createElement('option');o.value=k;o.textContent=(t.name||k)+' (custom)';sel.appendChild(o);});
+  sel.value=(cur in BUILTIN_THEMES||cur in customThemes)?cur:'perigee';
+}
+function openThemeEditor(){const t=getTheme(activeThemeKey);document.getElementById('theme-editor').value=JSON.stringify(t,null,2);document.getElementById('theme-error').style.display='none';openModal('modal-theme');}
+function applyThemeFromEditor(){const txt=document.getElementById('theme-editor').value;try{const t=JSON.parse(txt);const key='custom_'+Date.now();customThemes[key]=t;rebuildThemeSelect();applyTheme(key);document.getElementById('theme-error').style.display='none';}catch(e){const err=document.getElementById('theme-error');err.textContent='// JSON parse error: '+e.message;err.style.display='block';}}
+function saveThemeFromEditor(){const txt=document.getElementById('theme-editor').value;try{const t=JSON.parse(txt);downloadJSON(t,(t.name||'theme').replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_theme.json');}catch(e){document.getElementById('theme-error').textContent='// JSON parse error: '+e.message;document.getElementById('theme-error').style.display='block';}}
+function saveTheme(){const t=getTheme(activeThemeKey);downloadJSON(t,(t.name||activeThemeKey).replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_theme.json');}
+function loadThemeFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const t=JSON.parse(e.target.result);const key='custom_'+(t.name||'theme').replace(/\s+/g,'_').toLowerCase();customThemes[key]=t;rebuildThemeSelect();applyTheme(key);}catch(err){alert('Invalid theme JSON: '+err.message);}};reader.readAsText(file);input.value='';}
+
+
+// ─── STAGE LIBRARY ────────────────────────────
+const STAGE_LIBRARY={
+  'Booster Stages':[
+    // ── US liquid-fuelled first stages ──
+    {name:'WAC Corporal',      dry:90,    prop:474,    thrust:6.7,  isp:195, engines:'XCAL-200',       note:'First US guided missile. Sounding rocket.',                    tags:['Nitrogen Tetroxide / Aniline','First Stage','1940s','1950s','American']},
+    {name:'Viking',            dry:480,   prop:6800,   thrust:94,   isp:225, engines:'XLR10-RM-2',     note:'NRL sounding rocket. LOX/Ethanol. Predecessor to Vanguard.',   tags:['Liquid Oxygen / Ethanol','First Stage','1950s','American']},
+    {name:'Redstone',          dry:5443,  prop:23820,  thrust:370,  isp:215, engines:'LR-89 (A-7)',    note:'Mercury/Juno first stage. LOX/Ethanol.',                        tags:['Liquid Oxygen / Ethanol','First Stage','1950s','1960s','American']},
+    {name:'Jupiter (A-7)',     dry:5624,  prop:54431,  thrust:750,  isp:247, engines:'S-3D/A-7',       note:'PGM-19 Jupiter IRBM. Used in Juno II.',                         tags:['Liquid Oxygen / Kerosene','First Stage','1950s','1960s','American']},
+    {name:'Thor DSV-2',        dry:3400,  prop:46400,  thrust:758,  isp:296, engines:'LR-79-7',        note:'Thor IRBM. LOX/RP-1. Used in Thor-Able/Agena/Delta.',           tags:['Liquid Oxygen / Kerosene','First Stage','1950s','1960s','1970s','American']},
+    {name:'Thor (Long Tank)',   dry:3600,  prop:66800,  thrust:758,  isp:296, engines:'LR-79-NA-11',   note:'Extended Thor. Delta variants.',                                tags:['Liquid Oxygen / Kerosene','First Stage','1960s','1970s','American']},
+    {name:'Atlas D Sust.',     dry:3310,  prop:90000,  thrust:1600, isp:316, engines:'LR-105+LR-89',   note:'Stage-and-a-half. Boosters jettisoned at 2m 11s.',              tags:['Liquid Oxygen / Kerosene','First Stage','1960s','American']},
+    {name:'Atlas SLV-3',       dry:3400,  prop:117000, thrust:1920, isp:316, engines:'MA-3',           note:'Atlas SLV-3 for Agena/Centaur missions.',                       tags:['Liquid Oxygen / Kerosene','First Stage','1960s','1970s','American']},
+    {name:'Atlas I/II Booster', dry:3600, prop:145000, thrust:1920, isp:316, engines:'MA-5A',          note:'Atlas I/II first stage. LOX/RP-1.',                             tags:['Liquid Oxygen / Kerosene','First Stage','1990s-2000s','American']},
+    {name:'Saturn I S-I',      dry:37500, prop:375000, thrust:7557, isp:288, engines:'8× H-1',         note:'Saturn I first stage. 8× H-1. LOX/RP-1.',                      tags:['Liquid Oxygen / Kerosene','First Stage','1960s','American']},
+    {name:'Saturn IB S-IB',    dry:41594, prop:395979, thrust:7100, isp:294, engines:'8× H-1 (uprat)', note:'Saturn IB first stage. Uprated H-1.',                           tags:['Liquid Oxygen / Kerosene','First Stage','1960s','1970s','American']},
+    {name:'Saturn V S-IC',     dry:135218,prop:2150999,thrust:34020,isp:304, engines:'5× F-1',         note:'Largest booster stage flown. F-1 vac Isp 304s.',               tags:['Liquid Oxygen / Kerosene','First Stage','1960s','1970s','American']},
+    {name:'Titan I Stage 1',   dry:3230,  prop:72900,  thrust:1512, isp:290, engines:'LR-87-1',        note:'First Titan. LOX/RP-1. Only 2-stage LOX Titan.',                tags:['Liquid Oxygen / Kerosene','First Stage','1960s','American']},
+    {name:'Titan II GLV S1',   dry:4526,  prop:112500, thrust:2090, isp:290, engines:'LR-87-7',        note:'Gemini LV. NTO/Aerozine-50.',                                  tags:['Nitrogen Tetroxide / Aerozine-50','First Stage','1960s','American']},
+    {name:'Titan IIIC/D S1',   dry:8200,  prop:142000, thrust:2340, isp:301, engines:'LR-87-11',       note:'Titan III core stage 1.',                                       tags:['Nitrogen Tetroxide / Aerozine-50','First Stage','1970s','1980s','American']},
+    {name:'Titan IIIE S1',     dry:9200,  prop:158000, thrust:2340, isp:301, engines:'LR-87-11',       note:'Titan IIIE core first stage.',                                  tags:['Nitrogen Tetroxide / Aerozine-50','First Stage','1970s','American']},
+    {name:'Titan IV Stage 1',  dry:9200,  prop:165000, thrust:2340, isp:302, engines:'LR-87-AJ11',     note:'Titan IV. Uprated LR-87. NTO/Aerozine-50.',                    tags:['Nitrogen Tetroxide / Aerozine-50','First Stage','1990s-2000s','American']},
+    {name:'Delta II S1',       dry:4800,  prop:96900,  thrust:1050, isp:302, engines:'RS-27A',         note:'LOX/RP-1. RS-27A.',                                             tags:['Liquid Oxygen / Kerosene','First Stage','1980s','1990s-2000s','American']},
+    {name:'Delta III/IV S1',   dry:6100,  prop:151700, thrust:2141, isp:360, engines:'RS-68',          note:'LOX/LH2. Common Booster Core. Delta III/IV.',                  tags:['Liquid Oxygen / Liquid Hydrogen','First Stage','2000s','2010s+','American']},
+    {name:'Antares S1 (Castor 30)', dry:3500, prop:44000, thrust:1285, isp:289, engines:'Castor 30XL', note:'Solid first stage for Antares 230.',                             tags:['Solid Propellant','First Stage','2010s+','American']},
+    {name:'Vanguard S1',       dry:1990,  prop:10200,  thrust:125,  isp:248, engines:'GE X-405',         note:'Vanguard first stage. LOX/Kerosene.',                         tags:['Liquid Oxygen / Kerosene','First Stage','1950s','1960s','American']},
+    {name:'Atlas V CCB',        dry:21054, prop:284089, thrust:4152, isp:338, engines:'RD-180',           note:'Atlas V Common Core Booster. LOX/RP-1. RD-180 single shaft.',      tags:['Liquid Oxygen / Kerosene','First Stage','1990s-2000s','2010s+','American']},
+    {name:'Delta IV CBC',       dry:26760, prop:199640, thrust:3137, isp:412, engines:'RS-68A',           note:'Delta IV Common Booster Core. LOX/LH2. RS-68A.',                    tags:['Liquid Oxygen / Liquid Hydrogen','First Stage','2000s','2010s+','American']},
+    {name:'Vulcan S1',          dry:15600, prop:372000, thrust:4800, isp:340, engines:'2× BE-4',           note:'Vulcan first stage. LOX/Methane. 2× Blue Origin BE-4.',              tags:['Liquid Oxygen / Methane','First Stage','2010s+','American']},
+    {name:'New Glenn S1',       dry:45000, prop:875000, thrust:16800,isp:340, engines:'7× BE-4',           note:'New Glenn first stage. LOX/Methane. 7× BE-4.',                      tags:['Liquid Oxygen / Methane','First Stage','2010s+','American']},
+    {name:'Antares S1',         dry:8000,  prop:218000, thrust:3840, isp:338, engines:'2× RD-181',         note:'Antares 230+ first stage. LOX/RP-1. 2× Energomash RD-181.',         tags:['Liquid Oxygen / Kerosene','First Stage','2010s+','American','Soviet / Russian']},
+    {name:'Electron S1',        dry:950,   prop:9300,   thrust:224,  isp:320, engines:'9× Rutherford',     note:'Rocket Lab Electron. LOX/RP-1. Electric-pump fed.',                 tags:['Liquid Oxygen / Kerosene','First Stage','2010s+','American']},
+    {name:'Falcon 9 B5 S1',    dry:25600, prop:407500, thrust:8829, isp:311, engines:'9× Merlin 1D+',  note:'Expendable config. LOX/RP-1.',                                  tags:['Liquid Oxygen / Kerosene','First Stage','2010s+','American']},
+    // ── Soviet/Russian first stages ──
+    {name:'R-7 Blok A (core)', dry:6545,  prop:91440,  thrust:941,  isp:315, engines:'RD-108',         note:'R-7/Sputnik/Vostok/Soyuz core stage. LOX/Kerosene.',           tags:['Liquid Oxygen / Kerosene','First Stage','1950s','1960s','1970s','Soviet / Russian']},
+    {name:'Proton Blok A',     dry:31000, prop:419400, thrust:10470,isp:285, engines:'6× RD-253',      note:'Proton first stage. N2O4/UDMH. 6 engines radially.',            tags:['Nitrogen Tetroxide / UDMH','First Stage','1960s','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'N1 Blok A',         dry:209000,prop:1880000,thrust:45400,isp:297, engines:'30× NK-15',      note:'N1 first stage. 30× NK-15. LOX/RP-1. Never succeeded.',         tags:['Liquid Oxygen / Kerosene','First Stage','1960s','1970s','Soviet / Russian']},
+    {name:'Zenit S1',          dry:10400, prop:262800, thrust:8180, isp:337, engines:'RD-171',         note:'Zenit first stage. LOX/Kerosene. RD-171 — worlds most powerful single-chamber engine.',tags:['Liquid Oxygen / Kerosene','First Stage','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Kosmos-3M S1',      dry:3000,  prop:65000,  thrust:1510, isp:276, engines:'RD-216',         note:'Based on R-14 IRBM. N2O4/UDMH. Reliable workhorse.',             tags:['Nitrogen Tetroxide / UDMH','First Stage','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Tsyklon-2 S1',      dry:4000,  prop:131000, thrust:2750, isp:301, engines:'RD-261',         note:'Based on R-36 ICBM. N2O4/UDMH.',                               tags:['Nitrogen Tetroxide / UDMH','First Stage','1970s','1980s','Soviet / Russian']},
+    {name:'Energia Blok Ts',   dry:34500, prop:730000, thrust:5888, isp:455, engines:'4× RD-0120',     note:'Energia core. LOX/LH2. Most powerful Soviet LH2 engine.',      tags:['Liquid Oxygen / Liquid Hydrogen','First Stage','1980s','Soviet / Russian']},
+  ],
+  'Upper Stages':[
+    // ── US upper stages ──
+    {name:'Able (Thor-Able)',   dry:200,   prop:1400,   thrust:33,   isp:271, engines:'AJ10-101',       note:'Thor-Able upper stage. NTO/UDMH. Pioneer probes.',              tags:['Nitrogen Tetroxide / UDMH','Upper Stage','1950s','1960s','American']},
+    {name:'Vanguard S2',       dry:200,   prop:1360,   thrust:33,   isp:271, engines:'AJ10-118',         note:'Vanguard second stage. NTO/Aerozine-50.',                      tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','1950s','1960s','American']},
+    {name:'Vanguard S3',       dry:22,    prop:104,    thrust:10,   isp:250, engines:'X-248',            note:'Vanguard third stage. Solid kick motor.',                       tags:['Solid Propellant','Upper Stage','Kick Stage','1950s','1960s','American']},
+    {name:'Kosmos-3M S2',      dry:450,   prop:5300,   thrust:157,  isp:300, engines:'RD-48',            note:'Kosmos-3M second stage. N2O4/UDMH.',                            tags:['Nitrogen Tetroxide / UDMH','Upper Stage','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Agena A',           dry:620,   prop:5000,   thrust:68,   isp:276, engines:'Bell 8048',       note:'IRFNA/UDMH. First Agena variant.',                              tags:['Inhibited Red Fuming Nitric Acid / UDMH','Upper Stage','Restartable','1950s','1960s','American']},
+    {name:'Agena B',           dry:720,   prop:6200,   thrust:71,   isp:285, engines:'Bell 8081',       note:'Extended Agena. IRFNA/UDMH.',                                  tags:['Inhibited Red Fuming Nitric Acid / UDMH','Upper Stage','Restartable','1960s','American']},
+    {name:'Agena D',           dry:670,   prop:6497,   thrust:71,   isp:291, engines:'Bell 8096',       note:'IRFNA/UDMH. Standard upper stage for Atlas/Thor.',              tags:['Inhibited Red Fuming Nitric Acid / UDMH','Upper Stage','Restartable','1960s','1970s','American']},
+    {name:'Saturn S-IV',       dry:4400,  prop:40800,  thrust:400,  isp:421, engines:'6× RL-10A-1',    note:'Saturn I upper stage. 6× RL-10. LOX/LH2.',                     tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','1960s','American']},
+    {name:'Saturn V S-II',     dry:43000, prop:437000, thrust:5165, isp:421, engines:'5× J-2',         note:'LOX/LH2. Five J-2 engines.',                                   tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','1960s','1970s','American']},
+    {name:'Saturn V S-IVB',    dry:15200, prop:104700, thrust:1000, isp:421, engines:'J-2',            note:'Restartable. Used for TLI on Apollo.',                          tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1960s','1970s','American']},
+    {name:'Saturn IB S-IVB',   dry:13300, prop:107300, thrust:1000, isp:421, engines:'J-2',            note:'Saturn IB S-IVB. Slightly different to Saturn V variant.',       tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1960s','American']},
+    {name:'Centaur A',         dry:1800,  prop:9000,   thrust:133,  isp:428, engines:'2× RL-10A-1',    note:'First Centaur. LOX/LH2. Atlas-Centaur.',                       tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1960s','American']},
+    {name:'Centaur D-1T',      dry:2100,  prop:13500,  thrust:133,  isp:444, engines:'2× RL-10A-3-3',  note:'Titan IIIE upper stage. LOX/LH2.',                             tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1970s','American']},
+    {name:'Centaur II (AC)',    dry:2100,  prop:15900,  thrust:147,  isp:449, engines:'2× RL-10A-4',    note:'Atlas-Centaur II. LOX/LH2.',                                   tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1980s','1990s-2000s','American']},
+    {name:'Centaur III',       dry:2247,  prop:20830,  thrust:147,  isp:451, engines:'2× RL-10A-4-2',  note:'Atlas V upper stage. LOX/LH2.',                                tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1990s-2000s','2010s+','American']},
+    {name:'Titan I Stage 2',   dry:1630,  prop:27000,  thrust:444,  isp:308, engines:'LR-91-1',        note:'Titan I second stage. LOX/RP-1.',                              tags:['Liquid Oxygen / Kerosene','Upper Stage','1960s','American']},
+    {name:'Titan II GLV S2',   dry:2404,  prop:26535,  thrust:444,  isp:316, engines:'LR-91-7',        note:'Gemini LV second stage. NTO/Aerozine-50.',                     tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','1960s','American']},
+    {name:'Titan IIIC/D S2',   dry:4100,  prop:28800,  thrust:444,  isp:316, engines:'LR-91-11',       note:'Titan III second stage.',                                       tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','1970s','1980s','American']},
+    {name:'Titan IIIE S2',     dry:4500,  prop:27500,  thrust:467,  isp:316, engines:'LR-91-11',       note:'Titan IIIE second stage.',                                     tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','1970s','American']},
+    {name:'Transtage',         dry:1100,  prop:10000,  thrust:71,   isp:311, engines:'AJ10-138',       note:'Titan IIIC third stage. NTO/Aerozine-50. Restartable.',        tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','Restartable','1960s','1970s','1980s','American']},
+    {name:'Delta-K',           dry:950,   prop:6000,   thrust:43,   isp:319, engines:'AJ10-118K',      note:'Delta upper stage. NTO/Aerozine-50.',                          tags:['Nitrogen Tetroxide / Aerozine-50','Upper Stage','1980s','1990s-2000s','American']},
+    {name:'PAM-D (Star-48)',   dry:130,   prop:2010,   thrust:67,   isp:292, engines:'Star-48B',       note:'Payload Assist Module. Solid. Used on Delta/Shuttle.',          tags:['Solid Propellant','Upper Stage','Kick Stage','1980s','1990s-2000s','American']},
+    {name:'Inertial Upper Stg',dry:944,   prop:9707,   thrust:89,   isp:304, engines:'STAR-63D',       note:'IUS solid. Used on Shuttle/Titan. Two-stage solid.',            tags:['Solid Propellant','Upper Stage','1980s','1990s-2000s','American']},
+    {name:'DCSS (Delta IV)',   dry:3380,  prop:27220,  thrust:110,  isp:462, engines:'RL-10B-2',       note:'Delta Cryogenic Second Stage. LOX/LH2.',                       tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','1990s-2000s','2010s+','American']},
+    {name:'Falcon 9 MVac',     dry:4000,  prop:107500, thrust:934,  isp:348, engines:'Merlin Vac',     note:'LOX/RP-1. Expendable config.',                                  tags:['Liquid Oxygen / Kerosene','Upper Stage','Restartable','2010s+','American']},
+    {name:'Centaur V',          dry:2700,  prop:41000,  thrust:110,  isp:452, engines:'RL-10C-1-1',       note:'Vulcan Centaur upper stage. LOX/LH2. Single RL-10C.',               tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','2010s+','American']},
+    {name:'New Glenn S2',       dry:3000,  prop:47000,  thrust:710,  isp:445, engines:'BE-3U',             note:'New Glenn second stage. LOX/LH2. Blue Origin BE-3U.',               tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','2010s+','American']},
+    {name:'Electron S2',        dry:250,   prop:2150,   thrust:27,   isp:343, engines:'Rutherford Vac',    note:'Rocket Lab Electron upper stage. LOX/RP-1. Vacuum Rutherford.',      tags:['Liquid Oxygen / Kerosene','Upper Stage','2010s+','American']},
+    {name:'SLS Core Stage',     dry:99000, prop:987000, thrust:8360, isp:452, engines:'4× RS-25',          note:'SLS Core Stage. 4× RS-25 (SSME). LOX/LH2. ~8,360 kN total.',        tags:['Liquid Oxygen / Liquid Hydrogen','First Stage','2010s+','American']},
+    {name:'ICPS (SLS Block 1)', dry:3380,  prop:27220,  thrust:110,  isp:462, engines:'RL-10B-2',           note:'Interim Cryogenic Propulsion Stage. Same as DCSS. LOX/LH2.',          tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','2010s+','American']},
+    {name:'EUS (SLS Block 1B)', dry:15000, prop:120000, thrust:440,  isp:462, engines:'4× RL-10C-3',        note:'Exploration Upper Stage. 4× RL-10C. LOX/LH2. SLS Block 1B.',          tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','2010s+','American']},
+    {name:'NOMAD (G-1)',        dry:600,   prop:5500,   thrust:53.5, isp:357, engines:'Rocketdyne G-1',    note:'LF2/Hydrazine. Atlas upper stage (Agena replacement). Never flown due to fluorine toxicity. Engine specs confirmed; stage masses estimated.', tags:['Liquid Fluorine / Hydrazine','Upper Stage','Exotic','Unbuilt','1950s','1960s','American']},
+    {name:'CHARIOT',            dry:1600,  prop:12000,  thrust:155.9,isp:350, engines:'Bell LF2',          note:'LF2/MMH+H2O+Hydrazine. Titan III Transtage replacement. Never flown. Burned to CO and HF. Engine specs confirmed; stage masses estimated.', tags:['Liquid Fluorine / Hydrazine','Upper Stage','Exotic','Unbuilt','1960s','American']},
+    {name:'Vulcan ACES',       dry:2500,  prop:41000,  thrust:110,  isp:462, engines:'2× RL-10C-1-1', note:'Advanced Cryogenic Evolved Stage. LOX/LH2.',                   tags:['Liquid Oxygen / Liquid Hydrogen','Upper Stage','Restartable','2010s+','American']},
+    // ── Soviet/Russian upper stages ──
+    {name:'R-7 Blok E',        dry:600,   prop:5600,   thrust:55,   isp:323, engines:'RD-0109',        note:'Vostok 3rd stage. LOX/Kerosene. First orbital upper stage.',   tags:['Liquid Oxygen / Kerosene','Upper Stage','1950s','1960s','Soviet / Russian']},
+    {name:'Soyuz Blok I',      dry:2355,  prop:22000,  thrust:298,  isp:326, engines:'RD-0110',        note:'Soyuz/Molniya 3rd stage. LOX/Kerosene. Restartable.',           tags:['Liquid Oxygen / Kerosene','Upper Stage','Restartable','1960s','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Blok L (8S814)',    dry:1200,  prop:8000,   thrust:54,   isp:340, engines:'S1.5400',        note:'Luna/Molniya 4th stage. LOX/Kerosene. Deep space kick.',        tags:['Liquid Oxygen / Kerosene','Upper Stage','Kick Stage','1960s','1970s','Soviet / Russian']},
+    {name:'Proton Blok B',     dry:11000, prop:157300, thrust:2399, isp:327, engines:'3× RD-0210 + RD-0211', note:'Proton 2nd stage. N2O4/UDMH.',                          tags:['Nitrogen Tetroxide / UDMH','Upper Stage','1960s','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Proton Blok V',     dry:4185,  prop:46562,  thrust:599,  isp:325, engines:'RD-0212',        note:'Proton 3rd stage. N2O4/UDMH. Restartable.',                    tags:['Nitrogen Tetroxide / UDMH','Upper Stage','Restartable','1960s','1970s','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'Blok D',            dry:2400,  prop:15200,  thrust:85,   isp:352, engines:'11D58',          note:'Deep space stage. LOX/Kerosene. Used on Proton/Zond/Lunna.',   tags:['Liquid Oxygen / Kerosene','Upper Stage','Restartable','1960s','1970s','1980s','Soviet / Russian']},
+    {name:'Blok DM-03',        dry:2750,  prop:19800,  thrust:85,   isp:352, engines:'11D58M',         note:'Modernised Blok D. LOX/Kerosene. Proton upper stage.',          tags:['Liquid Oxygen / Kerosene','Upper Stage','Restartable','1990s-2000s','2010s+','Soviet / Russian']},
+    {name:'Fregat',            dry:930,   prop:5250,   thrust:20,   isp:332, engines:'S5.92',          note:'Soyuz/Zenit upper stage. N2O4/UDMH. Highly restartable.',      tags:['Nitrogen Tetroxide / UDMH','Upper Stage','Restartable','1990s-2000s','2010s+','Soviet / Russian']},
+    {name:'Zenit Blok II',     dry:8800,  prop:82600,  thrust:912,  isp:350, engines:'RD-120',         note:'Zenit second stage. LOX/Kerosene.',                             tags:['Liquid Oxygen / Kerosene','Upper Stage','1980s','1990s-2000s','Soviet / Russian']},
+    {name:'N1 Blok B',         dry:11400, prop:300000, thrust:14040,isp:346, engines:'8× NK-15V',      note:'N1 second stage. LOX/Kerosene. NK-15V high-alt variant.',      tags:['Liquid Oxygen / Kerosene','Upper Stage','1960s','1970s','Soviet / Russian']},
+    {name:'N1 Blok V',         dry:4400,  prop:93000,  thrust:4080, isp:354, engines:'4× NK-19',       note:'N1 third stage. LOX/Kerosene.',                                tags:['Liquid Oxygen / Kerosene','Upper Stage','1960s','1970s','Soviet / Russian']},
+    {name:'N1 Blok G (TLI)',   dry:4900,  prop:15600,  thrust:980,  isp:353, engines:'NK-21',          note:'N1 TLI stage. LOX/Kerosene.',                                   tags:['Liquid Oxygen / Kerosene','Upper Stage','Kick Stage','1960s','1970s','Soviet / Russian']},
+  ],
+  'Kick Stages':[
+    // ── US solid kick stages ──
+    {name:'Sergeant (1×)',     dry:6,    prop:22,    thrust:7.3, isp:214, engines:'Solid', note:'Single Sergeant motor. Juno I 4th stage.',            tags:['Solid Propellant','Kick Stage','1950s','1960s','American']},
+    {name:'Sergeant (3×)',     dry:18,   prop:73,    thrust:22,  isp:214, engines:'Solid', note:'3× Sergeant cluster. Juno I 3rd stage.',              tags:['Solid Propellant','Kick Stage','1950s','1960s','American']},
+    {name:'Sergeant (11×)',    dry:68,   prop:295,   thrust:73,  isp:214, engines:'Solid', note:'11× Sergeant cluster. Juno I 2nd stage.',             tags:['Solid Propellant','Kick Stage','1950s','1960s','American']},
+    {name:'Altair 1 (X-248)', dry:40,   prop:388,   thrust:12,  isp:256, engines:'Solid', note:'Scout/Vanguard 3rd stage. X-248 motor.',               tags:['Solid Propellant','Kick Stage','1950s','1960s','American']},
+    {name:'Altair 3',          dry:25,   prop:276,   thrust:27.4,isp:280, engines:'Solid', note:'Scout 4th stage. HTPB.',                               tags:['Solid Propellant','Kick Stage','1960s','American']},
+    {name:'Antares 3A',        dry:98,   prop:1286,  thrust:80,  isp:294, engines:'Solid', note:'Scout 3rd stage.',                                    tags:['Solid Propellant','Kick Stage','1960s','American']},
+    {name:'Castor II',         dry:695,  prop:3729,  thrust:259, isp:262, engines:'Solid', note:'Scout 2nd stage / Delta strap-on.',                    tags:['Solid Propellant','Kick Stage','1960s','American']},
+    {name:'Algol III',         dry:1600, prop:12720, thrust:472, isp:284, engines:'Solid', note:'Scout 1st stage.',                                    tags:['Solid Propellant','Kick Stage','1970s','American']},
+    {name:'Star-17',           dry:22,   prop:88,    thrust:9.5, isp:278, engines:'Solid', note:'Small kick motor. Spin-stabilised.',                  tags:['Solid Propellant','Kick Stage','1970s','1980s','American']},
+    {name:'Star-37FM',         dry:100,  prop:1000,  thrust:45,  isp:289, engines:'Solid', note:'Kick motor. Spin-stabilised.',                        tags:['Solid Propellant','Kick Stage','1980s','American']},
+    {name:'Star-48B',          dry:123,  prop:2010,  thrust:67,  isp:292, engines:'Solid', note:'Payload kick stage. Widely used.',                    tags:['Solid Propellant','Kick Stage','1980s','1990s-2000s','American']},
+    {name:'Star-48BV',         dry:120,  prop:2010,  thrust:66,  isp:292, engines:'Solid', note:'Star-48B with vectored nozzle.',                      tags:['Solid Propellant','Kick Stage','1990s-2000s','American']},
+    {name:'Star-63D (IUS)',    dry:620,  prop:9250,  thrust:182, isp:299, engines:'Solid', note:'Inertial Upper Stage 1st stage. Shuttle payload.',     tags:['Solid Propellant','Kick Stage','1980s','1990s-2000s','American']},
+    {name:'MAGE-1 (Apogee)',   dry:40,   prop:550,   thrust:27,  isp:285, engines:'Solid', note:'Apogee kick motor. Used on European/US commsats.',     tags:['Solid Propellant','Kick Stage','1970s','1980s','American','European']},
+    {name:'MAGE-2',            dry:55,   prop:813,   thrust:36,  isp:286, engines:'Solid', note:'Larger apogee kick motor.',                           tags:['Solid Propellant','Kick Stage','1980s','American','European']},
+    {name:'AKM / Thiokol TE-364-4', dry:50, prop:545, thrust:39, isp:290, engines:'Solid', note:'Standard apogee kick motor.',                         tags:['Solid Propellant','Kick Stage','1970s','1980s','American']},
+    // ── Soviet kick stages ──
+    {name:'Blok L (kick)',     dry:1200, prop:8000,  thrust:54,  isp:340, engines:'S1.5400', note:'LOX/Kerosene. Molniya/Luna escape stage.',           tags:['Liquid Oxygen / Kerosene','Kick Stage','1960s','1970s','Soviet / Russian']},
+  ],
+  'Side Boosters':[
+    // ── US strap-on boosters ──
+    {name:'UA1205 SRB',       dry:6200,  prop:110000, thrust:5340, isp:268, engines:'Solid', note:'Titan IIIC/E strap-on. Per booster.',               tags:['Solid Propellant','Strap-on Booster','1960s','1970s','American'],isBooster:true},
+    {name:'UA1207 SRB',       dry:7600,  prop:143000, thrust:6846, isp:272, engines:'Solid', note:'Titan IVA strap-on. Per booster.',                  tags:['Solid Propellant','Strap-on Booster','1980s','1990s-2000s','American'],isBooster:true},
+    {name:'UA1212 SRB (TIV-B)',dry:8300, prop:182000, thrust:7560, isp:275, engines:'Solid', note:'Titan IVB upgraded SRB. Per booster.',               tags:['Solid Propellant','Strap-on Booster','1990s-2000s','American'],isBooster:true},
+    {name:'Space Shuttle SRB', dry:87500, prop:503000, thrust:12450,isp:269, engines:'Solid', note:'Thiokol SRB. Per booster. Sea level thrust.',        tags:['Solid Propellant','Strap-on Booster','1980s','1990s-2000s','American'],isBooster:true},
+    {name:'GEM-40',           dry:874,   prop:11765,  thrust:490,  isp:274, engines:'Solid', note:'Delta II strap-on. Per booster.',                   tags:['Solid Propellant','Strap-on Booster','1980s','1990s-2000s','American'],isBooster:true},
+    {name:'GEM-46',           dry:910,   prop:14175,  thrust:490,  isp:274, engines:'Solid', note:'Delta II 7925 strap-on. Per booster.',              tags:['Solid Propellant','Strap-on Booster','1990s-2000s','American'],isBooster:true},
+    {name:'GEM-60 (Delta IV)', dry:1600,  prop:27000,  thrust:827,  isp:275, engines:'Solid', note:'Delta IV strap-on. Per booster.',                   tags:['Solid Propellant','Strap-on Booster','2000s','2010s+','American'],isBooster:true},
+    {name:'Castor 4A',        dry:1150,  prop:11600,  thrust:478,  isp:265, engines:'Solid', note:'Delta/Scout strap-on. Per booster.',                tags:['Solid Propellant','Strap-on Booster','1970s','1980s','American'],isBooster:true},
+    {name:'Atlas V SRB (AJ-60A)', dry:1000, prop:42000, thrust:1688, isp:279, engines:'Solid', note:'Atlas V strap-on. Per booster.',                   tags:['Solid Propellant','Strap-on Booster','2000s','2010s+','American'],isBooster:true},
+    // ── Soviet/Russian strap-on boosters ──
+    {name:'Delta IV CBC (booster)',dry:26760,prop:199640, thrust:3137, isp:412, engines:'RS-68A',  note:'Delta IV Heavy side CBC. LOX/LH2. Per booster.',    tags:['Liquid Oxygen / Liquid Hydrogen','Strap-on Booster','2000s','2010s+','American'],isBooster:true},
+    {name:'Atlas V CCB (booster)', dry:21054,prop:284089, thrust:4152, isp:338, engines:'RD-180',  note:'Atlas V CCB used as future strap-on concept. LOX/RP-1.',tags:['Liquid Oxygen / Kerosene','Strap-on Booster','2000s','2010s+','American'],isBooster:true},
+    {name:'SLS 5-Seg SRB',        dry:97000,prop:628000, thrust:16000,isp:269, engines:'RSRM-V',   note:'SLS Block 1 solid strap-on. Per booster. Largest SRBs ever flown.', tags:['Solid Propellant','Strap-on Booster','2010s+','American'],isBooster:true},
+    {name:'R-7 Blok B/V/G/D', dry:3450,  prop:38600,  thrust:1021, isp:313, engines:'RD-107', note:'R-7 strap-on. Per booster. LOX/Kerosene.',          tags:['Liquid Oxygen / Kerosene','Strap-on Booster','1950s','1960s','1970s','Soviet / Russian'],isBooster:true},
+    {name:'Energia Zenit SRB', dry:30000, prop:278000, thrust:7904, isp:309, engines:'RD-170', note:'Energia liquid strap-on (Zenit-based). Per booster.',tags:['Liquid Oxygen / Kerosene','Strap-on Booster','1980s','Soviet / Russian'],isBooster:true},
+  ],
+};
+let userStagesByCategory={}; // { catName: [stage, ...] }
+let collapsedLibCats=new Set(['Booster Stages','Upper Stages','Kick Stages','Side Boosters']);
+
+function toggleLibrary(){
+  libOpen=!libOpen;
+  document.getElementById('lib-body').style.display=libOpen?'block':'none';
+  document.getElementById('lib-arrow').classList.toggle('open',libOpen);
+}
+
+function makeCard(stage,cat,onDel){
+  const card=document.createElement('div');
+  card.className='stage-card'+(stage.isBooster?' booster-card':'')+(onDel?' lib-user-stage-card':'');
+  card.draggable=true;
+  // Slim display: name + fuel + prop mass
+  const fuel=propShort(stage.tags);
+  const fM=v=>v>=1000?(v/1000).toFixed(0)+'t':v+' kg';
+  const mini=[fuel,stage.prop>=1000?fM(stage.prop)+' prop':''].filter(Boolean).join(' · ');
+  card.innerHTML=`<div class="stage-card-name" title="${stage.name}">${stage.name}</div>
+    ${mini?`<div class="stage-card-mini">${mini}</div>`:''}`;
+  if(onDel){
+    const x=document.createElement('button');x.className='lib-del-btn';x.textContent='×';x.title='Remove stage';
+    x.onclick=e=>{e.stopPropagation();onDel();};card.appendChild(x);
+  }
+  // Drag (separate from click via _didDrag flag)
+  card.addEventListener('dragstart',e=>{
+    _didDrag=true;
+    _draggingStage={...stage,_cat:cat};
+    e.dataTransfer.setData('text/plain',JSON.stringify(_draggingStage));
+    e.dataTransfer.effectAllowed='copy';
+    setTimeout(()=>card.classList.add('dragging'),0);
+  });
+  card.addEventListener('dragend',()=>{
+    card.classList.remove('dragging');_draggingStage=null;
+    setTimeout(()=>{_didDrag=false;},80);
+  });
+  card.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(_didDrag)return;
+    openStageModal(stage);
+  });
+  return card;
+}
+
+function buildLibCat(container,cat,stages,userStages,q){
+  const filtBuiltin=stages.filter(s=>stageMatchesFilters(s)&&(!q||s.name.toLowerCase().includes(q)||
+    (s.engines||'').toLowerCase().includes(q)||(s.note||'').toLowerCase().includes(q)||
+    (s.tags||[]).some(t=>t.toLowerCase().includes(q))));
+  const filtUser=(userStages||[]).filter(s=>stageMatchesFilters(s)&&(!q||s.name.toLowerCase().includes(q)||
+    (s.engines||'').toLowerCase().includes(q)||(s.note||'').toLowerCase().includes(q)||
+    (s.tags||[]).some(t=>t.toLowerCase().includes(q))));
+  if(!filtBuiltin.length&&!filtUser.length)return;
+  const collapsed=!q&&collapsedLibCats.has(cat);
+  const div=document.createElement('div');div.className='lib-cat';
+  // Header
+  const hdr=document.createElement('div');hdr.className='lib-cat-hdr';
+  const lbl=document.createElement('span');lbl.className='lib-cat-label';lbl.textContent=cat;
+  const count=document.createElement('span');
+  count.style.cssText='font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:4px;';
+  count.textContent=`(${filtBuiltin.length+filtUser.length})`;
+  const chev=document.createElement('span');chev.className='lib-cat-chevron'+(collapsed?'':' open');chev.textContent='▶';
+  hdr.appendChild(lbl);hdr.appendChild(count);hdr.appendChild(chev);
+  hdr.addEventListener('click',e=>{e.stopPropagation();collapsedLibCats.has(cat)?collapsedLibCats.delete(cat):collapsedLibCats.add(cat);buildStageLibrary();});
+  div.appendChild(hdr);
+  if(!collapsed){
+    const scroll=document.createElement('div');scroll.className='lib-scroll';
+    filtBuiltin.forEach(stage=>scroll.appendChild(makeCard(stage,cat,null)));
+    filtUser.forEach((stage,ui)=>scroll.appendChild(makeCard(stage,cat,()=>{
+      userStagesByCategory[cat].splice(ui,1);
+      if(!userStagesByCategory[cat].length)delete userStagesByCategory[cat];
+      buildStageLibrary();
+    })));
+    div.appendChild(scroll);
+  }
+  container.appendChild(div);
+}
+
+function buildStageLibrary(){
+  const q=(document.getElementById('lib-search')?.value||'').toLowerCase();
+  const cont=document.getElementById('lib-content');
+  cont.innerHTML='';
+  // ── Preset Vehicles ──
+  const vehicleStages=BUILTIN_PRESETS.filter(p=>{
+    if(!q)return true;
+    const sub=(p.stageNames||[]).join(' ');
+    return(p.name+' '+sub+' '+(p.note||'')+' '+(p.tags||[]).join(' ')).toLowerCase().includes(q);
+  });
+  if(vehicleStages.length){
+    const collapsed=collapsedLibCats.has('__vehicles__');
+    const catDiv=document.createElement('div');catDiv.className='lib-cat';
+    const hdr=document.createElement('div');hdr.className='lib-cat-hdr';
+    const chev=document.createElement('span');chev.className='lib-cat-chevron'+(collapsed?'':' open');chev.textContent='▶';
+    const lbl=document.createElement('span');lbl.className='lib-cat-label';lbl.textContent='Preset Vehicles';
+    const cnt=document.createElement('span');cnt.style.cssText='font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:4px;';cnt.textContent='('+vehicleStages.length+')';
+    hdr.appendChild(lbl);hdr.appendChild(cnt);hdr.appendChild(chev);
+    hdr.addEventListener('click',e=>{e.stopPropagation();collapsedLibCats.has('__vehicles__')?collapsedLibCats.delete('__vehicles__'):collapsedLibCats.add('__vehicles__');buildStageLibrary();});
+    catDiv.appendChild(hdr);
+    if(!collapsed){
+      const scroll=document.createElement('div');scroll.className='lib-scroll';
+      vehicleStages.forEach((p,pi)=>{
+        const card=document.createElement('div');
+        card.className='stage-card';card.style.width='180px';card.draggable=true;
+        const sub=(p.stageNames||[]).join(' + ');
+        card.innerHTML=`<div class="stage-card-name" title="${p.name}">${p.name}</div>
+          ${p.note?`<div class="stage-card-mini" style="white-space:normal;line-height:1.4;">${p.note.slice(0,70)}${p.note.length>70?'…':''}</div>`:''}`;
+        card.title='Click for details · Drag to load all stages';
+        card.addEventListener('dragstart',e=>{
+          _didDrag=true;
+          _draggingStage={_isVehicle:true,_preset:p,name:p.name};
+          e.dataTransfer.setData('text/plain',JSON.stringify({_isVehicle:true,name:p.name}));
+          e.dataTransfer.effectAllowed='copy';
+          setTimeout(()=>card.classList.add('dragging'),0);
+        });
+        card.addEventListener('dragend',()=>{card.classList.remove('dragging');setTimeout(()=>{_didDrag=false;},80);});
+        card.addEventListener('click',e=>{e.stopPropagation();if(_didDrag)return;openVehicleModal(p);});
+        scroll.appendChild(card);
+      });
+      catDiv.appendChild(scroll);
+    }
+    cont.appendChild(catDiv);
+  }
+  // Built-in categories
+  Object.entries(STAGE_LIBRARY).forEach(([cat,stages])=>{
+    buildLibCat(cont,cat,stages,userStagesByCategory[cat],q);
+  });
+  // User-created categories not in built-ins
+  const builtinNames=new Set(Object.keys(STAGE_LIBRARY));
+  Object.keys(userStagesByCategory).filter(k=>!builtinNames.has(k)).forEach(cat=>{
+    buildLibCat(cont,cat,[],userStagesByCategory[cat],q);
+  });
+}
+
+function applyStageData(stageIdx,stage){
+  const s=stageIdx+1;
+  const set=(key,val)=>{const el=document.getElementById(`s${s}_${key}`);if(el){el.value=val;stageStore[stageIdx]={...stageStore[stageIdx],[key]:String(val)};}};
+  set('dry',stage.dry);set('prop',stage.prop);set('thrust',stage.thrust);set('isp',stage.isp);set('res',stage.res??2);
+  currentStageNames[stageIdx]=stage.name||null;
+  stageSaved[stageIdx]=false;
+  buildStageComposition();
+  markLVUserDefined();
+}
+
+// ── Booster drop zone handlers ──
+// Booster populate helper (called from table drop)
+function applyBoosterData(s){setBoosters(true);document.getElementById('b_dry').value=s.dry;document.getElementById('b_prop').value=s.prop;document.getElementById('b_thrust').value=s.thrust;document.getElementById('b_isp').value=s.isp;document.getElementById('b_res').value=s.res??2;currentBoosterName=s.name||null;boosterSaved=false;buildStageComposition();markLVUserDefined();}
+
+// ── Stage column drop handlers (called from buildTable) ──
+function onColDragOver(e,stageIdx){
+  if(!_draggingStage||_draggingStage.isBooster)return;
+  e.preventDefault();e.dataTransfer.dropEffect='copy';
+  // Highlight whole column by adding class to the row containing this header
+  document.getElementById('stage-header-row').classList.add('stage-col-hover');
+  // Store target column for visual highlight
+  document.getElementById('stage-header-row').dataset.hoverCol=stageIdx;
+  // Highlight just this header cell
+  const ths=document.getElementById('stage-header-row').querySelectorAll('th');
+  ths.forEach((th,i)=>th.style.background=i===stageIdx+1?'rgba(0,200,255,.15)':'');
+}
+function onColDragLeave(e,stageIdx){
+  const ths=document.getElementById('stage-header-row').querySelectorAll('th');
+  ths.forEach(th=>th.style.background='');
+}
+function onColDrop(e,stageIdx){
+  e.preventDefault();
+  const ths=document.getElementById('stage-header-row').querySelectorAll('th');
+  ths.forEach(th=>th.style.background='');
+  if(!_draggingStage)return;
+  if(_draggingStage._isVehicle){
+    // Drop vehicle card on any column → load whole preset
+    loadPreset(_draggingStage._preset,'builtin_'+BUILTIN_PRESETS.indexOf(_draggingStage._preset));
+  } else if(!_draggingStage.isBooster){
+    applyStageData(stageIdx,_draggingStage);
+  }
+}
+
+
+
+const FILTER_TREE={
+  'Propellant':[
+    'Liquid Oxygen / Liquid Hydrogen',
+    'Liquid Oxygen / Kerosene',
+    'Liquid Oxygen / Ethanol',
+    'Nitrogen Tetroxide / Aerozine-50',
+    'Nitrogen Tetroxide / UDMH',
+    'Inhibited Red Fuming Nitric Acid / UDMH',
+    'Solid Propellant',
+  ],
+  'Application':['First Stage','Upper Stage','Kick Stage','Strap-on Booster','Restartable'],
+  'Era':['1950s','1960s','1970s','1980s','1990s-2000s','2010s+'],
+  'Origin':['American','Soviet / Russian','European'],
+};
+let activeFilters={};
+let collapsedFilterCats=new Set(['Origin']);
+let filterPanelOpen=false;
+
+
+
+// ─── LAUNCH SITES ─────────────────────────────
+const LAUNCH_SITES=[
+  {region:'North America',sites:[
+    {name:'Kennedy Space Center', short:'KSC',  country:'USA',        lat:28.5, azMin:37,  azMax:112, note:'Cape Canaveral. Primary US launch site.'},
+    {name:'Vandenberg SFB',       short:'VAFB', country:'USA',        lat:34.6, azMin:147, azMax:201, note:'Polar & sun-sync. Retrograde only from here.'},
+    {name:'Wallops Island',       short:'WLPS', country:'USA',        lat:37.8, azMin:90,  azMax:159, note:'MARS. Mid-inclination and polar capable.'},
+    {name:'Kodiak / PSCA',        short:'KDK',  country:'USA',        lat:57.4, azMin:110, azMax:220, note:'Alaska. High-inclination and polar.'},
+  ]},
+  {region:'Russia',sites:[
+    {name:'Baikonur Cosmodrome',  short:'BKR',  country:'Russia',     lat:45.9, azMin:51,  azMax:100, minInc:51.6, note:'Range safety forces min inc ≈ 51.6° despite 45.9° latitude.'},
+    {name:'Plesetsk Cosmodrome',  short:'PLSK', country:'Russia',     lat:62.8, azMin:66,  azMax:160, note:'Primary Russian military site. Polar capable.'},
+    {name:'Vostochny Cosmodrome', short:'VST',  country:'Russia',     lat:51.9, azMin:60,  azMax:120, note:'New Russian civilian site.'},
+  ]},
+  {region:'Europe / Americas',sites:[
+    {name:'Kourou (CSG)',         short:'CSG',  country:'France/ESA', lat:5.2,  azMin:10,  azMax:95,  note:'Near-equatorial. Ariane advantage: GTO inc ≈ 5.2°.'},
+    {name:'Alcântara (ALZ)',      short:'ALZ',  country:'Brazil',     lat:-2.3, azMin:10,  azMax:180, note:'Near-equatorial. Southern hemisphere.'},
+  ]},
+  {region:'Asia / Pacific',sites:[
+    {name:'Tanegashima',          short:'TNGS', country:'Japan',      lat:30.4, azMin:90,  azMax:115, note:'JAXA primary launch site.'},
+    {name:'Jiuquan (JSLC)',       short:'JSLC', country:'China',      lat:40.6, azMin:57,  azMax:100, note:'Chinese crewed launches.'},
+    {name:'Xichang (XSLC)',       short:'XSLC', country:'China',      lat:28.2, azMin:90,  azMax:115, note:'Chinese GTO launches.'},
+    {name:'Wenchang (WSLC)',      short:'WSLC', country:'China',      lat:19.6, azMin:90,  azMax:115, note:'Newest Chinese site. Lower latitude.'},
+    {name:'Sriharikota (SHAR)',   short:'SHAR', country:'India',      lat:13.7, azMin:50,  azMax:140, note:'ISRO primary launch site.'},
+    {name:'Mahia Peninsula',      short:'MHI',  country:'New Zealand',lat:-39.3,azMin:57,  azMax:185, note:'Rocket Lab. Southern hemisphere. ~39° min inc.'},
+  ]},
+];
+
+let activeSiteKey=null;
+
+function siteEffectiveInc(site){
+  // Minimum achievable inclination from this site
+  return site.minInc!==undefined ? site.minInc : Math.abs(site.lat);
+}
+
+function buildSiteSelector(){
+  const grid=document.getElementById('site-selector-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  LAUNCH_SITES.forEach(region=>{
+    const regionDiv=document.createElement('div');regionDiv.className='site-region';
+    const lbl=document.createElement('div');lbl.className='site-region-label';lbl.textContent=region.region;
+    regionDiv.appendChild(lbl);
+    const btnRow=document.createElement('div');btnRow.className='site-grid';
+    region.sites.forEach(site=>{
+      const key=site.short;
+      const btn=document.createElement('button');
+      btn.className='site-btn'+(activeSiteKey===key?' active':'');
+      btn.textContent=site.short;
+      btn.title=site.name+' — '+site.note;
+      btn.onclick=()=>loadSite(site);
+      btnRow.appendChild(btn);
+    });
+    regionDiv.appendChild(btnRow);
+    grid.appendChild(regionDiv);
+  });
+  // Custom option
+  const customDiv=document.createElement('div');customDiv.className='site-region';
+  const customRow=document.createElement('div');customRow.className='site-grid';
+  const customBtn=document.createElement('button');
+  customBtn.className='site-btn'+(activeSiteKey===null?' active':'');
+  customBtn.textContent='Custom';customBtn.title='Edit fields manually';
+  customBtn.onclick=()=>{activeSiteKey=null;buildSiteSelector();updateSiteNotes(null);};
+  customRow.appendChild(customBtn);customDiv.appendChild(customRow);grid.appendChild(customDiv);
+}
+
+function loadSite(site){
+  activeSiteKey=site.short;
+  document.getElementById('site-lat').value=site.lat;
+  document.getElementById('az-min').value=site.azMin;
+  document.getElementById('az-max').value=site.azMax;
+  buildSiteSelector();
+  updateSiteNotes(site);
+  // Update any active incTracksLat orbit
+  updateIncForSite(site);
+}
+
+function updateSiteNotes(site){
+  const noteEl=document.getElementById('site-note');
+  const trackEl=document.getElementById('inc-tracked-note');
+  if(!site){noteEl.textContent='';trackEl.style.display='none';return;}
+  noteEl.textContent=site.name+(site.note?' — '+site.note:'');
+  updateIncTrackedNote(site);
+}
+
+function updateIncTrackedNote(site){
+  const trackEl=document.getElementById('inc-tracked-note');
+  if(!site){trackEl.style.display='none';return;}
+  const effectiveInc=siteEffectiveInc(site);
+  // Check if active orbit tracks lat
+  const activeOrbitTracksLat=checkActiveOrbitTracksLat();
+  if(activeOrbitTracksLat){
+    trackEl.style.display='block';
+    trackEl.textContent='↻ Active orbit inclination updated to '+effectiveInc.toFixed(1)+'° ('+
+      (site.minInc!==undefined?'range safety minimum':'site latitude')+')';
+  } else {
+    trackEl.style.display='none';
+  }
+}
+
+function checkActiveOrbitTracksLat(){
+  if(!activeOrbitKey)return false;
+  // Search ORBIT_CATEGORIES for the active orbit
+  for(const cat of ORBIT_CATEGORIES){
+    for(let i=0;i<cat.orbits.length;i++){
+      if('orbit_'+cat.planet+'_'+i===activeOrbitKey){
+        return cat.orbits[i].incTracksLat===true;
+      }
+    }
+  }
+  return false;
+}
+
+function updateIncForSite(site){
+  if(!checkActiveOrbitTracksLat())return;
+  const inc=siteEffectiveInc(site);
+  document.getElementById('inclination').value=inc;
+  updateIncTrackedNote(site);
+}
+
+
+function matchSiteFromFields(){
+  // Try to match current lat/azMin/azMax to a known site
+  const lat=parseFloat(document.getElementById('site-lat').value);
+  const azMin=parseFloat(document.getElementById('az-min').value);
+  const azMax=parseFloat(document.getElementById('az-max').value);
+  for(const region of LAUNCH_SITES){
+    for(const site of region.sites){
+      if(Math.abs(site.lat-lat)<0.1&&Math.abs(site.azMin-azMin)<1&&Math.abs(site.azMax-azMax)<1){
+        activeSiteKey=site.short;
+        buildSiteSelector();
+        updateSiteNotes(site);
+        return;
+      }
+    }
+  }
+  // No match — stay custom
+  activeSiteKey=null;
+  buildSiteSelector();
+  updateSiteNotes(null);
+}
+function onSiteFieldEdit(){
+  // User manually edited fields → switch to custom
+  if(activeSiteKey!==null){
+    activeSiteKey=null;
+    buildSiteSelector();
+    document.getElementById('site-note').textContent='';
+    document.getElementById('inc-tracked-note').style.display='none';
+  }
+}
+
+function getCurrentSite(){
+  if(!activeSiteKey)return null;
+  for(const region of LAUNCH_SITES){
+    const s=region.sites.find(s=>s.short===activeSiteKey);
+    if(s)return s;
+  }
+  return null;
+}
+
+
+// ─── PERFORMANCE CASES ────────────────────────
+let performanceCases=[];   // { label, timestamp, vehicleName, result, config }
+let activeCaseIndex=null;
+let loadedVehicleName='';  // name from last loaded file
+
+function buildCaseList(){
+  const list=document.getElementById('case-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(!performanceCases.length){
+    list.innerHTML='<div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>';
+    const dlBtn=document.getElementById('download-cases-btn');
+    if(dlBtn)dlBtn.disabled=true;
+    return;
+  }
+  const dlBtn=document.getElementById('download-cases-btn');
+  if(dlBtn)dlBtn.disabled=false;
+  performanceCases.forEach((c,i)=>{
+    const item=document.createElement('div');item.className='case-item';
+    const btn=document.createElement('button');
+    btn.className='case-btn'+(activeCaseIndex===i?' active':'');
+    const payload=c.result?.maxPayload;
+    const payStr=payload!=null?(payload>=1000?(payload/1000).toFixed(1)+'t':Math.round(payload)+'kg'):'—';
+    btn.innerHTML=`<div class="case-label">${c.label||'Case '+(i+1)}</div>
+      <div class="case-sub">${payStr} · ${c.config?.modeLabel||''}</div>`;
+    btn.onclick=()=>viewCase(i);
+    const del=document.createElement('button');
+    del.className='case-del';del.textContent='×';del.title='Remove case';
+    del.onclick=()=>{
+      performanceCases.splice(i,1);
+      if(activeCaseIndex===i)activeCaseIndex=null;
+      else if(activeCaseIndex>i)activeCaseIndex--;
+      buildCaseList();
+    };
+    item.appendChild(btn);item.appendChild(del);
+    list.appendChild(item);
+  });
+}
+
+function openSaveCaseModal(){
+  if(!lastResult){alert('Run a calculation first.');return;}
+  // Auto-suggest label from site + orbit
+  const site=activeSiteKey||'Custom';
+  const orbit=lastResult.modeLabel||'';
+  document.getElementById('case-label-input').value=`${orbit} — ${site}`;
+  openModal('modal-save-case');
+  setTimeout(()=>document.getElementById('case-label-input').select(),100);
+}
+
+function doSaveCase(){
+  if(!lastResult)return;
+  const label=document.getElementById('case-label-input').value.trim()||('Case '+(performanceCases.length+1));
+  // Snapshot current config
+  const config={
+    modeLabel:lastResult.modeLabel,
+    site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max'),name:activeSiteKey},
+    orbit:lastResult.orbitParams||null,
+  };
+  performanceCases.push({
+    label,
+    timestamp:new Date().toISOString(),
+    vehicleName:loadedVehicleName||document.getElementById('lv-save-name')?.value||'',
+    result:{...lastResult},
+    config,
+  });
+  activeCaseIndex=performanceCases.length-1;
+  closeModal('modal-save-case');
+  buildCaseList();
+}
+
+function viewCase(i){
+  activeCaseIndex=i;
+  const c=performanceCases[i];
+  if(!c)return;
+  // Restore lastResult and re-render results panel
+  lastResult={...c.result};
+  renderResults(lastResult);
+  buildCaseList();
+}
+
+// loadVehicleForCases removed — loadLVFile + applyLVObject handle both pages
+
+function downloadAllCases(){
+  if(!performanceCases.length){alert('No cases to download.');return;}
+  // Bundle vehicle config + cases as a single loadable file
+  const obj=buildLVObject(loadedVehicleName||'vehicle','');
+  downloadJSON(obj,((loadedVehicleName||'vehicle').replace(/[^a-z0-9_-]/gi,'_').toLowerCase())+'.json');
+}
+
+
+// ─── STAGE COMPOSITION VIEW ───────────────────
+let currentStageNames=new Array(15).fill(null); // library name for each stage slot
+let stageSaved=new Array(15).fill(false);
+let boosterSaved=false;
+
+function buildStageComposition(){
+  const body=document.getElementById('comp-body');
+  if(!body)return;
+  body.innerHTML='';
+
+  const fT=v=>v>=1000?(v/1000).toFixed(1)+' MN':v+' kN';
+  const fM=v=>v>=1000?(v/1000).toFixed(0)+'t':v+' kg';
+
+  function makeCompCard(label,stageName,dry,prop,thrust,isp,stageIdx,isBooster){
+    const saved=isBooster?boosterSaved:(stageIdx>=0?stageSaved[stageIdx]:false);
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;flex-direction:column;';
+    const lbl=document.createElement('div');
+    lbl.className='comp-stage-label';lbl.textContent=label;
+    wrap.appendChild(lbl);
+    // Outer row: card content + save area
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:stretch;gap:0;';
+    const card=document.createElement('div');
+    card.className='comp-card'+(stageName?'':' custom-stage');
+    card.style.flex='1';
+    card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('drop-hover');});
+    card.addEventListener('dragleave',()=>card.classList.remove('drop-hover'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();card.classList.remove('drop-hover');
+      if(!_draggingStage)return;
+      if(_draggingStage._isVehicle){loadPreset(_draggingStage._preset,'builtin_'+BUILTIN_PRESETS.indexOf(_draggingStage._preset));}
+      else if(isBooster){applyBoosterData(_draggingStage);}
+      else{applyStageData(stageIdx,_draggingStage);}
+    });
+    const nameEl=document.createElement('div');
+    nameEl.className='comp-card-name'+(stageName?'':' unnamed');
+    nameEl.textContent=stageName||'Unnamed';
+    card.appendChild(nameEl);
+    if(dry||prop||thrust||isp){
+      const specs=document.createElement('div');specs.className='comp-card-specs';
+      specs.innerHTML=`<span><b>Isp</b> ${isp||0} s</span><span><b>F</b> ${fT(thrust||0)}</span><span><b>Dry</b> ${fM(dry||0)}</span><span><b>Prop</b> ${fM(prop||0)}</span>`;
+      card.appendChild(specs);
+    }
+    const hint=document.createElement('div');hint.className='comp-card-hint';
+    hint.textContent='// drop to replace';
+    card.appendChild(hint);
+    row.appendChild(card);
+    // Save button / saved dot
+    const saveBtn=document.createElement('div');
+    saveBtn.style.cssText=`width:22px;display:flex;align-items:center;justify-content:center;
+      border:1px solid var(--border);border-left:none;cursor:${saved?'default':'pointer'};
+      color:${saved?'var(--accent3)':'var(--text-dim)'};flex-shrink:0;transition:color .15s;`;
+    if(saved){
+      saveBtn.innerHTML='<span style="font-size:9px;line-height:1;">●</span>';
+      saveBtn.title='Saved';
+    } else {
+      saveBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="5.5" y1="1" x2="5.5" y2="7.5"/><polyline points="2.5,5 5.5,8.5 8.5,5"/><line x1="1.5" y1="10" x2="9.5" y2="10"/></svg>';
+      saveBtn.title='Save stage as .json';
+      saveBtn.addEventListener('mouseenter',()=>saveBtn.style.color='var(--accent)');
+      saveBtn.addEventListener('mouseleave',()=>saveBtn.style.color='var(--text-dim)');
+      saveBtn.addEventListener('click',e=>{e.stopPropagation();saveStageCardAsFile(stageIdx,isBooster);});
+    }
+    row.appendChild(saveBtn);
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  for(let s=0;s<numStages;s++){
+    const store=stageStore[s]||{};
+    body.appendChild(makeCompCard(
+      `Stage ${s+1}`,
+      currentStageNames[s]||null,
+      parseFloat(store.dry)||0,
+      parseFloat(store.prop)||0,
+      parseFloat(store.thrust)||0,
+      parseFloat(store.isp)||0,
+      s,false
+    ));
+  }
+
+  if(useBooster){
+    const bCount=parseInt(document.getElementById('num-boosters')?.value)||0;
+    body.appendChild(makeCompCard(
+      `Strap-on ×${bCount}`,
+      currentBoosterName,
+      parseFloat(document.getElementById('b_dry')?.value)||0,
+      parseFloat(document.getElementById('b_prop')?.value)||0,
+      parseFloat(document.getElementById('b_thrust')?.value)||0,
+      parseFloat(document.getElementById('b_isp')?.value)||0,
+      null,true
+    ));
+  }
+}
+
+// Track booster name
+let currentBoosterName=null;
+// applyBoosterData moved below(s){setBoosters(true);document.getElementById('b_dry').value=s.dry;document.getElementById('b_prop').value=s.prop;document.getElementById('b_thrust').value=s.thrust;document.getElementById('b_isp').value=s.isp;document.getElementById('b_res').value=s.res??2;currentBoosterName=s.name||null;boosterSaved=false;buildStageComposition();markLVUserDefined();}
+
+// ─── STAGE DETAIL MODAL ───────────────────────
+let _didDrag = false;
+
+function propShort(tags){
+  const t = (tags||[]).find(t=>
+    t.includes('Liquid Oxygen')||t.includes('Nitrogen')||t.includes('Fluorine')||
+    t.includes('Inhibited')||t.includes('Solid')||t.includes('Ethanol'));
+  if(!t) return '';
+  if(t.includes('Liquid Hydrogen')) return 'LOX / LH₂';
+  if(t.includes('Kerosene'))        return 'LOX / RP-1';
+  if(t.includes('Methane'))         return 'LOX / CH₄';
+  if(t.includes('Ethanol'))         return 'LOX / Ethanol';
+  if(t.includes('Aerozine'))        return 'NTO / Aerozine-50';
+  if(t.includes('UDMH')&&t.includes('Nitrogen')) return 'NTO / UDMH';
+  if(t.includes('IRFNA'))           return 'IRFNA / UDMH';
+  if(t.includes('Fluorine'))        return 'LF₂ / Hydrazine';
+  if(t.includes('Solid'))           return 'Solid Propellant';
+  return t;
+}
+
+function openStageModal(stage){
+  document.getElementById('sdm-title').textContent = stage.name;
+  const fT=v=>v>=1000?(v/1000).toFixed(2)+' MN':v+' kN';
+  const fM=v=>v>=1000?(v/1000).toFixed(1)+' t':v+' kg';
+  const body = document.getElementById('sdm-body');
+  const fuel = propShort(stage.tags);
+  const nonPropTags=(stage.tags||[]).filter(t=>!['Liquid Oxygen','Nitrogen Tetroxide','Inhibited','Solid Propellant','Liquid Fluorine','Liquid Oxygen / Ethanol'].some(p=>t.startsWith(p)));
+  body.innerHTML=`
+    <div class="stage-detail-grid">
+      <div class="stage-detail-row"><label>Dry Mass</label><span>${fM(stage.dry||0)}</span></div>
+      <div class="stage-detail-row"><label>Propellant</label><span>${fM(stage.prop||0)}</span></div>
+      <div class="stage-detail-row"><label>Thrust (vac)</label><span>${fT(stage.thrust||0)}</span></div>
+      <div class="stage-detail-row"><label>Isp (vac)</label><span>${stage.isp||0} s</span></div>
+      <div class="stage-detail-row"><label>Residuals</label><span>${stage.res??2} %</span></div>
+      <div class="stage-detail-row"><label>Engines</label><span>${stage.engines||'—'}</span></div>
+      ${fuel?`<div class="stage-detail-row" style="grid-column:1/-1;"><label>Propellant</label><span>${fuel}</span></div>`:''}
+    </div>
+    ${stage.note?`<div class="note" style="margin:0 0 8px;">${stage.note}</div>`:''}
+    <div class="stage-detail-tags">${nonPropTags.map(t=>`<span class="stage-detail-tag">${t}</span>`).join('')}</div>
+  `;
+  openModal('modal-stage-detail');
+}
+
+function openVehicleModal(p){
+  document.getElementById('sdm-title').textContent = p.name;
+  const body = document.getElementById('sdm-body');
+  const tags = computeVehicleTags(p);
+  const nonEra = tags.filter(t=>!['1940s','1950s','1960s','1970s','1980s','1990s-2000s','2010s+'].includes(t));
+  body.innerHTML=`
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:10px;">
+      ${(p.stageNames||[]).join(' → ')}${p.boosterName?' + '+p.boosterName+(p.boosterCount>1?' ×'+p.boosterCount:''):''}
+    </div>
+    ${p.note?`<div class="note" style="margin:0 0 8px;">${p.note}</div>`:''}
+    <div class="stage-detail-tags">${nonEra.map(t=>`<span class="stage-detail-tag">${t}</span>`).join('')}</div>
+  `;
+  openModal('modal-stage-detail');
+}
+
+
+// ─── STAGE CARD SAVE ──────────────────────────
+function saveStageCardAsFile(stageIdx,isBooster){
+  let stage;
+  if(isBooster){
+    stage={
+      name:currentBoosterName||'Strap-on Booster',
+      dry:parseFloat(document.getElementById('b_dry')?.value)||0,
+      prop:parseFloat(document.getElementById('b_prop')?.value)||0,
+      thrust:parseFloat(document.getElementById('b_thrust')?.value)||0,
+      isp:parseFloat(document.getElementById('b_isp')?.value)||0,
+      res:parseFloat(document.getElementById('b_res')?.value)||2,
+      isBooster:true,
+    };
+    boosterSaved=true;
+  } else {
+    const store=stageStore[stageIdx]||{};
+    stage={
+      name:currentStageNames[stageIdx]||`Stage ${stageIdx+1}`,
+      dry:parseFloat(store.dry)||0,
+      prop:parseFloat(store.prop)||0,
+      thrust:parseFloat(store.thrust)||0,
+      isp:parseFloat(store.isp)||0,
+      res:parseFloat(store.res)||2,
+    };
+    stageSaved[stageIdx]=true;
+  }
+  const fname=stage.name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_stage.json';
+  downloadJSON(stage,fname);
+  buildStageComposition();
+}
+
+// ─── STAGE RESOLVER ───────────────────────────
+function findStageByName(name){
+  for(const stages of Object.values(STAGE_LIBRARY)){
+    const s=stages.find(s=>s.name===name);
+    if(s)return s;
+  }
+  for(const stages of Object.values(userStagesByCategory)){
+    const s=stages.find(s=>s.name===name);
+    if(s)return s;
+  }
+  return null;
+}
+
+function resolvePresetStages(p){
+  // Convert stageNames array to stageData array by looking up library
+  if(p.stageData)return p.stageData; // already resolved (user LV)
+  return (p.stageNames||[]).map(name=>{
+    const s=findStageByName(name);
+    if(!s)return {dry:0,prop:0,thrust:0,isp:300,res:2,_missing:name};
+    return {dry:s.dry,prop:s.prop,thrust:s.thrust,isp:s.isp,res:s.res??2};
+  });
+}
+
+function resolvePresetBooster(p){
+  if(p.boosterData)return p.boosterData;
+  if(!p.boosterName)return null;
+  const s=findStageByName(p.boosterName);
+  if(!s)return null;
+  return {dry:s.dry,prop:s.prop,thrust:s.thrust,isp:s.isp,res:s.res??2,count:p.boosterCount||1};
+}
+
+// Compute tags for a vehicle from its stages + vehicle-specific tags
+function computeVehicleTags(p){
+  const stageTags=new Set();
+  (p.stageNames||[]).forEach(name=>{
+    const s=findStageByName(name);
+    if(s)(s.tags||[]).forEach(t=>stageTags.add(t));
+  });
+  if(p.boosterName){
+    const s=findStageByName(p.boosterName);
+    if(s)(s.tags||[]).forEach(t=>stageTags.add(t));
+  }
+  // Add payload class tag
+  const pay=p.payload||0;
+  if(pay<50)stageTags.add('Nano (<50 kg)');
+  else if(pay<1000)stageTags.add('Small (<1 t)');
+  else if(pay<10000)stageTags.add('Medium (1–10 t)');
+  else if(pay<50000)stageTags.add('Heavy (10–50 t)');
+  else stageTags.add('Super Heavy (>50 t)');
+  // Merge with vehicle's own tags
+  (p.tags||[]).forEach(t=>stageTags.add(t));
+  return [...stageTags];
+}
+
+// ─── FILTER SYSTEM ─────────────────────────────
+function buildFilterPanel(){
+  const panel=document.getElementById('filter-panel');
+  panel.innerHTML='';
+  Object.entries(FILTER_TREE).forEach(([cat,opts])=>{
+    const collapsed=collapsedFilterCats.has(cat);
+    const div=document.createElement('div');div.className='filter-cat';
+    const hdr=document.createElement('div');hdr.className='filter-cat-hdr';
+    const chev=document.createElement('span');chev.className='filter-cat-chevron'+(collapsed?'':' open');chev.textContent='▶';
+    hdr.appendChild(chev);
+    hdr.appendChild(Object.assign(document.createElement('span'),{textContent:cat}));
+    const activeInCat=activeFilters[cat]?.size||0;
+    if(activeInCat){
+      const badge=document.createElement('span');
+      badge.style.cssText='font-family:var(--mono);font-size:8px;color:var(--accent);border:1px solid var(--accent);padding:1px 5px;margin-left:4px;';
+      badge.textContent=activeInCat;hdr.appendChild(badge);
+    }
+    hdr.onclick=()=>{collapsedFilterCats.has(cat)?collapsedFilterCats.delete(cat):collapsedFilterCats.add(cat);buildFilterPanel();};
+    div.appendChild(hdr);
+    if(!collapsed){
+      const row=document.createElement('div');row.className='filter-opts';
+      opts.forEach(opt=>{
+        const active=activeFilters[cat]?.has(opt);
+        const btn=document.createElement('div');btn.className='filter-opt'+(active?' active':'');
+        btn.textContent=opt;
+        btn.onclick=()=>{
+          if(!activeFilters[cat])activeFilters[cat]=new Set();
+          if(activeFilters[cat].has(opt))activeFilters[cat].delete(opt);else activeFilters[cat].add(opt);
+          if(!activeFilters[cat].size)delete activeFilters[cat];
+          buildFilterPanel();updateFilterChips();buildStageLibrary();
+        };
+        row.appendChild(btn);
+      });
+      div.appendChild(row);
+    }
+    panel.appendChild(div);
+  });
+}
+
+function updateFilterChips(){
+  const chips=document.getElementById('active-filter-chips');
+  chips.innerHTML='';
+  let any=false;
+  Object.entries(activeFilters).forEach(([cat,tags])=>{
+    tags.forEach(tag=>{
+      any=true;
+      const chip=document.createElement('div');chip.className='filter-chip';
+      chip.innerHTML=`<span>${tag}</span><span class="filter-chip-x" onclick="removeFilter('${cat}','${tag}')">×</span>`;
+      chips.appendChild(chip);
+    });
+  });
+  document.getElementById('clear-filters-btn').style.display=any?'':'none';
+  document.getElementById('filter-toggle-btn').classList.toggle('active',any||filterPanelOpen);
+}
+
+function removeFilter(cat,tag){
+  if(activeFilters[cat]){activeFilters[cat].delete(tag);if(!activeFilters[cat].size)delete activeFilters[cat];}
+  buildFilterPanel();updateFilterChips();buildStageLibrary();
+}
+
+function clearAllFilters(){
+  activeFilters={};buildFilterPanel();updateFilterChips();buildStageLibrary();
+}
+
+function toggleFilterPanel(){
+  filterPanelOpen=!filterPanelOpen;
+  const panel=document.getElementById('filter-panel');
+  panel.style.display=filterPanelOpen?'block':'none';
+  if(filterPanelOpen)buildFilterPanel();
+  document.getElementById('filter-toggle-btn').classList.toggle('active',filterPanelOpen||Object.keys(activeFilters).length>0);
+}
+
+function stageMatchesFilters(stage){
+  // AND across filter categories, OR within each category
+  return Object.entries(activeFilters).every(([cat,tags])=>{
+    if(!tags.size)return true;
+    const stageTags=stage.tags||[];
+    return [...tags].some(t=>stageTags.includes(t));
+  });
+}
+
+// ─── USER STAGE MANAGEMENT ─────────────────────
+function openAddStageModal(){
+  // Pre-fill from any currently selected stage
+  ['stg-name','stg-note','stg-engines'].forEach(id=>document.getElementById(id).value='');
+  ['stg-dry','stg-prop','stg-thrust','stg-isp'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stg-res').value=2;
+  document.getElementById('stg-is-booster').checked=false;
+  document.getElementById('stg-new-cat-wrap').style.display='none';
+  // Populate custom categories in dropdown
+  const sel=document.getElementById('stg-category');
+  // Remove old custom options (keep first 5 built-in + __new__)
+  while(sel.options.length>5)sel.remove(4); // remove before __new__
+  Object.keys(userStagesByCategory).filter(k=>!Object.keys(STAGE_LIBRARY).includes(k)).forEach(k=>{
+    const o=document.createElement('option');o.value=k;o.textContent=k+' (custom)';
+    sel.insertBefore(o,sel.lastElementChild);
+  });
+  sel.value='Upper Stages';
+  openModal('modal-add-stage');
+  setTimeout(()=>document.getElementById('stg-name').focus(),100);
+}
+
+function onStageCatChange(val){
+  document.getElementById('stg-new-cat-wrap').style.display=val==='__new__'?'grid':'none';
+}
+
+function doAddStage(andSave){
+  const name=document.getElementById('stg-name').value.trim();
+  if(!name){alert('Please enter a stage name.');return;}
+  let cat=document.getElementById('stg-category').value;
+  if(cat==='__new__'){
+    cat=document.getElementById('stg-new-cat').value.trim()||'Custom';
+  }
+  const stage={
+    name,
+    dry:    parseFloat(document.getElementById('stg-dry').value)||0,
+    prop:   parseFloat(document.getElementById('stg-prop').value)||0,
+    thrust: parseFloat(document.getElementById('stg-thrust').value)||0,
+    isp:    parseFloat(document.getElementById('stg-isp').value)||1,
+    res:    parseFloat(document.getElementById('stg-res').value)||2,
+    engines:document.getElementById('stg-engines').value.trim()||'—',
+    note:   document.getElementById('stg-note').value.trim(),
+    tags:   document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    isBooster:document.getElementById('stg-is-booster').checked,
+    _category:cat,
+  };
+  if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
+  userStagesByCategory[cat].push(stage);
+  if(andSave){
+    downloadJSON(stage,(name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase())+'_stage.json');
+  }
+  closeModal('modal-add-stage');
+  buildStageLibrary();
+}
+
+function loadUserStageFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const s=JSON.parse(e.target.result);
+      if(!s.name||s.dry===undefined){alert('Invalid stage file: missing name or dry mass.');return;}
+      const cat=s._category||'Custom';
+      if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
+      userStagesByCategory[cat].push(s);
+      buildStageLibrary();
+    }catch(err){alert('Invalid stage JSON: '+err.message);}
+  };
+  reader.readAsText(file);input.value='';
+}
+
+// ─── INIT ────────────────────────────────────────
+buildTable();
+buildPresets();
+buildOrbitCategories();
+buildSiteSelector();
+buildStageLibrary();
+buildCaseList();
+updateFilterChips();
+applyTheme('perigee');
+
+// Delegated listeners for user-defined tracking
+document.getElementById('stage-tbody').addEventListener('input',e=>{
+  if(_suppressUD)return;
+  // Clear the library name for the column being manually edited
+  const td=e.target.closest('td');
+  const tr=e.target.closest('tr');
+  if(td&&tr){
+    const colIdx=[...tr.cells].indexOf(td)-1; // -1 for label column
+    if(colIdx>=0&&colIdx<15){currentStageNames[colIdx]=null;stageSaved[colIdx]=false;}
+    buildStageComposition();
+  }
+  markLVUserDefined();
+});
+['fairing-mass','fairing-jettison','b_dry','b_prop','b_thrust','b_isp','b_res','num-boosters'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('change',()=>markLVUserDefined());
+});
+</script>
+
+<!-- MODAL: Theme editor -->
+
+
+<!-- ── MODAL: Save Performance Case ── -->
+<div class="modal-overlay" id="modal-save-case" style="display:none">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">Save Performance Case</span>
+      <button class="modal-close" onclick="closeModal('modal-save-case')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Case Label</label>
+      <input type="text" id="case-label-input" placeholder="e.g. LEO 185 km — KSC" maxlength="80">
+      <div class="save-note" style="margin-top:8px;">
+        Saves the current result alongside any other cases for this vehicle.
+        Download all cases as a single .json file from the cases panel.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-case')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveCase()">Save Case</button>
+    </div>
+  </div>
+</div>
+<script>
+// Position fixed tooltips near their trigger
+document.addEventListener('mousemove',e=>{
+  const tip=e.target.closest('.info-tip');
+  if(!tip)return;
+  const box=tip.getBoundingClientRect();
+  const txt=tip.querySelector('.tip-text');
+  if(!txt)return;
+  txt.style.left=box.left+'px';
+  txt.style.top=(box.top-txt.offsetHeight-8)+'px';
+});
+</script>
+
+<!-- ── MODAL: Stage / Vehicle Detail ── -->
+<div class="modal-overlay" id="modal-stage-detail" style="display:none">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="sdm-title">Stage Details</span>
+      <button class="modal-close" onclick="closeModal('modal-stage-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="sdm-body"></div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-stage-detail')">Close</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
