@@ -1992,14 +1992,14 @@ function loadOrbitFile(input){
   reader.onload=e=>{
     try{
       const o=JSON.parse(e.target.result);
-      if(!o.mode){alert('Invalid orbit file: missing mode field.');return;}
+      if(!o.mode){showAlert('Invalid orbit file: missing mode field.','Invalid File');return;}
       const cat=o._category||'Custom';
       if(!userOrbitsByCategory[cat])userOrbitsByCategory[cat]=[];
       const idx=userOrbitsByCategory[cat].length;
       userOrbitsByCategory[cat].push(o);
       const key=`uorbit_${cat}_${idx}`;
       loadOrbitPreset(o,key);
-    }catch(err){alert('Invalid orbit JSON: '+err.message);}
+    }catch(err){showAlert('Invalid orbit JSON: '+err.message,'Invalid File');}
   };
   reader.readAsText(file);input.value='';
 }
@@ -2362,21 +2362,26 @@ function openSaveLVModal(){document.getElementById('lv-save-name').value='';docu
  */
 function progUseCurrentVehicle() {
   if (typeof PROG_ACTIVE_PROGRAM === 'undefined' || !PROG_ACTIVE_PROGRAM) {
-    alert('No active Program. Open the Program tab first.');
+    showAlert('No active Program. Open the Program tab first.', 'No Program');
     return;
   }
   const name = (loadedVehicleName || document.getElementById('lv-save-name')?.value || 'Vehicle').trim() || 'Vehicle';
   const obj  = buildLVObject(name, '');
   obj.refId  = typeof progUUID === 'function' ? progUUID() : (Date.now().toString(36));
+  const _doAdd = () => {
+    if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
+    showAlert('Added "' + obj.name + '" to Program vehicle definitions.', 'Vehicle Added');
+  };
   const existing = PROG_ACTIVE_PROGRAM.vehicleDefinitions.find(v => v.name === obj.name);
   if (existing) {
-    if (!confirm('Replace existing "' + obj.name + '" in Program?')) return;
-    Object.assign(existing, obj);
+    showConfirm('Replace Vehicle', 'Replace existing "' + obj.name + '" in Program?', () => {
+      Object.assign(existing, obj);
+      _doAdd();
+    }, 'Replace');
   } else {
     PROG_ACTIVE_PROGRAM.vehicleDefinitions.push(obj);
+    _doAdd();
   }
-  if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
-  alert('Added "' + obj.name + '" to Program vehicle definitions.');
 }
 function doSaveLV(){
   const name=document.getElementById('lv-save-name').value.trim()||'LV';
@@ -2389,7 +2394,7 @@ function savePerformance(){openSaveCaseModal();} // legacy alias
 function loadLVFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVObject(obj);if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();}}catch(err){alert('Invalid LV JSON: '+err.message);}};
+  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVObject(obj);if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();}}catch(err){showAlert('Invalid LV JSON: '+err.message,'Invalid File');}};
   reader.readAsText(file);input.value='';
 }
 function applyLVObject(obj){
@@ -2463,6 +2468,12 @@ function showConfirm(title, message, onConfirm, confirmLabel) {
   btn.textContent = confirmLabel || 'Confirm';
   btn.onclick = () => { closeModal('modal-confirm'); onConfirm(); };
   openModal('modal-confirm');
+}
+/** Show a themed one-button alert dialog. */
+function showAlert(message, title) {
+  document.getElementById('modal-alert-title').textContent = title || 'Notice';
+  document.getElementById('modal-alert-msg').textContent   = message;
+  openModal('modal-alert');
 }
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.style.display='none';});
 
@@ -2643,7 +2654,7 @@ function teExportJSON(){
 }
 function saveThemeFromEditor(){const txt=document.getElementById('theme-editor').value;try{const t=JSON.parse(txt);downloadJSON(t,(t.name||'theme').replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_theme.json');}catch(e){document.getElementById('theme-error').textContent='// JSON parse error: '+e.message;document.getElementById('theme-error').style.display='block';}}
 function saveTheme(){const t=getTheme(activeThemeKey);downloadJSON(t,(t.name||activeThemeKey).replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_theme.json');}
-function loadThemeFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const t=JSON.parse(e.target.result);const key='custom_'+(t.name||'theme').replace(/\s+/g,'_').toLowerCase();customThemes[key]=t;rebuildThemeSelect();applyTheme(key);}catch(err){alert('Invalid theme JSON: '+err.message);}};reader.readAsText(file);input.value='';}
+function loadThemeFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const t=JSON.parse(e.target.result);const key='custom_'+(t.name||'theme').replace(/\s+/g,'_').toLowerCase();customThemes[key]=t;rebuildThemeSelect();applyTheme(key);}catch(err){showAlert('Invalid theme JSON: '+err.message,'Invalid File');}};reader.readAsText(file);input.value='';}
 
 
 // ─── STAGE LIBRARY ────────────────────────────
@@ -3193,7 +3204,7 @@ function buildCaseList(){
 }
 
 function openSaveCaseModal(){
-  if(!lastResult){alert('Run a calculation first.');return;}
+  if(!lastResult){showAlert('Run a calculation first.','No Results');return;}
   // Auto-suggest label from site + orbit
   const site=activeSiteKey||'Custom';
   const orbit=lastResult.modeLabel||'';
@@ -3236,7 +3247,7 @@ function viewCase(i){
 // loadVehicleForCases removed — loadLVFile + applyLVObject handle both pages
 
 function downloadAllCases(){
-  if(!performanceCases.length){alert('No cases to download.');return;}
+  if(!performanceCases.length){showAlert('No cases to download.','No Data');return;}
   // Bundle vehicle config + cases as a single loadable file
   const obj=buildLVObject(loadedVehicleName||'vehicle','');
   downloadJSON(obj,((loadedVehicleName||'vehicle').replace(/[^a-z0-9_-]/gi,'_').toLowerCase())+'.json');
@@ -3308,7 +3319,7 @@ function advLoadStage(input){
     try{
       _advStageObj=JSON.parse(e.target.result);
       openAdvSlotModal();
-    }catch(err){alert('Invalid stage JSON.');}
+    }catch(err){showAlert('Invalid stage JSON.','Invalid File');}
   };
   reader.readAsText(file);input.value='';
 }
@@ -4182,7 +4193,7 @@ function onStageCatChange(val){
 
 function doAddStage(andSave){
   const name=document.getElementById('stg-name').value.trim();
-  if(!name){alert('Please enter a stage name.');return;}
+  if(!name){showAlert('Please enter a stage name.','Validation');return;}
   let cat=document.getElementById('stg-category').value;
   if(cat==='__new__'){
     cat=document.getElementById('stg-new-cat').value.trim()||'Custom';
@@ -4215,13 +4226,13 @@ function loadUserStageFile(input){
   reader.onload=e=>{
     try{
       const s=JSON.parse(e.target.result);
-      if(!s.name||s.dry===undefined){alert('Invalid stage file: missing name or dry mass.');return;}
+      if(!s.name||s.dry===undefined){showAlert('Invalid stage file: missing name or dry mass.','Invalid File');return;}
       s._userGenerated=true; // mark as user content on import
       const cat=s._category||'Custom';
       if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
       userStagesByCategory[cat].unshift(s); // prepend so it appears first
       buildStageLibrary();
-    }catch(err){alert('Invalid stage JSON: '+err.message);}
+    }catch(err){showAlert('Invalid stage JSON: '+err.message,'Invalid File');}
   };
   reader.readAsText(file);input.value='';
 }
@@ -5627,20 +5638,22 @@ function progHandleVehicleFile(event) {
     try {
       const obj = JSON.parse(e.target.result);
       if (!obj.stageData || !Array.isArray(obj.stageData)) {
-        alert('Not a valid LV Calculator vehicle file (missing stageData).');
+        showAlert('Not a valid LV Calculator vehicle file (missing stageData).', 'Invalid File');
         return;
       }
       const existing = PROG_ACTIVE_PROGRAM.vehicleDefinitions.find(v => v.name === (obj.name || 'Vehicle'));
+      const _doImport = () => { progRenderVehicleList(); progRenderBandView(); };
       if (existing) {
-        if (!confirm('Replace existing "' + existing.name + '" definition?')) return;
-        Object.assign(existing, obj);
+        showConfirm('Replace Definition', 'Replace existing "' + existing.name + '" definition?', () => {
+          Object.assign(existing, obj);
+          _doImport();
+        }, 'Replace');
       } else {
         PROG_ACTIVE_PROGRAM.vehicleDefinitions.push(Object.assign({ refId: progUUID() }, obj));
+        _doImport();
       }
-      progRenderVehicleList();
-      progRenderBandView();
     } catch (err) {
-      alert('Invalid vehicle JSON: ' + err.message);
+      showAlert('Invalid vehicle JSON: ' + err.message, 'Invalid File');
     }
     event.target.value = '';
   };
@@ -6676,7 +6689,7 @@ function progCreateLaunchVehicle() {
     progUpdateEventEditor(ev.eventId);
     progRenderVehicleList();
   } else {
-    alert('LAUNCH failed: ' + (ev.warnings || []).join('; '));
+    showAlert('LAUNCH failed: ' + (ev.warnings || []).join('; '), 'Launch Error');
   }
   progRenderBandView();
 }
@@ -7643,7 +7656,7 @@ function progNmEdgeClick(edgeId) {
 
   // Pick a vehicle
   const fvList = Object.values(PROG_ACTIVE_PROGRAM.vehicles).filter(fv => fv.status !== 'EXPENDED');
-  if (!fvList.length) { alert('No active vehicles. Load a demo or insert a LAUNCH first.'); return; }
+  if (!fvList.length) { showAlert('No active vehicles. Load a demo or insert a LAUNCH first.', 'No Vehicles'); return; }
   const selEv = PROG_BAND_STATE.selId
     ? PROG_ACTIVE_PROGRAM.events.find(e => e.eventId === PROG_BAND_STATE.selId)
     : null;
@@ -7683,7 +7696,7 @@ function progNmEdgeClick(edgeId) {
 
 /** Open the "Add Custom Node" modal. */
 function progNmOpenAddNode() {
-  if (!PROG_ACTIVE_PROGRAM) { alert('No active program.'); return; }
+  if (!PROG_ACTIVE_PROGRAM) { showAlert('No active program.', 'No Program'); return; }
   // Clear fields
   ['nm-cn-label','nm-cn-sub','nm-cn-alt','nm-cn-inc','nm-cn-dv','nm-cn-color'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -7781,7 +7794,7 @@ function progNmSaveCustomNode() {
   const color = g('nm-cn-color')?.value || '#c0c4e8';
   const connectTo = g('nm-cn-connect')?.value || '';
 
-  if (!label) { alert('Label is required.'); return; }
+  if (!label) { showAlert('Label is required.', 'Validation'); return; }
 
   const { cx, cy } = _progNmAutoPos(zone, alt);
   const nodeId = 'custom-' + Date.now().toString(36);
@@ -8737,7 +8750,7 @@ function _presetToLVObject(p) {
 
 /** Open the import-vehicle modal and populate the list. */
 function progNmOpenImportVehicle() {
-  if (!PROG_ACTIVE_PROGRAM) { alert('No active Program. Open the Program tab first.'); return; }
+  if (!PROG_ACTIVE_PROGRAM) { showAlert('No active Program. Open the Program tab first.', 'No Program'); return; }
   openModal('modal-prog-import-vehicle');
   document.getElementById('prog-import-vehicle-search').value = '';
   progNmImportVehicleFilter();
@@ -8798,22 +8811,24 @@ function progNmImportVehicle(key, btn) {
   const obj = Object.assign(_presetToLVObject(p), { refId: progUUID() });
 
   const existing = PROG_ACTIVE_PROGRAM.vehicleDefinitions.find(v => v.name === obj.name);
+  const _doAdd = () => {
+    progRenderVehicleList();
+    if (typeof progRenderBandView === 'function') progRenderBandView();
+    if (btn) {
+      btn.textContent = '✓ Added';
+      btn.style.color = 'var(--accent)';
+      btn.style.borderColor = 'var(--accent)';
+      setTimeout(() => { btn.textContent = '↺ Replace'; btn.style.color = 'var(--text-dim)'; btn.style.borderColor = ''; progNmImportVehicleFilter(); }, 1000);
+    }
+  };
   if (existing) {
-    if (!confirm('Replace existing "' + obj.name + '" in Program?')) return;
-    Object.assign(existing, obj);
+    showConfirm('Replace Vehicle', 'Replace existing "' + obj.name + '" in Program?', () => {
+      Object.assign(existing, obj);
+      _doAdd();
+    }, 'Replace');
   } else {
     PROG_ACTIVE_PROGRAM.vehicleDefinitions.push(obj);
-  }
-  progRenderVehicleList();
-  if (typeof progRenderBandView === 'function') progRenderBandView();
-
-  // Flash button as confirmation
-  if (btn) {
-    const orig = btn.textContent;
-    btn.textContent = '✓ Added';
-    btn.style.color = 'var(--accent)';
-    btn.style.borderColor = 'var(--accent)';
-    setTimeout(() => { btn.textContent = '↺ Replace'; btn.style.color = 'var(--text-dim)'; btn.style.borderColor = ''; progNmImportVehicleFilter(); }, 1000);
+    _doAdd();
   }
 }
 
@@ -9313,23 +9328,99 @@ function progArtUploadFile(input) {
 
 /** Remove an art entry; unassigns from all vehicleDefs and live FlightVehicles. */
 function progArtDelete(artId) {
-  if (!confirm('Delete this art? Vehicles using it will lose their icon.')) return;
-  delete PROG_ART_REGISTRY[artId];
-  _progArtImgCache.delete(artId);
-  _progArtDbDelete(artId).catch(err => console.warn('[Art] DB delete:', err));
-  if (PROG_ACTIVE_PROGRAM) {
-    (PROG_ACTIVE_PROGRAM.vehicleDefinitions || []).forEach(vd => { if (vd.artKey === artId) vd.artKey = null; });
-    Object.values(PROG_ACTIVE_PROGRAM.vehicles || {}).forEach(fv => { if (fv.artKey === artId) fv.artKey = null; });
-  }
-  _progArtRebuildManagerList();
-  if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
-  if (typeof progRenderBandView    === 'function') progRenderBandView();
+  showConfirm('Delete Art', 'Delete this art? Vehicles using it will lose their icon.', () => {
+    delete PROG_ART_REGISTRY[artId];
+    _progArtImgCache.delete(artId);
+    _progArtDbDelete(artId).catch(err => console.warn('[Art] DB delete:', err));
+    if (PROG_ACTIVE_PROGRAM) {
+      (PROG_ACTIVE_PROGRAM.vehicleDefinitions || []).forEach(vd => { if (vd.artKey === artId) vd.artKey = null; });
+      Object.values(PROG_ACTIVE_PROGRAM.vehicles || {}).forEach(fv => { if (fv.artKey === artId) fv.artKey = null; });
+    }
+    _progArtRebuildManagerList();
+    if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
+    if (typeof progRenderBandView    === 'function') progRenderBandView();
+  }, 'Delete');
 }
 
 // ── Art Manager modal ─────────────────────────────────────────────────────────
 
 function progOpenArtManager() {
   showPage('art');
+}
+
+/** Load art from an external URL (AWS S3, GCS, any public image). */
+function progArtLoadFromURL() {
+  const urlEl = document.getElementById('art-url-input');
+  const url = urlEl?.value.trim();
+  if (!url) { showAlert('Enter an image URL first.', 'No URL'); return; }
+
+  const nameEl = document.getElementById('art-upload-name');
+  const name = nameEl?.value.trim() ||
+    url.split('/').pop().replace(/[?#].*/, '').replace(/\.[^.]+$/, '') || 'Art';
+  const artId = 'art_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  // Try fetch → blob → base64 (works when server allows CORS)
+  fetch(url, { mode: 'cors' })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.blob();
+    })
+    .then(blob => new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = e => res({ dataURL: e.target.result, mimeType: blob.type });
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    }))
+    .catch(() => {
+      // CORS blocked or fetch failed — store URL directly; display still works,
+      // canvas taint-checks are wrapped in try/catch elsewhere.
+      return { dataURL: url, mimeType: url.match(/\.svg/i) ? 'image/svg+xml' : 'image/png', urlDirect: true };
+    })
+    .then(({ dataURL, mimeType, urlDirect }) => {
+      const probe = new Image();
+      if (!urlDirect) probe.crossOrigin = 'anonymous';
+      probe.onload = () => {
+        let finalURL = dataURL, finalW = probe.naturalWidth, finalH = probe.naturalHeight;
+        // Auto-crop only works on same-origin / CORS-OK images
+        if (!urlDirect && mimeType !== 'image/svg+xml' && finalW && finalH) {
+          try {
+            const tcvs = document.createElement('canvas');
+            tcvs.width = finalW; tcvs.height = finalH;
+            const tctx = tcvs.getContext('2d');
+            tctx.drawImage(probe, 0, 0);
+            const px = tctx.getImageData(0, 0, finalW, finalH).data;
+            let x0 = finalW, y0 = finalH, x1 = -1, y1 = -1;
+            for (let y = 0; y < finalH; y++) {
+              for (let x = 0; x < finalW; x++) {
+                if (px[(y * finalW + x) * 4 + 3] > 0) {
+                  if (x < x0) x0 = x; if (x > x1) x1 = x;
+                  if (y < y0) y0 = y; if (y > y1) y1 = y;
+                }
+              }
+            }
+            if (x1 >= 0 && (x0 > 0 || y0 > 0 || x1 < finalW - 1 || y1 < finalH - 1)) {
+              const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+              const ccvs = document.createElement('canvas');
+              ccvs.width = cw; ccvs.height = ch;
+              ccvs.getContext('2d').drawImage(probe, x0, y0, cw, ch, 0, 0, cw, ch);
+              finalURL = ccvs.toDataURL(mimeType);
+              finalW = cw; finalH = ch;
+            }
+          } catch (_) {}
+        }
+        const entry = { artId, name, dataURL: finalURL, mimeType, width: finalW, height: finalH,
+                        monochrome: _artSampleMonochrome(probe),
+                        ...(urlDirect ? { urlDirect: true, sourceURL: url } : {}) };
+        PROG_ART_REGISTRY[artId] = entry;
+        _progArtPreload(entry);
+        if (!urlDirect) _progArtDbPut(entry).catch(err => console.warn('[Art] DB write:', err));
+        if (nameEl) nameEl.value = '';
+        if (urlEl) urlEl.value = '';
+        _progArtRebuildManagerList();
+      };
+      probe.onerror = () => showAlert('Could not load image from URL.', 'Load Error');
+      probe.src = dataURL;
+    });
 }
 
 function _progArtRebuildManagerList() {
@@ -9589,7 +9680,7 @@ const PROG_P9_TEST_RESULTS = (() => { try {
 
 function progExportConops() {
   const canvas = document.getElementById('prog-band-canvas');
-  if (!canvas) { alert('Band View not available.'); return; }
+  if (!canvas) { showAlert('Band View not available.', 'Unavailable'); return; }
   // Make sure we're in timeline mode
   if (document.getElementById('prog-band-wrap')?.style.display === 'none') {
     progSwitchView('timeline');
@@ -9638,9 +9729,9 @@ function _progHandleLoadFile(e) {
 
 function progLoadProgramJSON(jsonStr) {
   let data;
-  try { data = JSON.parse(jsonStr); } catch(err) { alert('Invalid JSON: ' + err.message); return; }
+  try { data = JSON.parse(jsonStr); } catch(err) { showAlert('Invalid JSON: ' + err.message, 'Invalid File'); return; }
   if (data.formatVersion !== 3) {
-    alert('Expected formatVersion 3, got ' + data.formatVersion + '.\nThis file may be from an older version.');
+    showAlert('Expected formatVersion 3, got ' + data.formatVersion + '.\nThis file may be from an older version.', 'Version Mismatch');
     return;
   }
   delete data.formatVersion;
@@ -9759,7 +9850,7 @@ function progSavePad() {
   const name    = (document.getElementById('pad-edit-name')?.value    ?? '').trim();
   const siteKey = (document.getElementById('pad-edit-site')?.value    ?? '').trim();
   const recycle = parseFloat(document.getElementById('pad-edit-recycle')?.value ?? 72) || 72;
-  if (!name) { alert('Pad name is required.'); return; }
+  if (!name) { showAlert('Pad name is required.', 'Validation'); return; }
 
   if (_progEditPadIdx < 0) {
     // New pad
@@ -9777,10 +9868,12 @@ function progSavePad() {
 
 function progDeletePad() {
   if (!PROG_ACTIVE_PROGRAM || _progEditPadIdx < 0) return;
-  if (!confirm('Delete pad "' + (PROG_ACTIVE_PROGRAM.pads[_progEditPadIdx]?.name ?? '') + '"?')) return;
-  PROG_ACTIVE_PROGRAM.pads.splice(_progEditPadIdx, 1);
-  closeModal('modal-prog-pad');
-  progRenderSpaceport();
+  const padName = PROG_ACTIVE_PROGRAM.pads[_progEditPadIdx]?.name ?? '';
+  showConfirm('Delete Pad', 'Delete pad "' + padName + '"?', () => {
+    PROG_ACTIVE_PROGRAM.pads.splice(_progEditPadIdx, 1);
+    closeModal('modal-prog-pad');
+    progRenderSpaceport();
+  }, 'Delete');
 }
 
 // ── Closure bar ───────────────────────────────────────────────────────────────
@@ -10002,6 +10095,22 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   </div>
 </div>
 
+<!-- ── MODAL: Alert (one-button notice) ── -->
+<div class="modal-overlay" id="modal-alert" style="display:none">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-alert-title">Notice</span>
+      <button class="modal-close" onclick="closeModal('modal-alert')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-alert-msg" style="font-size:13px;line-height:1.55;color:var(--text);margin:0;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-alert')">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── MODAL: Add Edge (ΔV calculator) ── -->
 <div class="modal-overlay" id="modal-nm-edge" style="display:none">
   <div class="modal" style="max-width:400px;">
@@ -10052,6 +10161,24 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
         </div>
         <div style="font-family:var(--mono);font-size:7px;color:var(--text-dim);opacity:.6;">
           PNG · SVG · JPG · WebP · persists in IndexedDB
+        </div>
+        <!-- From URL -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:6px;">FROM URL</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="art-url-input" type="url" placeholder="https://…"
+              style="flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--text);
+                font-family:var(--mono);font-size:10px;padding:5px 8px;outline:none;"
+              onkeydown="if(event.key==='Enter')progArtLoadFromURL()">
+            <button onclick="progArtLoadFromURL()"
+              style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--accent);
+                color:var(--accent);padding:5px 10px;cursor:pointer;white-space:nowrap;letter-spacing:.06em;flex-shrink:0;">
+              Load
+            </button>
+          </div>
+          <div style="font-family:var(--mono);font-size:7px;color:var(--text-dim);opacity:.6;margin-top:4px;">
+            AWS S3 · GCS · any public image URL
+          </div>
         </div>
       </div>
 

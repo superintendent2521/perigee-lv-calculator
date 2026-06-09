@@ -107,9 +107,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* IN-APP DIALOG */
+#pm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center;}
+#pm-dialog{background:var(--surface2);border:1px solid var(--border2);min-width:300px;max-width:460px;width:100%;}
+#pm-dlg-title{padding:11px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text-bright);}
+#pm-dlg-body{padding:16px;}
+#pm-dlg-body p{font-size:13px;line-height:1.55;color:var(--text);margin:0 0 12px;}
+#pm-dlg-body input{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;margin-top:2px;}
+#pm-dlg-body input:focus{border-color:var(--accent);}
+#pm-dlg-btns{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
 </style>
 </head>
 <body>
+
+<!-- In-app dialog overlay -->
+<div id="pm-overlay">
+  <div id="pm-dialog">
+    <div id="pm-dlg-title">Notice</div>
+    <div id="pm-dlg-body"><p id="pm-dlg-msg"></p><input id="pm-dlg-input" type="text" style="display:none;"></div>
+    <div id="pm-dlg-btns" id="pm-dlg-btns"></div>
+  </div>
+</div>
 
 <div id="hdr">
   <h1>RP — Preset Manager</h1>
@@ -154,6 +173,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 
 <script>
 'use strict';
+
+// ══════════════════════════════════════════════════════════
+//  IN-APP DIALOG SYSTEM  (replaces alert / confirm / prompt)
+// ══════════════════════════════════════════════════════════
+function _pmDlg({ title, msg, input, inputVal, inputPlaceholder, buttons }) {
+  document.getElementById('pm-dlg-title').textContent = title || 'Notice';
+  document.getElementById('pm-dlg-msg').textContent   = msg   || '';
+  const inp = document.getElementById('pm-dlg-input');
+  if (input) {
+    inp.style.display = 'block';
+    inp.value = inputVal || '';
+    inp.placeholder = inputPlaceholder || '';
+    setTimeout(() => { inp.focus(); inp.select(); }, 60);
+  } else {
+    inp.style.display = 'none';
+  }
+  const btns = document.getElementById('pm-dlg-btns');
+  btns.innerHTML = '';
+  (buttons || [{ label: 'OK', primary: true }]).forEach(b => {
+    const el = document.createElement('button');
+    el.className = 'btn' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '');
+    el.textContent = b.label;
+    el.onclick = () => { _pmClose(); b.action && b.action(); };
+    btns.appendChild(el);
+  });
+  const ov = document.getElementById('pm-overlay');
+  ov.style.display = 'flex';
+  if (input) {
+    inp.onkeydown = e => {
+      if (e.key === 'Enter') { const ok = buttons?.find(b => b.primary); if (ok) { _pmClose(); ok.action && ok.action(inp.value); } }
+      if (e.key === 'Escape') _pmClose();
+    };
+  }
+}
+function _pmClose() { document.getElementById('pm-overlay').style.display = 'none'; }
+
+function pmAlert(msg, title) {
+  _pmDlg({ title: title || 'Notice', msg, buttons: [{ label: 'OK', primary: true }] });
+}
+function pmConfirm(title, msg, onOk, okLabel) {
+  _pmDlg({ title, msg, buttons: [
+    { label: 'Cancel' },
+    { label: okLabel || 'Confirm', danger: !okLabel || okLabel==='Delete', primary: !!okLabel, action: onOk },
+  ]});
+}
+function pmPrompt(title, msg, def, onOk, placeholder) {
+  _pmDlg({ title, msg, input: true, inputVal: def || '', inputPlaceholder: placeholder || '',
+    buttons: [
+      { label: 'Cancel' },
+      { label: 'OK', primary: true, action: (val) => { if (typeof onOk === 'function') onOk(document.getElementById('pm-dlg-input').value.trim()); } },
+    ]
+  });
+}
+// Close on overlay click
+document.addEventListener('click', e => { if (e.target.id === 'pm-overlay') _pmClose(); });
 
 // ══════════════════════════════════════════════════════════
 //  STATE
@@ -246,9 +320,9 @@ function extractSection(source, varName, openBr, closeBr) {
 
 function parseAll() {
   const sl = extractSection(src, 'STAGE_LIBRARY', '{', '}');
-  if (sl) { try { stageLib = (0, eval)('(' + sl.code + ')'); } catch(e) { alert('Parse STAGE_LIBRARY failed:\n' + e.message); stageLib = {}; } }
+  if (sl) { try { stageLib = (0, eval)('(' + sl.code + ')'); } catch(e) { pmAlert('Parse STAGE_LIBRARY failed:\n' + e.message, 'Parse Error'); stageLib = {}; } }
   const bp = extractSection(src, 'BUILTIN_PRESETS', '[', ']');
-  if (bp) { try { presets = (0, eval)('(' + bp.code + ')'); } catch(e) { alert('Parse BUILTIN_PRESETS failed:\n' + e.message); presets = []; } }
+  if (bp) { try { presets = (0, eval)('(' + bp.code + ')'); } catch(e) { pmAlert('Parse BUILTIN_PRESETS failed:\n' + e.message, 'Parse Error'); presets = []; } }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -450,64 +524,70 @@ function saveStageEdits(oldCat, idx) {
 }
 
 function deleteStage(cat, idx) {
-  if (!confirm(`Delete "${stageLib[cat]?.[idx]?.name||'this stage'}"?`)) return;
-  stageLib[cat].splice(idx, 1);
-  if (!stageLib[cat].length) delete stageLib[cat];
-  if (selStage?.cat === cat && selStage?.idx === idx) selStage = null;
-  setDirty(true);
-  renderStagesList();
-  document.getElementById('stage-editor').innerHTML = '<div class="placeholder">Select a stage to edit</div>';
+  pmConfirm('Delete Stage', 'Delete "' + (stageLib[cat]?.[idx]?.name||'this stage') + '"?', () => {
+    stageLib[cat].splice(idx, 1);
+    if (!stageLib[cat].length) delete stageLib[cat];
+    if (selStage?.cat === cat && selStage?.idx === idx) selStage = null;
+    setDirty(true);
+    renderStagesList();
+    document.getElementById('stage-editor').innerHTML = '<div class="placeholder">Select a stage to edit</div>';
+  }, 'Delete');
 }
 
 function addStageToCategory(cat) {
-  const name = prompt('Stage name:', 'New Stage');
-  if (!name) return;
-  if (!stageLib[cat]) stageLib[cat] = [];
-  stageLib[cat].push({name, dry:0, prop:0, thrust:0, isp:300, res:2, tags:[]});
-  const idx = stageLib[cat].length - 1;
-  setDirty(true);
-  renderStagesList();
-  selectStage(cat, idx);
+  pmPrompt('New Stage', 'Stage name:', 'New Stage', name => {
+    if (!name) return;
+    if (!stageLib[cat]) stageLib[cat] = [];
+    stageLib[cat].push({name, dry:0, prop:0, thrust:0, isp:300, res:2, tags:[]});
+    const idx = stageLib[cat].length - 1;
+    setDirty(true);
+    renderStagesList();
+    selectStage(cat, idx);
+  });
 }
 
 function promptAddCategory() {
-  const name = prompt('Category name:');
-  if (!name || stageLib[name]) return;
-  stageLib[name] = [];
-  setDirty(true);
-  renderStagesList();
+  pmPrompt('New Category', 'Category name:', '', name => {
+    if (!name || stageLib[name]) return;
+    stageLib[name] = [];
+    setDirty(true);
+    renderStagesList();
+  });
 }
 
 function promptAddStage() {
   const cats = Object.keys(stageLib);
-  if (!cats.length) { alert('Add a category first.'); return; }
-  const ans = prompt('Add to category (name or number):\n\n' + cats.map((c,i)=>`${i+1}.  ${c}`).join('\n'));
-  if (!ans) return;
-  const resolved = isNaN(ans.trim()) ? ans.trim() : cats[parseInt(ans.trim())-1];
-  if (!resolved || !stageLib[resolved]) { alert('Invalid selection.'); return; }
-  addStageToCategory(resolved);
+  if (!cats.length) { pmAlert('Add a category first.', 'No Categories'); return; }
+  pmPrompt('Add Stage', 'Category (name or number):\n' + cats.map((c,i)=>`${i+1}. ${c}`).join(', '), '', ans => {
+    if (!ans) return;
+    const resolved = isNaN(ans) ? ans : cats[parseInt(ans)-1];
+    if (!resolved || !stageLib[resolved]) { pmAlert('Invalid selection.', 'Unknown Category'); return; }
+    addStageToCategory(resolved);
+  });
 }
 
 function renameCategory(oldName) {
-  const newName = prompt('Rename category:', oldName);
-  if (!newName || newName === oldName) return;
-  if (stageLib[newName]) { alert('Category already exists.'); return; }
-  const rebuilt = {};
-  for (const [k,v] of Object.entries(stageLib)) rebuilt[k===oldName ? newName : k] = v;
-  stageLib = rebuilt;
-  if (selStage?.cat === oldName) selStage.cat = newName;
-  setDirty(true);
-  renderStagesList();
-  if (selStage) renderStageEditor(stageLib[selStage.cat]?.[selStage.idx], selStage.cat, selStage.idx);
+  pmPrompt('Rename Category', 'New name:', oldName, newName => {
+    if (!newName || newName === oldName) return;
+    if (stageLib[newName]) { pmAlert('Category already exists.', 'Name Taken'); return; }
+    const rebuilt = {};
+    for (const [k,v] of Object.entries(stageLib)) rebuilt[k===oldName ? newName : k] = v;
+    stageLib = rebuilt;
+    if (selStage?.cat === oldName) selStage.cat = newName;
+    setDirty(true);
+    renderStagesList();
+    if (selStage) renderStageEditor(stageLib[selStage.cat]?.[selStage.idx], selStage.cat, selStage.idx);
+  });
 }
 
 function deleteCategory(cat) {
-  if (!confirm(`Delete category "${cat}" and ALL its stages?`)) return;
-  delete stageLib[cat];
-  if (selStage?.cat === cat) selStage = null;
-  setDirty(true);
-  renderStagesList();
-  document.getElementById('stage-editor').innerHTML = '<div class="placeholder">Select a stage to edit</div>';
+  pmConfirm('Delete Category', 'Delete "' + cat + '" and ALL its stages?', () => {
+    delete stageLib[cat];
+    if (selStage?.cat === cat) selStage = null;
+    setDirty(true);
+    renderStagesList();
+    document.getElementById('stage-editor').innerHTML = '<div class="placeholder">Select a stage to edit</div>';
+  }, 'Delete');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -838,28 +918,30 @@ function saveVehicleEdits(idx) {
 }
 
 function deleteVehicle(idx) {
-  if (!confirm(`Delete "${presets[idx]?.name||'this vehicle'}"?`)) return;
-  presets.splice(idx, 1);
-  selVehicle = null;
-  setDirty(true);
-  renderVehiclesList();
-  document.getElementById('vehicle-editor').innerHTML = '<div class="placeholder">Select a vehicle to edit</div>';
+  pmConfirm('Delete Vehicle', 'Delete "' + (presets[idx]?.name||'this vehicle') + '"?', () => {
+    presets.splice(idx, 1);
+    selVehicle = null;
+    setDirty(true);
+    renderVehiclesList();
+    document.getElementById('vehicle-editor').innerHTML = '<div class="placeholder">Select a vehicle to edit</div>';
+  }, 'Delete');
 }
 
 function addVehicle() {
-  const name = prompt('Vehicle name:', 'New Vehicle');
-  if (!name) return;
+  pmPrompt('New Vehicle', 'Vehicle name:', 'New Vehicle', name => {
+    if (!name) return;
   presets.push({
     name, payload: 100, fairingMass: 0, fairingJettison: 0,
     stageNames: [], stages: 1,
-    boosterName: null, boosterCount: 0,
-    site: {lat:28.5, azMin:37, azMax:120},
-    mode: 'orbit', orbit: {perigee:185, apogee:185, inc:28.5},
-    tags: [],
+      boosterName: null, boosterCount: 0,
+      site: {lat:28.5, azMin:37, azMax:120},
+      mode: 'orbit', orbit: {perigee:185, apogee:185, inc:28.5},
+      tags: [],
+    });
+    setDirty(true);
+    renderVehiclesList();
+    selectVehicle(presets.length - 1);
   });
-  setDirty(true);
-  renderVehiclesList();
-  selectVehicle(presets.length - 1);
 }
 
 // ══════════════════════════════════════════════════════════
