@@ -1409,49 +1409,75 @@ async function _luFetchProxy(url, parser) {
 }
 
 // ── b14643.eu fetch + parser ──────────────────────────────────────
-// b14643 uses framesets: Frame.htm wraps Nav.htm + Text.htm.
-// The actual data is always in Text.htm (same directory).
+// The site is mirrored on GitHub: fjmoeller/b14643 (main branch, /b14643/ subfolder).
+// That lets us fetch directly from raw.githubusercontent.com — no CORS proxy needed.
+// Frame.htm pages are framesets; actual data is always in the sibling Text.htm.
+//
+// Table format (3 columns):
+//   col 0 (20%): row label, e.g. "Liftoff weight"
+//   col 1  (5%): unit,      e.g. "t", "kN", "N*s/kg"
+//   col 2 (14%, sometimes colspan=2): numeric value
+// Stage sections are separated by gray rows (bgcolor="#C0C0C0"):
+//   col 0: stage number  ("Stage 1")
+//   col 1: "Name" label
+//   col 2+: engine/stage designation string
+
 async function _luFetchB14643(url) {
-  const fetchURL = url.replace(/Frame\.htm([?#].*)?$/i, 'Text.htm');
-  return _luFetchProxy(fetchURL, _luParseB14643);
+  // Rewrite live URL → raw GitHub URL
+  let fetchURL = url
+    .replace(/^https?:\/\/b14643\.eu\//i,
+             'https://raw.githubusercontent.com/fjmoeller/b14643/main/b14643/')
+    .replace(/Frame\.htm([?#].*)?$/i, 'Text.htm');
+
+  const resp = await fetch(fetchURL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' — ' + fetchURL);
+  const html = await resp.text();
+  if (html.length < 200) throw new Error('Page too short — may be a 404 redirect');
+  return _luParseB14643(html);
 }
 
 function _luParseB14643(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const vehicleFields = {};
   const stages = [];   // [{name, fields}]
-  let current = null;  // null = vehicle-level (before first stage header)
+  let current = null;  // null = vehicle-level
 
-  // Stage section header: row whose full text is short and matches stage/booster patterns
   const stageHdrRE = /^(?:stage\s+\d+|booster|core\s+stage|strap[\s\-]?on|solid\s+rocket)/i;
+  const isGrayCell = c => /^#?c0c0c0$/i.test(c.getAttribute('bgcolor') || '');
 
   doc.querySelectorAll('tr').forEach(row => {
     const cells = [...row.querySelectorAll('td,th')];
     if (!cells.length) return;
 
-    // Detect stage-header row: one cell (or colspan ≥ 2) whose trimmed text is short
-    // and looks like "Stage 1", "Stage 2", "Booster", etc.
-    const rowText = row.textContent.trim().replace(/\s+/g, ' ');
-    const isSpanning = cells.some(c => parseInt(c.getAttribute('colspan') || '1') >= 2);
-    if ((cells.length === 1 || isSpanning) && rowText.length < 80 && stageHdrRE.test(rowText)) {
-      const sFields = {};
-      stages.push({ name: rowText, fields: sFields });
-      current = sFields;
+    // ── Stage header row: first cell is gray AND text looks like "Stage N" ──
+    if (isGrayCell(cells[0])) {
+      const stageLabel = cells[0].textContent.trim().replace(/\s+/g, ' ');
+      if (stageHdrRE.test(stageLabel)) {
+        // Engine/designation is in col 2+ (col 1 = "Name" label)
+        const designation = cells.length > 2
+          ? cells.slice(2).map(c => c.textContent.trim()).filter(Boolean).join(' / ')
+          : '';
+        const sFields = {};
+        if (designation) sFields.engines = { raw: designation, value: designation, unit: '', checked: true };
+        stages.push({ name: designation || stageLabel, fields: sFields });
+        current = sFields;
+      }
       return;
     }
 
-    // Key-value data row (need at least 2 cells)
+    // ── Data row: need at least 3 cells (label | unit | value) ──
     if (cells.length < 2) return;
-    const key = cells[0].textContent.trim().toLowerCase().replace(/\s+/g, ' ');
-    const val = cells[cells.length - 1].textContent.trim();
+    const key     = cells[0].textContent.trim().toLowerCase().replace(/\s+/g, ' ');
+    const unitTxt = cells.length >= 3 ? cells[1].textContent.trim() : '';
+    const numTxt  = cells[cells.length - 1].textContent.trim();
+    // Combine into a single parseable string, e.g. "54.43 t" or "667.2 kN"
+    const val = unitTxt ? numTxt + ' ' + unitTxt : numTxt;
+
     _luMapB14643Field(key, val, current ?? vehicleFields);
   });
 
-  // Derive dry mass (gross − prop) for every bucket, promote stage name
-  stages.forEach(s => {
-    _luDeriveProps(s.fields);
-    if (s.fields._stageName) { s.name = s.fields._stageName; delete s.fields._stageName; }
-  });
+  // Derive dry mass (gross − prop) for every bucket
+  stages.forEach(s => _luDeriveProps(s.fields));
   _luDeriveProps(vehicleFields);
 
   const out = { ...vehicleFields };
@@ -1461,28 +1487,27 @@ function _luParseB14643(html) {
 
 function _luMapB14643Field(key, val, out) {
   if (!val || val.length > 300) return;
-  // Strip parenthetical qualifier from key for base matching, but remember it
   const baseKey = key.replace(/\s*\(.*?\)\s*/g, '').trim();
   const isVac   = /vac/i.test(key);
 
-  // "Name" row = stage/engine designation (use as engines label)
+  // "Name" row (second column of the gray stage header) — fallback if no designation found
   if (key === 'name') {
     const clean = val.replace(/\[.*?\]/g, '').trim();
-    if (clean) { out._stageName = clean; if (!out.engines) out.engines = { raw: clean, value: clean, unit: '', checked: true }; }
+    if (clean && !out.engines) out.engines = { raw: clean, value: clean, unit: '', checked: true };
     return;
   }
-  // "Engines" row (overrides name-derived engine label)
-  if (key === 'engines') {
+  // "Engines" row
+  if (/^engines?$/.test(key)) {
     const clean = val.replace(/\[.*?\]/g, '').trim();
     if (clean) out.engines = { raw: clean, value: clean, unit: '', checked: true };
     return;
   }
-  // "Propellant" = fuel type — stash for tag suggestions
+  // "Propellant" = fuel type
   if (key === 'propellant') {
     out._propellant = val.replace(/\[.*?\]/g, '').trim();
     return;
   }
-  // Liftoff weight (t or kg) — gross/wet mass
+  // Liftoff weight (t or kg) → gross mass
   if (/liftoff weight/.test(key)) {
     const v = luParseKG(val);
     if (v) out.grossMass = { raw: val, value: v, unit: 'kg', checked: false };
@@ -1494,22 +1519,22 @@ function _luMapB14643Field(key, val, out) {
     if (v) out.prop = { raw: val, value: v, unit: 'kg', checked: true };
     return;
   }
-  // Payload weight (vehicle level, t or kg)
+  // Payload weight (vehicle-level, t or kg)
   if (/payload weight/.test(key)) {
     const v = luParseKG(val);
     if (v) out.payload = { raw: val, value: v, unit: 'kg', checked: true };
     return;
   }
-  // Total thrust (kN) — prefer vacuum over sea level
+  // Total thrust (kN) — prefer vacuum
   if (/total thrust/.test(baseKey)) {
     const v = luParseKN(val);
     if (v && (!out.thrust || isVac)) out.thrust = { raw: val, value: v, unit: 'kN', checked: true };
     return;
   }
-  // Specific impulse (N·s/kg) — convert to seconds by ÷ g₀; prefer vacuum
+  // Specific impulse (N*s/kg from site) → seconds (÷ g₀); prefer vacuum
   if (/specific impulse/.test(baseKey)) {
     const v = _luParseNskg(val);
-    if (v && (!out.isp || isVac)) out.isp = { raw: val + ' N·s/kg', value: v, unit: 's', checked: true };
+    if (v && (!out.isp || isVac)) out.isp = { raw: val, value: v, unit: 's', checked: true };
     return;
   }
 }
