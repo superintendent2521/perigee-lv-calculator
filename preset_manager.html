@@ -144,6 +144,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 .lu-err{color:var(--danger);}
 .lu-section{margin-bottom:14px;}
 .lu-section-title{font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+/* b14643 multi-design picker */
+.lu-b14643-picker{padding:16px 0;}
+.lu-b14643-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.lu-b14643-chip{font-family:var(--mono);font-size:10px;padding:7px 16px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;letter-spacing:.06em;transition:all .12s;}
+.lu-b14643-chip:hover{background:var(--accent-dim,rgba(100,160,255,.12));border-color:var(--accent);}
 /* Stage picker */
 .lu-stage-picker{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
 .lu-stage-chip{font-family:var(--mono);font-size:9px;letter-spacing:.06em;padding:4px 11px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;border-radius:2px;transition:all .12s;}
@@ -1298,6 +1303,11 @@ async function luFetch() {
       // Generic: try proxy + heuristic parse
       extracted = await _luFetchProxy(rawURL, _luParseGeneric);
     }
+    // b14643 multiple-design-page picker
+    if (extracted._b14643Picker) {
+      _luRenderB14643Picker(extracted._links);
+      return;
+    }
     _luExtracted = extracted;
     // Default active fields: first stage in stage mode, vehicle-level otherwise
     if (_luExtracted._stages?.length) {
@@ -1440,51 +1450,92 @@ async function _b14643Fetch(url) {
 async function _luFetchB14643(url) {
   const gh = _b14643GhURL(url);
 
-  // ── Strategy 1: URL is already inside a /Design/ directory ──────
-  // (and isn't a frameset — Frame.htm just wraps the real page)
+  // ── Strategy 1: URL is already a specific Design page (not a frameset) ──
   if (/\/Design\//i.test(gh) && !/Frame\.htm/i.test(gh)) {
     const html = await _b14643Fetch(gh);
     const result = _luParseB14643(html);
     if (_b14643HasData(result)) return result;
-    // If the design page itself had no stage tables, fall through to Nav strategy
   }
 
-  // ── Strategy 2: Find the "Vehicle Design" page via Nav.htm ──────
-  // Nav.htm lives in the same directory as the page the user pasted.
-  // It contains a link labeled "Vehicle Design" → ../Design/SomeName.htm
-  const dir = gh.replace(/[^/]+$/, '');          // strip filename, keep trailing /
+  // ── Strategy 2: Find design page(s) via Nav.htm ──────────────────
+  const dir = gh.replace(/[^/]+$/, '');
   const navURL = dir + 'Nav.htm';
-  let designURL = null;
+  let designLinks = [];
   try {
     const navHtml = await _b14643Fetch(navURL);
-    const navDoc = new DOMParser().parseFromString(navHtml, 'text/html');
-    // Collect all links that point into a /Design/ subdirectory
-    const designLinks = [...navDoc.querySelectorAll('a[href]')].filter(a => {
-      const href = a.getAttribute('href') || '';
-      return /vehicle\s*design/i.test(a.textContent) || /\/Design\//i.test(href) || /Design[/\\]/i.test(href);
-    });
-    if (designLinks.length) {
-      // Prefer a link whose text says "Vehicle Design"; otherwise take the first Design link
-      const preferred = designLinks.find(a => /vehicle\s*design/i.test(a.textContent)) || designLinks[0];
-      designURL = new URL(preferred.getAttribute('href'), navURL).href;
-    }
-  } catch(_) { /* Nav.htm missing — try the URL directly */ }
+    const navDoc  = new DOMParser().parseFromString(navHtml, 'text/html');
+    designLinks = [...navDoc.querySelectorAll('a[href]')]
+      .filter(a => {
+        const href = a.getAttribute('href') || '';
+        return /vehicle\s*design/i.test(a.textContent) ||
+               /[/\\]Design[/\\]/i.test(href) ||
+               /^\.\.\/Design\//i.test(href);
+      })
+      .map(a => ({
+        label: a.textContent.trim().replace(/\s+/g, ' ') || 'Design',
+        url:   new URL(a.getAttribute('href'), navURL).href,
+      }));
+  } catch(_) { /* Nav.htm absent */ }
 
-  if (designURL) {
-    const html = await _b14643Fetch(designURL);
+  // Multiple design pages → show a picker; caller handles rendering
+  if (designLinks.length > 1) {
+    // Check if one is labelled "Vehicle Design" — auto-select it if so
+    const auto = designLinks.find(d => /vehicle\s*design/i.test(d.label));
+    if (!auto) {
+      // Genuine ambiguity: surface picker to user
+      return { _b14643Picker: true, _links: designLinks, _navURL: navURL };
+    }
+    // Single unambiguous "Vehicle Design" link even among multiples
+    designLinks = [auto];
+  }
+
+  if (designLinks.length === 1) {
+    const html = await _b14643Fetch(designLinks[0].url);
     const result = _luParseB14643(html);
     if (_b14643HasData(result)) return result;
   }
 
-  // ── Strategy 3: Last resort — parse whatever URL was given directly ─
+  // ── Strategy 3: last resort — parse the given URL directly ───────
   const html = await _b14643Fetch(gh.replace(/Frame\.htm([?#].*)?$/i, 'Text.htm'));
   return _luParseB14643(html);
+}
+
+// Called when user clicks a design-page chip in the picker UI
+async function _b14643PickDesign(ghURL) {
+  document.getElementById('lu-detail').innerHTML = '<div class="lu-loading">Fetching…</div>';
+  document.getElementById('lu-apply-note').textContent = 'Loading…';
+  try {
+    const html   = await _b14643Fetch(ghURL);
+    const result = _luParseB14643(html);
+    _luExtracted = result;
+    _luSelectedStage = result._stages?.length ? (_luMode === 'stage' ? 0 : -1) : -1;
+    _luActiveFields  = _luGetFields(_luSelectedStage);
+    _luRenderDetail(ghURL);
+  } catch(e) {
+    document.getElementById('lu-detail').innerHTML =
+      `<div class="lu-err">Failed: ${esc(e.message)}</div>`;
+    document.getElementById('lu-apply-note').textContent = 'Error';
+  }
 }
 
 // Returns true if the parsed result has at least one stage or one non-private field.
 function _b14643HasData(r) {
   if (r._stages?.length) return true;
   return Object.keys(r).some(k => !k.startsWith('_'));
+}
+
+// Render a picker when multiple b14643 design pages are available.
+function _luRenderB14643Picker(links) {
+  document.getElementById('lu-apply-note').textContent = 'Choose a design page';
+  const chips = links.map(d => {
+    const safeURL = d.url.replace(/'/g, "\\'");
+    return `<button class="lu-b14643-chip" onclick="_b14643PickDesign('${safeURL}')">${esc(d.label)}</button>`;
+  }).join('');
+  document.getElementById('lu-detail').innerHTML =
+    `<div class="lu-b14643-picker">
+       <div class="lu-section-title">Multiple design pages found — choose one:</div>
+       <div class="lu-b14643-chips">${chips}</div>
+     </div>`;
 }
 
 function _luParseB14643(html) {
