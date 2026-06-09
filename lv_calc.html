@@ -6669,10 +6669,10 @@ function progRenderNodeMap() {
   // Each blob = layered concentric circles creating a soft "sphere of influence" glow.
   // Decorative planet body circle at center (NOT interactive — nodes sit on top).
   const PLANET_BLOBS = [
-    { cx:195, cy:255, r:150, col:nmEarth,  bodyR:26, label:'EARTH'  },
-    { cx:450, cy:192, r:70,  col:nmLunar,  bodyR:12, label:'MOON'   },
-    { cx:860, cy:205, r:80,  col:nmInterp, bodyR:18, label:'MARS'   },
-    { cx:848, cy:380, r:67,  col:nmInterp, bodyR:15, label:'VENUS'  },
+    { cx:195, cy:255, r:210, col:nmEarth,  bodyR:26, label:'EARTH'  },
+    { cx:450, cy:192, r:100, col:nmLunar,  bodyR:12, label:'MOON'   },
+    { cx:860, cy:205, r:115, col:nmInterp, bodyR:18, label:'MARS'   },
+    { cx:848, cy:380, r:100, col:nmInterp, bodyR:15, label:'VENUS'  },
   ];
   for (const b of PLANET_BLOBS) {
     // Soft concentric fill layers (outermost → innermost, increasing opacity)
@@ -6827,6 +6827,11 @@ function progRenderNodeMap() {
   s += `<rect x="${W-72}" y="8" width="64" height="18" rx="4" fill="${nmPillBg}" stroke="${nmPillBd}" stroke-width="1"/>`;
   s += `<text x="${W-40}" y="20" text-anchor="middle" fill="${nmLabel}" font-size="9" font-family="monospace">⟳ Reset</text>`;
   s += `</g>`;
+  // Scroll hint — bottom-centre, fades out once the user has zoomed
+  const hintOpacity = (_nmView.scale === 1 && _nmView.tx === 0 && _nmView.ty === 0) ? '.38' : '0';
+  s += `<text x="${W/2}" y="${H-8}" text-anchor="middle" fill="${nmLabel}" fill-opacity="${hintOpacity}"
+          font-size="9" font-family="monospace" style="pointer-events:none">
+          scroll to zoom · drag to pan · more planets off-screen</text>`;
 
   svg.innerHTML = s;
 
