@@ -1482,22 +1482,22 @@ function _luMapB14643Field(key, val, out) {
     out._propellant = val.replace(/\[.*?\]/g, '').trim();
     return;
   }
-  // Liftoff weight (tonnes → kg) — gross/wet mass
+  // Liftoff weight (t or kg) — gross/wet mass
   if (/liftoff weight/.test(key)) {
-    const v = _luParseT(val);
-    if (v) out.grossMass = { raw: val + ' t', value: v, unit: 'kg', checked: false };
+    const v = luParseKG(val);
+    if (v) out.grossMass = { raw: val, value: v, unit: 'kg', checked: false };
     return;
   }
-  // Propellant weight (tonnes → kg)
+  // Propellant weight (t or kg)
   if (/propellant weight/.test(key)) {
-    const v = _luParseT(val);
-    if (v) out.prop = { raw: val + ' t', value: v, unit: 'kg', checked: true };
+    const v = luParseKG(val);
+    if (v) out.prop = { raw: val, value: v, unit: 'kg', checked: true };
     return;
   }
-  // Payload weight (vehicle level, tonnes → kg)
+  // Payload weight (vehicle level, t or kg)
   if (/payload weight/.test(key)) {
-    const v = _luParseT(val);
-    if (v) out.payload = { raw: val + ' t', value: v, unit: 'kg', checked: true };
+    const v = luParseKG(val);
+    if (v) out.payload = { raw: val, value: v, unit: 'kg', checked: true };
     return;
   }
   // Total thrust (kN) — prefer vacuum over sea level
@@ -1512,13 +1512,6 @@ function _luMapB14643Field(key, val, out) {
     if (v && (!out.isp || isVac)) out.isp = { raw: val + ' N·s/kg', value: v, unit: 's', checked: true };
     return;
   }
-}
-
-// Parse metric tonnes → kg (b14643 mass values are plain numbers in tonnes)
-function _luParseT(text) {
-  if (!text) return null;
-  const m = String(text).replace(/,/g, '').replace(/\[.*?\]/g, '').match(/([\d.]+)/);
-  return m ? Math.round(parseFloat(m[1]) * 1000) : null;
 }
 
 // Parse N·s/kg → seconds (Ve / g₀)
