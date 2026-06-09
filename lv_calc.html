@@ -161,6 +161,70 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .modal-body{padding:16px;overflow-y:auto;flex:1;}
 .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
 .modal textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical;min-height:300px;line-height:1.6;}
+/* ── Vehicle Performance Panel ── */
+/* Make the vehicles page fill the full viewport height (same trick as #page-program) */
+#page-vehicles.active{display:flex;flex:1;flex-direction:column;min-height:0;}
+#vehicles-beginner{flex-shrink:0;}
+#vehicles-perf{flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;}
+#vehicles-perf>.vp-top-row{flex-shrink:0;}
+#vp-dv{display:flex;flex-direction:column;}
+#vp-dv-body{flex:1;overflow-y:auto;}
+#vp-stats{display:flex;flex-direction:column;}
+#vp-stats-body{flex:1;overflow-y:auto;}
+#vp-table{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+#vp-table-body{flex:1;overflow:auto;min-height:0;}
+#vehicles-perf .lib-panel{margin-top:0;}
+.vp-header{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
+.vp-header-sub{font-size:7px;letter-spacing:.08em;opacity:.6;}
+/* ΔV bar rows */
+.vp-dv-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.vp-dv-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);flex-shrink:0;white-space:nowrap;max-width:160px;}
+.vp-dv-track{flex:1;height:18px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:1px;overflow:hidden;position:relative;}
+.vp-dv-fill{height:100%;transition:width .3s ease;border-radius:1px;}
+.vp-dv-val{font-family:var(--mono);font-size:9px;width:82px;flex-shrink:0;text-align:right;}
+.vp-dv-meta{font-family:var(--mono);font-size:8px;color:var(--text-dim);width:90px;flex-shrink:0;text-align:right;opacity:.7;}
+.vp-dv-total{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.vp-dv-total-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);flex:1;}
+.vp-dv-total-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
+.vp-dv-empty{font-family:var(--mono);font-size:10px;color:var(--text-dim);opacity:.5;padding:16px 0;text-align:center;}
+/* Stats card */
+.vp-stat{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border);}
+.vp-stat:last-child{border-bottom:none;}
+.vp-stat-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
+.vp-stat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text-bright);}
+.vp-stat-val.warn{color:#f4a;}
+.vp-stat-val.ok{color:var(--accent3);}
+/* Spec table */
+.vp-spec-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.vp-spec-tbl th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+.vp-spec-tbl th:first-child{text-align:left;}
+.vp-spec-tbl td{padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right;font-family:var(--mono);font-size:10px;color:var(--text-bright);white-space:nowrap;}
+.vp-spec-tbl td:first-child{text-align:left;color:var(--text-dim);font-size:9px;letter-spacing:.06em;}
+.vp-spec-tbl tr:last-child td{border-bottom:none;}
+.vp-spec-tbl .vp-dv-accent{color:var(--accent);}
+.vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+/* ── Web Lookup modal ── */
+#modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
+#lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
+#lu-url-input{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;}
+#lu-url-input:focus{border-color:var(--accent);}
+#lu-apply-bar{padding:8px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--panel);}
+.lu-stage-picker{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.lu-stage-chip{font-family:var(--mono);font-size:9px;letter-spacing:.06em;padding:4px 11px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .12s;}
+.lu-stage-chip:hover{color:var(--text-bright);border-color:var(--accent);}
+.lu-stage-chip.active{background:rgba(100,160,255,.12);border-color:var(--accent);color:var(--accent);}
+.lu-ftbl{width:100%;border-collapse:collapse;font-size:11px;}
+.lu-ftbl th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:4px 8px;border-bottom:1px solid var(--border);text-align:left;}
+.lu-ftbl td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.lu-ftbl tr:hover td{background:rgba(255,255,255,.03);}
+.lu-fname{color:var(--text-bright);font-size:11px;}
+.lu-fval{font-family:var(--mono);font-size:11px;color:var(--accent);}
+.lu-dim-msg,.lu-err-msg{font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:30px;text-align:center;line-height:1.7;}
+.lu-err-msg{color:#f47;}
+.lu-loading-msg::after{content:'…';animation:ellipsis 1.2s infinite;}
+/* Simple toast for lv_calc */
+#lvc-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:7px 18px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999;}
+#lvc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .modal textarea:focus{outline:none;border-color:var(--accent);}
 .modal-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 16px;cursor:pointer;letter-spacing:.1em;transition:all .15s;}
 .modal-btn:hover{border-color:var(--accent);color:var(--accent);}
@@ -502,7 +566,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
           <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
           <span id="comp-stage-count" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.55;flex-shrink:0;"></span>
         </div>
-        <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;padding:6px;"></div>
+        <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;padding:6px;max-height:min(340px,calc(100vh - 360px));"></div>
       </div>
       <div id="preset-grid" style="display:none"></div>
     </div>
@@ -542,6 +606,27 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
     </div>
 
   </div><!-- /vehicles-beginner -->
+
+  <!-- PERFORMANCE SUMMARY PANEL (beginner mode) -->
+  <div id="vehicles-perf">
+    <div class="vp-top-row" style="display:grid;grid-template-columns:1fr 210px;gap:14px;margin-bottom:14px;align-items:stretch;">
+      <!-- ΔV Budget -->
+      <div class="lib-panel" style="padding:12px 14px;" id="vp-dv">
+        <div class="vp-header">ΔV Budget <span class="vp-header-sub">stage-isolation basis · payload not included</span></div>
+        <div id="vp-dv-body"><div class="vp-dv-empty">// No stages loaded</div></div>
+      </div>
+      <!-- Vehicle Stats -->
+      <div class="lib-panel" style="padding:12px 14px;" id="vp-stats">
+        <div class="vp-header">Vehicle Summary</div>
+        <div id="vp-stats-body"><div class="vp-dv-empty">// —</div></div>
+      </div>
+    </div>
+    <!-- Stage Spec Comparison -->
+    <div class="lib-panel" style="padding:12px 14px;" id="vp-table">
+      <div class="vp-header">Stage Specifications</div>
+      <div id="vp-table-body"><div class="vp-dv-empty">// No stages loaded</div></div>
+    </div>
+  </div><!-- /vehicles-perf -->
 
   <!-- ADVANCED VIEW: compact controls + table -->
   <div id="vehicles-advanced" style="display:none;">
@@ -1079,6 +1164,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
       <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>
     </div>
     <div class="modal-footer" id="add-stage-footer">
+      <button class="modal-btn" onclick="lvcLuOpen()" style="margin-right:auto;" title="Look up stage data from Wikipedia, Astronautix, or Skyrocket">🔍 Web Lookup</button>
       <button class="modal-btn" onclick="closeModal('modal-add-stage')">Cancel</button>
       <button class="modal-btn" id="add-stage-lib-btn" onclick="doAddStage(false)">Add to Library</button>
       <button class="modal-btn primary" id="add-stage-save-btn" onclick="doAddStage(true)">Add & Save .json</button>
@@ -3266,14 +3352,17 @@ function setVehicleMode(mode){
   const beg=document.getElementById('vehicles-beginner');
   const adv=document.getElementById('vehicles-advanced');
   const tbl=document.getElementById('vehicles-stage-params');
+  const perf=document.getElementById('vehicles-perf');
   if(mode==='beginner'){
     beg.style.display='grid';
     adv.style.display='none';
     tbl.style.display='none';
+    if(perf) perf.style.display='block';
   } else {
     beg.style.display='none';
     adv.style.display='block';
     tbl.style.display='block';
+    if(perf) perf.style.display='none';
     syncAdvControls();
   }
 }
@@ -3505,6 +3594,7 @@ function buildStageComposition(){
   }
   vehCanvasOnStagesChanged();
   vehBuildAssignStrip();
+  updatePerfPanel();
 }
 
 // ─── VEHICLE CANVAS ───────────────────────────
@@ -10007,6 +10097,179 @@ function progSwitchView(mode) {
 // ─── END PROGRAM MODULE Phase 1 ─────────────────────────────────────────────────────
 
 
+// ══════════════════════════════════════════════════════════════════
+//  VEHICLE PERFORMANCE PANEL
+// ══════════════════════════════════════════════════════════════════
+
+// Palette: booster, then stages 1-N (cycles if more stages than colors)
+const VP_COLORS = ['#ff8844','#5599ff','#88cc55','#cc77ff','#55ccff','#ffcc33','#ff5577'];
+
+function updatePerfPanel() {
+  const dvBody    = document.getElementById('vp-dv-body');
+  const statsBody = document.getElementById('vp-stats-body');
+  const tblBody   = document.getElementById('vp-table-body');
+  if (!dvBody || !statsBody || !tblBody) return;
+
+  // ── Collect stage data ────────────────────────────────────────
+  const pF = v => parseFloat(v) || 0;
+  const segments = []; // {label, shortLabel, dry, prop, thrust, isp, res, color, isBooster}
+
+  if (useBooster) {
+    const bCount = parseInt(document.getElementById('num-boosters')?.value) || 0;
+    segments.push({
+      label:      (currentBoosterName || 'Strap-on') + (bCount > 1 ? ` ×${bCount}` : ''),
+      shortLabel: currentBoosterName ? currentBoosterName.slice(0,10) : 'Booster',
+      dry:    pF(document.getElementById('b_dry')?.value),
+      prop:   pF(document.getElementById('b_prop')?.value),
+      thrust: pF(document.getElementById('b_thrust')?.value) * bCount,
+      isp:    pF(document.getElementById('b_isp')?.value) || 1,
+      res:    pF(document.getElementById('b_res')?.value),
+      count:  bCount,
+      color:  VP_COLORS[0],
+      isBooster: true,
+    });
+  }
+
+  for (let s = 0; s < numStages; s++) {
+    const st = stageStore[s] || {};
+    const colorIdx = useBooster ? (s + 1) : s;
+    segments.push({
+      label:      currentStageNames[s] || `Stage ${s+1}`,
+      shortLabel: currentStageNames[s] ? currentStageNames[s].slice(0,10) : `S${s+1}`,
+      dry:    pF(st.dry),
+      prop:   pF(st.prop),
+      thrust: pF(st.thrust),
+      isp:    pF(st.isp) || 1,
+      res:    pF(st.res),
+      count:  1,
+      color:  VP_COLORS[colorIdx % VP_COLORS.length],
+      isBooster: false,
+    });
+  }
+
+  // Helpers
+  const fmt  = v => Math.round(v).toLocaleString();
+  const fmtF = (v, dec=1) => v >= 1000 ? (v/1000).toFixed(dec) + ' MN' : v.toFixed(dec) + ' kN';
+  const fmtM = v => v >= 1e6 ? (v/1e6).toFixed(2) + ' Mt' : v >= 1000 ? (v/1000).toFixed(1) + ' t' : Math.round(v) + ' kg';
+
+  // ── Per-segment calculations ──────────────────────────────────
+  let totalDV = 0, liftoffMass = 0, totalThrust = 0, totalDry = 0, totalProp = 0;
+
+  const calcs = segments.map(seg => {
+    const propUsable = seg.prop * (1 - seg.res / 100);
+    const m0 = seg.dry + propUsable;
+    const mf = seg.dry;
+    const dv = (m0 > mf && mf > 0) ? G0 * seg.isp * Math.log(m0 / mf) : 0;
+    const massFlow = (seg.thrust * 1000) / (G0 * seg.isp);
+    const burnTime = massFlow > 0 ? propUsable / massFlow : 0;
+    const propFrac = (seg.dry + seg.prop) > 0 ? seg.prop / (seg.dry + seg.prop) * 100 : 0;
+    const massRatio = mf > 0 ? m0 / mf : 0;
+
+    // For vehicle-level totals, multiply boosters by count
+    const effectiveDry   = seg.dry   * seg.count;
+    const effectiveProp  = seg.prop  * seg.count;
+    totalDry    += effectiveDry;
+    totalProp   += effectiveProp;
+    liftoffMass += effectiveDry + effectiveProp;
+    totalThrust += seg.thrust; // already has ×count baked in for boosters
+    totalDV     += dv;
+
+    return { ...seg, dv, burnTime, propFrac, massRatio };
+  });
+
+  // ── ΔV Panel ─────────────────────────────────────────────────
+  const hasAnyDV = totalDV > 0;
+  if (!hasAnyDV) {
+    dvBody.innerHTML = '<div class="vp-dv-empty">// Drop stages into the composition above</div>';
+  } else {
+    const maxDV = Math.max(...calcs.map(c => c.dv), 1);
+    const rows = calcs.map(c => {
+      const barPct = (c.dv / maxDV * 100).toFixed(1);
+      const dvStr  = c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—';
+      const mrStr  = c.massRatio > 0 ? 'MR ' + c.massRatio.toFixed(2) : '';
+      const ispStr = c.isp > 1 ? 'Isp ' + Math.round(c.isp) + ' s' : '';
+      return `<div class="vp-dv-row">
+        <div class="vp-dv-label">${c.label}</div>
+        <div class="vp-dv-track">
+          <div class="vp-dv-fill" style="width:${barPct}%;background:${c.color};opacity:.85;"></div>
+        </div>
+        <div class="vp-dv-val" style="color:${c.color};">${dvStr}</div>
+        <div class="vp-dv-meta">${ispStr}&nbsp;&nbsp;${mrStr}</div>
+      </div>`;
+    }).join('');
+
+    dvBody.innerHTML = rows + `
+      <div class="vp-dv-total">
+        <div class="vp-dv-total-label">Total ΔV (stage-isolation)</div>
+        <div class="vp-dv-total-val">${fmt(Math.round(totalDV))} m/s</div>
+      </div>`;
+  }
+
+  // ── Stats Panel ───────────────────────────────────────────────
+  if (liftoffMass === 0) {
+    statsBody.innerHTML = '<div class="vp-dv-empty">// —</div>';
+  } else {
+    const weightKN   = liftoffMass * G0 / 1000;
+    const twr        = weightKN > 0 ? totalThrust / weightKN : 0;
+    const twrClass   = twr < 1.05 ? 'warn' : twr >= 1.2 ? 'ok' : '';
+    const massFrac   = liftoffMass > 0 ? (totalDry / liftoffMass * 100) : 0;
+
+    statsBody.innerHTML = `
+      <div class="vp-stat">
+        <div class="vp-stat-label">Liftoff Mass</div>
+        <div class="vp-stat-val">${fmtM(liftoffMass)}</div>
+      </div>
+      <div class="vp-stat">
+        <div class="vp-stat-label">Total Propellant</div>
+        <div class="vp-stat-val">${fmtM(totalProp)}</div>
+      </div>
+      <div class="vp-stat">
+        <div class="vp-stat-label">Liftoff Thrust</div>
+        <div class="vp-stat-val">${fmtF(totalThrust, totalThrust >= 100 ? 0 : 1)}</div>
+      </div>
+      <div class="vp-stat">
+        <div class="vp-stat-label">Liftoff T/W</div>
+        <div class="vp-stat-val ${twrClass}">${twr > 0 ? twr.toFixed(2) : '—'}</div>
+      </div>
+      <div class="vp-stat">
+        <div class="vp-stat-label">Structural Fraction</div>
+        <div class="vp-stat-val">${massFrac.toFixed(1)} %</div>
+      </div>
+      <div class="vp-stat">
+        <div class="vp-stat-label">Total ΔV</div>
+        <div class="vp-stat-val" style="color:var(--accent);">${hasAnyDV ? fmt(Math.round(totalDV)) + ' m/s' : '—'}</div>
+      </div>`;
+  }
+
+  // ── Spec Table ────────────────────────────────────────────────
+  if (calcs.length === 0) {
+    tblBody.innerHTML = '<div class="vp-dv-empty">// No stages loaded</div>';
+    return;
+  }
+
+  const dotH = c => `<span class="vp-col-dot" style="background:${c.color};"></span>`;
+  const th = c => `<th>${dotH(c)}${c.shortLabel}</th>`;
+  const headers = `<tr><th></th>${calcs.map(th).join('')}</tr>`;
+
+  const row = (label, fn) =>
+    `<tr><td>${label}</td>${calcs.map(c => `<td>${fn(c)}</td>`).join('')}</tr>`;
+
+  tblBody.innerHTML = `<table class="vp-spec-tbl">
+    <thead>${headers}</thead>
+    <tbody>
+      ${row('Dry Mass',      c => fmtM(c.dry))}
+      ${row('Propellant',    c => fmtM(c.prop))}
+      ${row('Gross Mass',    c => fmtM(c.dry + c.prop))}
+      ${row('Isp',           c => c.isp > 1 ? Math.round(c.isp) + ' s' : '—')}
+      ${row('Thrust',        c => c.thrust > 0 ? fmtF(c.thrust / (c.isBooster ? 1 : 1), c.thrust >= 100 ? 0 : 1) : '—')}
+      ${row('Prop Fraction', c => c.propFrac > 0 ? c.propFrac.toFixed(1) + ' %' : '—')}
+      ${row('Mass Ratio',    c => c.massRatio > 1 ? c.massRatio.toFixed(2) : '—')}
+      ${row('ΔV (isol.)',    c => `<span class="vp-dv-accent">${c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—'}</span>`)}
+      ${row('Burn Time',     c => c.burnTime > 0 ? (c.burnTime >= 60 ? (c.burnTime/60).toFixed(1) + ' min' : Math.round(c.burnTime) + ' s') : '—')}
+    </tbody>
+  </table>`;
+}
+
 // ─── INIT ────────────────────────────────────────
 buildTable();
 buildPresets();
@@ -10380,6 +10643,364 @@ document.addEventListener('mousemove',e=>{
   txt.style.left=box.left+'px';
   txt.style.top=(box.top-txt.offsetHeight-8)+'px';
 });
+
+// ══════════════════════════════════════════════════════════════════
+//  WEB DATA LOOKUP  (stage editor)
+// ══════════════════════════════════════════════════════════════════
+const LVC_LU_PROXY = 'https://api.allorigins.win/raw?url=';
+
+// Form field map — matches the Add/Edit Stage modal IDs
+const LVC_LU_MAP = {
+  name:    { label: 'Name',          unit: '',   formId: 'stg-name'    },
+  dry:     { label: 'Dry Mass',      unit: 'kg', formId: 'stg-dry'     },
+  prop:    { label: 'Propellant',    unit: 'kg', formId: 'stg-prop'    },
+  thrust:  { label: 'Thrust (vac)',  unit: 'kN', formId: 'stg-thrust'  },
+  isp:     { label: 'Isp (vac)',     unit: 's',  formId: 'stg-isp'     },
+  engines: { label: 'Engine(s)',     unit: '',   formId: 'stg-engines' },
+};
+
+let _lvcLuExtracted  = {};  // full parsed result (may have ._stages, ._vehicleFields)
+let _lvcLuActive     = {};  // fields for the currently selected stage/vehicle
+let _lvcLuSelStage   = -1;  // -1 = vehicle-level, 0+ = stage index
+let _lvcLuURL        = '';
+
+// ── Toast ─────────────────────────────────────────────────────────
+function lvcShowToast(msg) {
+  const el = document.getElementById('lvc-toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ── Open ──────────────────────────────────────────────────────────
+function lvcLuOpen() {
+  document.getElementById('lu-url-input').value = '';
+  document.getElementById('lu-detail').innerHTML = '<div class="lu-dim-msg">Paste a page URL above and click Fetch</div>';
+  document.getElementById('lu-apply-note').textContent = 'No data loaded';
+  _lvcLuExtracted = {}; _lvcLuActive = {}; _lvcLuSelStage = -1; _lvcLuURL = '';
+  openModal('modal-lookup');
+  setTimeout(() => document.getElementById('lu-url-input').focus(), 80);
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────
+async function lvcLuFetch() {
+  const url = document.getElementById('lu-url-input').value.trim();
+  if (!url) return;
+  _lvcLuURL = url;
+  document.getElementById('lu-detail').innerHTML = '<div class="lu-dim-msg lu-loading-msg">Fetching</div>';
+  document.getElementById('lu-apply-note').textContent = 'Loading…';
+  try {
+    let extracted = {};
+    const wikiM = url.match(/en\.wikipedia\.org\/wiki\/(.+)/);
+    if (wikiM) {
+      extracted = await _lvcLuFetchWiki(decodeURIComponent(wikiM[1].split('#')[0]));
+    } else if (/astronautix\.com/i.test(url)) {
+      extracted = await _lvcLuFetchProxy(url, _lvcLuParseAnx);
+    } else if (/skyrocket\.de/i.test(url)) {
+      extracted = await _lvcLuFetchProxy(url, _lvcLuParseSky);
+    } else {
+      extracted = await _lvcLuFetchProxy(url, _lvcLuParseGeneric);
+    }
+    _lvcLuExtracted = extracted;
+    _lvcLuSelStage  = extracted._stages?.length ? 0 : -1;
+    _lvcLuActive    = _lvcLuGetFields(_lvcLuSelStage);
+    _lvcLuRenderDetail();
+  } catch(e) {
+    document.getElementById('lu-detail').innerHTML =
+      `<div class="lu-err-msg">Failed to load: ${_lvcEsc(e.message)}<br><br>
+       <a href="${_lvcEsc(url)}" target="_blank" style="color:var(--accent);">Open in browser ↗</a></div>`;
+    document.getElementById('lu-apply-note').textContent = 'Error';
+  }
+}
+
+function _lvcLuGetFields(idx) {
+  if (idx >= 0 && _lvcLuExtracted._stages?.[idx]) return _lvcLuExtracted._stages[idx].fields;
+  return _lvcLuExtracted._vehicleFields ?? _lvcLuExtracted;
+}
+
+function lvcLuSelectStage(idx) {
+  _lvcLuSelStage = idx;
+  _lvcLuActive   = _lvcLuGetFields(idx);
+  document.querySelectorAll('.lu-stage-chip').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && idx === -1) || (i === idx + 1));
+  });
+  _lvcLuRenderTable();
+}
+
+// ── Wikipedia ─────────────────────────────────────────────────────
+const _LVC_STAGE_HDR = /\b(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th|upper|lower|core|sustainer|strap[\s\-]?ons?|solid[\s\-]?rockets?|srbs?|boosters?|stages?)\b/i;
+
+async function _lvcLuFetchWiki(title) {
+  const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json&origin=*`;
+  const d = await (await fetch(url)).json();
+  if (d.error) throw new Error(d.error.info);
+  return _lvcLuParseWikiHTML(d.parse?.text?.['*'] || '');
+}
+
+function _lvcLuParseWikiHTML(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const vehicleFields = {}, stages = [];
+  let current = vehicleFields;
+
+  const infobox = doc.querySelector('table.infobox');
+  const rows = infobox ? [...infobox.querySelectorAll('tr')] : [...doc.querySelectorAll('table tr')];
+
+  rows.forEach(row => {
+    const tds = [...row.querySelectorAll('td')];
+    const ths = [...row.querySelectorAll('th')];
+    const spanningTh = ths.find(th =>
+      parseInt(th.getAttribute('colspan') || '1') >= 2 || th.classList.contains('infobox-header'));
+    const isHeader = (tds.length === 0 && ths.length >= 1) || spanningTh != null;
+    if (isHeader && ths.length >= 1) {
+      const htext = (spanningTh || ths[0]).textContent.trim().replace(/\[.*?\]/g, '');
+      if (_LVC_STAGE_HDR.test(htext)) {
+        const sf = {}; stages.push({ name: htext, fields: sf }); current = sf;
+      } else if (stages.length === 0) { current = vehicleFields; }
+      return;
+    }
+    _lvcLuMapRow(row, current);
+  });
+
+  _lvcLuDeriveProps(vehicleFields);
+  stages.forEach(s => _lvcLuDeriveProps(s.fields));
+  doc.querySelectorAll('p').forEach(p => _lvcLuScanText(p.textContent, vehicleFields));
+
+  const out = { ...vehicleFields };
+  if (stages.length > 0) { out._stages = stages; out._vehicleFields = vehicleFields; }
+  return out;
+}
+
+function _lvcLuMapRow(row, out) {
+  const cells = row.querySelectorAll('th,td');
+  if (cells.length < 2) return;
+  const key = cells[0].textContent.trim().toLowerCase().replace(/\s+/g,' ').replace(/\[.*?\]/g,'');
+  const val = cells[cells.length-1].textContent.trim().replace(/\[\d+\]/g,'');
+  _lvcLuMapField(key, val, out);
+}
+
+// ── Proxy parsers ─────────────────────────────────────────────────
+async function _lvcLuFetchProxy(url, parser) {
+  const resp = await fetch(LVC_LU_PROXY + encodeURIComponent(url));
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const html = await resp.text();
+  if (html.length < 200) throw new Error('Page empty or blocked by proxy');
+  return parser(html);
+}
+
+function _lvcLuParseAnx(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  doc.querySelectorAll('table tr').forEach(row => {
+    const cells = row.querySelectorAll('td,th');
+    if (cells.length >= 2) _lvcLuMapField(cells[0].textContent.trim().toLowerCase().replace(/\s+/g,' '), cells[1].textContent.trim(), out);
+  });
+  doc.querySelectorAll('table tr, p').forEach(el => _lvcLuScanText(el.textContent, out));
+  _lvcLuDeriveProps(out); return out;
+}
+
+function _lvcLuParseSky(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  doc.querySelectorAll('table tr').forEach(row => {
+    const cells = row.querySelectorAll('td,th');
+    if (cells.length >= 2) _lvcLuMapField(cells[0].textContent.trim().toLowerCase().replace(/\s+/g,' '), cells[cells.length-1].textContent.trim(), out);
+  });
+  doc.querySelectorAll('p').forEach(p => _lvcLuScanText(p.textContent, out));
+  _lvcLuDeriveProps(out); return out;
+}
+
+function _lvcLuParseGeneric(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  doc.querySelectorAll('table tr').forEach(row => {
+    const cells = row.querySelectorAll('td,th');
+    if (cells.length >= 2) _lvcLuMapField(cells[0].textContent.trim().toLowerCase().replace(/\s+/g,' '), cells[cells.length-1].textContent.trim(), out);
+  });
+  doc.querySelectorAll('p, li').forEach(el => _lvcLuScanText(el.textContent, out));
+  _lvcLuDeriveProps(out); return out;
+}
+
+function _lvcLuDeriveProps(out) {
+  if (out.grossMass && out.dry && !out.prop) {
+    const p = Math.round(out.grossMass.value - out.dry.value);
+    if (p > 0) out.prop = { raw: `${out.grossMass.raw} − ${out.dry.raw}`, value: p, unit: 'kg', checked: true };
+  }
+}
+
+// ── Field synonym mapping ─────────────────────────────────────────
+const _LVC_RE = {
+  dry:          /dry[\s\-]?(?:mass|weight|structure)|empty[\s\-]?(?:mass|weight)|inert[\s\-]?mass|unfuell?ed[\s\-]?(?:mass|weight)|burnout[\s\-]?(?:mass|weight)|structural[\s\-]?(?:mass|weight)|tare[\s\-]?(?:mass|weight)/,
+  gross:        /gross[\s\-]?(?:mass|weight)|(?:launch|lift[\s\-]?off|liftoff|take[\s\-]?off|loaded|fuell?ed|wet|total|full)[\s\-]?(?:mass|weight)|mass[\s\-]?(?:at[\s\-]?)?(?:launch|liftoff)|(?:mass|weight)[\s\-]?(?:full|loaded|fuell?ed)/,
+  prop:         /propellant[\s\-]?(?:mass|weight|load|capacity)|fuel(?:lant)?[\s\-]?(?:mass|weight|load)|oxidizer[\s\-]?(?:mass|weight)|oxidiser[\s\-]?(?:mass|weight)/,
+  thrust:       /thrust|engine[\s\-]?(?:thrust|force)|total[\s\-]?thrust|rated[\s\-]?thrust|nominal[\s\-]?thrust/,
+  thrustExcl:   /twr|thrust[\s\-]?(?:to[\s\-]?weight|weight[\s\-]?ratio)|t\/w/,
+  isp:          /specific[\s\-]?impulse|isp|i_?sp\b|exhaust[\s\-]?velocity/,
+  engine:       /^(?:engine|engines|engine[\s\-]?type|main[\s\-]?engine|propulsion|powerplant|motor|rocket[\s\-]?engine)/,
+};
+
+function _lvcLuMapField(key, val, out) {
+  if (!val || val.length > 200) return;
+  if (_LVC_RE.dry.test(key))   { const v=_lvcParseKG(val); if(v) out.dry={raw:val,value:v,unit:'kg',checked:true}; return; }
+  if (_LVC_RE.gross.test(key)) { const v=_lvcParseKG(val); if(v) out.grossMass={raw:val,value:v,unit:'kg',checked:false}; return; }
+  if (_LVC_RE.prop.test(key))  { const v=_lvcParseKG(val); if(v) out.prop={raw:val,value:v,unit:'kg',checked:true}; return; }
+  if (_LVC_RE.thrust.test(key) && !_LVC_RE.thrustExcl.test(key)) {
+    const v=_lvcParseKN(val); if(v){ const vac=/vac/i.test(key+' '+val); if(!out.thrust||vac) out.thrust={raw:val,value:v,unit:'kN',checked:true}; } return;
+  }
+  if (_LVC_RE.isp.test(key)) {
+    const v=_lvcParseSec(val); if(v){ const vac=/vac/i.test(key+' '+val); if(!out.isp||vac) out.isp={raw:val,value:v,unit:'s',checked:true}; } return;
+  }
+  if (_LVC_RE.engine.test(key) && !out.engines) {
+    const c=val.replace(/\[.*?\]/g,'').trim(); if(c&&c.length<100) out.engines={raw:c,value:c,unit:'',checked:true}; return;
+  }
+}
+
+function _lvcLuScanText(text, out) {
+  if (!text) return;
+  const P = [
+    [/(?:gross|launch|liftoff|fuell?ed|wet|loaded)\s*(?:mass|weight)\s*[:\-–]\s*([\d,.]+\s*(?:kg|lb|t\b|tonnes?|Mg))/gi,
+      m => { const v=_lvcParseKG(m[1]); if(v&&!out.grossMass) out.grossMass={raw:m[1],value:v,unit:'kg',checked:false}; }],
+    [/(?:dry|empty|inert|unfuell?ed|burnout)\s*(?:mass|weight)\s*[:\-–]\s*([\d,.]+\s*(?:kg|lb|t\b|tonnes?|Mg))/gi,
+      m => { const v=_lvcParseKG(m[1]); if(v&&!out.dry) out.dry={raw:m[1],value:v,unit:'kg',checked:true}; }],
+    [/propellant\s*(?:mass|load)\s*[:\-–]\s*([\d,.]+\s*(?:kg|lb|t\b|tonnes?|Mg))/gi,
+      m => { const v=_lvcParseKG(m[1]); if(v&&!out.prop) out.prop={raw:m[1],value:v,unit:'kg',checked:true}; }],
+    [/vacuum\s*thrust\s*[:\-–]\s*([\d,.]+\s*(?:kN|MN|lbf|tf))/gi,
+      m => { const v=_lvcParseKN(m[1]); if(v) out.thrust={raw:m[1],value:v,unit:'kN',checked:true}; }],
+    [/(?:^|[;\n])\s*thrust\s*[:\-–]\s*([\d,.]+\s*(?:kN|MN|lbf|tf))/gi,
+      m => { const v=_lvcParseKN(m[1]); if(v&&!out.thrust) out.thrust={raw:m[1],value:v,unit:'kN',checked:true}; }],
+    [/vacuum\s*(?:specific\s*impulse|isp)\s*[:\-–]\s*([\d.]+)\s*s/gi,
+      m => { const v=parseFloat(m[1]); if(v) out.isp={raw:m[1]+'s',value:v,unit:'s',checked:true}; }],
+    [/(?:specific\s*impulse|isp)\s*[:\-–]\s*([\d.]+)\s*s/gi,
+      m => { const v=parseFloat(m[1]); if(v&&!out.isp) out.isp={raw:m[1]+'s',value:v,unit:'s',checked:true}; }],
+  ];
+  P.forEach(([re,fn]) => { let m; re.lastIndex=0; while((m=re.exec(text))!==null) fn(m); });
+}
+
+// ── Unit parsers ──────────────────────────────────────────────────
+function _lvcParseKG(text) {
+  if (!text) return null;
+  text = String(text).replace(/,/g,'').replace(/\[.*?\]/g,'').trim();
+  let m;
+  if ((m=text.match(/([\d.]+)\s*(?:tonne?s?|Mg|t(?=[^fFa-zA-Z]|$))/i))) return Math.round(parseFloat(m[1])*1000);
+  if ((m=text.match(/([\d.]+)\s*kg/i)))    return Math.round(parseFloat(m[1]));
+  if ((m=text.match(/([\d.]+)\s*lb(?!f)/i))) return Math.round(parseFloat(m[1])*0.453592);
+  if ((m=text.match(/^([\d.]+)$/)))         return Math.round(parseFloat(m[1]));
+  return null;
+}
+function _lvcParseKN(text) {
+  if (!text) return null;
+  text = String(text).replace(/,/g,'').replace(/\[.*?\]/g,'').trim();
+  let m;
+  if ((m=text.match(/([\d.]+)\s*MN/i)))    return Math.round(parseFloat(m[1])*10000)/10;
+  if ((m=text.match(/([\d.]+)\s*kN/i)))    return Math.round(parseFloat(m[1])*10)/10;
+  if ((m=text.match(/([\d.]+)\s*tf/i)))    return Math.round(parseFloat(m[1])*9.80665*10)/10;
+  if ((m=text.match(/([\d.]+)\s*lbf/i)))   return Math.round(parseFloat(m[1])*0.0044482*10)/10;
+  return null;
+}
+function _lvcParseSec(text) {
+  if (!text) return null;
+  text = String(text).replace(/\[.*?\]/g,'');
+  let m;
+  if ((m=text.match(/([\d.]+)\s*s[^a-z]*vac/i))) return parseFloat(m[1]);
+  if ((m=text.match(/vac[^a-z]*([\d.]+)\s*s/i))) return parseFloat(m[1]);
+  const all = [...text.matchAll(/([\d.]+)\s*s\b/gi)];
+  if (all.length) return parseFloat(all[all.length-1][1]);
+  return null;
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function _lvcLuRenderDetail() {
+  const stages = _lvcLuExtracted._stages;
+  let pickerHTML = '';
+  if (stages?.length) {
+    const chips = [
+      `<button class="lu-stage-chip${_lvcLuSelStage===-1?' active':''}" onclick="lvcLuSelectStage(-1)">Vehicle</button>`
+    ].concat(stages.map((s,i) =>
+      `<button class="lu-stage-chip${_lvcLuSelStage===i?' active':''}" onclick="lvcLuSelectStage(${i})">${_lvcEsc(s.name)}</button>`
+    )).join('');
+    pickerHTML = `<div class="lu-stage-picker">${chips}</div>`;
+  }
+
+  const keys = Object.keys(_lvcLuActive).filter(k => k !== 'grossMass' && !k.startsWith('_'));
+  if (!keys.length && !_lvcLuActive.grossMass && !stages?.length) {
+    document.getElementById('lu-detail').innerHTML =
+      `${pickerHTML}<div class="lu-err-msg">No structured data found.<br>
+       <a href="${_lvcEsc(_lvcLuURL)}" target="_blank" style="color:var(--accent);">Open page in browser ↗</a></div>`;
+    document.getElementById('lu-apply-note').textContent = 'No data extracted';
+    return;
+  }
+
+  document.getElementById('lu-detail').innerHTML =
+    pickerHTML +
+    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+       <span style="font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);">Extracted Fields</span>
+       <a href="${_lvcEsc(_lvcLuURL)}" target="_blank" style="color:var(--accent);font-family:var(--mono);font-size:8px;text-decoration:none;">Open source ↗</a>
+     </div>
+     <div id="lu-field-rows"></div>`;
+  _lvcLuRenderTable();
+}
+
+function _lvcLuRenderTable() {
+  const fields = _lvcLuActive;
+  const keys   = Object.keys(fields).filter(k => k !== 'grossMass' && !k.startsWith('_'));
+  const gm     = fields.grossMass;
+  const wrap   = document.getElementById('lu-field-rows');
+  if (!wrap) return;
+
+  if (!keys.length && !gm) {
+    wrap.innerHTML = '<div class="lu-dim-msg" style="padding:18px 0;">No data extracted for this stage.</div>';
+    document.getElementById('lu-apply-note').textContent = 'No data for selection';
+    return;
+  }
+
+  const rows = keys.map(k => {
+    const f = fields[k], m = LVC_LU_MAP[k];
+    return `<tr>
+      <td><input type="checkbox" class="lu-cb" data-key="${_lvcEsc(k)}" ${f.checked?'checked':''}></td>
+      <td class="lu-fname">${_lvcEsc(m?.label||k)}</td>
+      <td class="lu-fval">${_lvcEsc(String(f.value))}${f.unit?' <span style="color:var(--text-dim);font-size:9px;">'+_lvcEsc(f.unit)+'</span>':''}</td>
+      <td style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">${_lvcEsc((f.raw||'').slice(0,60))}</td>
+    </tr>`;
+  }).join('');
+
+  const gmRow = gm ? `<tr style="opacity:.5;">
+    <td><input type="checkbox" class="lu-cb" data-key="grossMass"></td>
+    <td class="lu-fname">Gross Mass (ref)</td>
+    <td class="lu-fval">${gm.value} <span style="color:var(--text-dim);font-size:9px;">kg</span></td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">${_lvcEsc((gm.raw||'').slice(0,60))}</td>
+  </tr>` : '';
+
+  wrap.innerHTML = `<table class="lu-ftbl">
+    <thead><tr><th></th><th>Field</th><th>Value</th><th>Raw text</th></tr></thead>
+    <tbody>${rows}${gmRow}</tbody>
+  </table>`;
+  document.getElementById('lu-apply-note').textContent =
+    `${keys.length} field${keys.length!==1?'s':''} extracted`;
+}
+
+// ── Apply / Select All ────────────────────────────────────────────
+function lvcLuApply() {
+  const fields = _lvcLuActive;
+  let applied = 0;
+  document.querySelectorAll('#lu-detail .lu-cb:checked').forEach(cb => {
+    const key = cb.dataset.key;
+    if (key === 'grossMass') return;
+    const f = fields[key], m = LVC_LU_MAP[key];
+    const el = m ? document.getElementById(m.formId) : null;
+    if (el && f) { el.value = f.value; el.dispatchEvent(new Event('input')); applied++; }
+  });
+  closeModal('modal-lookup');
+  lvcShowToast(`Applied ${applied} field${applied!==1?'s':''} to stage form`);
+}
+
+function lvcLuSelectAll(state) {
+  document.querySelectorAll('#lu-detail .lu-cb').forEach(cb => cb.checked = state);
+}
+
+// HTML escape helper (scoped to avoid conflict)
+function _lvcEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 
 <!-- ── MODAL: Stage / Vehicle Detail ── -->
@@ -10432,5 +11053,36 @@ document.addEventListener('mousemove',e=>{
     </div>
   </div>
 </div>
+
+<!-- ── MODAL: Web Data Lookup ── -->
+<div class="modal-overlay" id="modal-lookup" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Web Data Lookup</span>
+      <button class="modal-close" onclick="closeModal('modal-lookup')">✕</button>
+    </div>
+    <div id="lu-url-bar">
+      <input id="lu-url-input" type="url"
+        placeholder="Paste a Wikipedia, Astronautix, or Skyrocket URL and press Fetch →"
+        onkeydown="if(event.key==='Enter')lvcLuFetch()">
+      <button class="modal-btn primary" onclick="lvcLuFetch()">Fetch</button>
+    </div>
+    <div class="modal-body" style="padding:14px;" id="lu-detail">
+      <div class="lu-dim-msg">Paste a page URL above and click Fetch</div>
+    </div>
+    <div id="lu-apply-bar">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);" id="lu-apply-note">No data loaded</span>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-btn" onclick="lvcLuSelectAll(true)">Select All</button>
+        <button class="modal-btn" onclick="lvcLuSelectAll(false)">None</button>
+        <button class="modal-btn primary" onclick="lvcLuApply()">Apply Selected to Form</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="lvc-toast"></div>
+
 </body>
 </html>
