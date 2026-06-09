@@ -756,8 +756,10 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
         </div>
         <!-- Orbit list (scrollable) -->
         <div id="nm-palette-list" style="flex:1;overflow-y:auto;padding:4px 0;"></div>
-        <!-- Footer: custom orbit button -->
-        <div style="padding:6px 8px;border-top:1px solid var(--border);flex-shrink:0;background:var(--nm-pal-hdr);">
+        <!-- Footer: action buttons -->
+        <div style="padding:6px 8px;border-top:1px solid var(--border);flex-shrink:0;background:var(--nm-pal-hdr);display:flex;flex-direction:column;gap:4px;">
+          <button onclick="progNmOpenImportOrbit()"
+            style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 0;cursor:pointer;letter-spacing:.08em;">↑ UPLOAD ORBIT</button>
           <button onclick="progNmOpenCustomNodeModal()"
             style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent);padding:4px 0;cursor:pointer;letter-spacing:.08em;">+ CUSTOM ORBIT</button>
         </div>
@@ -4255,7 +4257,7 @@ function progMakeProgram(name) {
     nodeMapCustomNodes:    [],       // user-added nodes (Phase 8)
     nodeMapCustomEdges:    [],       // user-added edges between custom nodes
     nodeMapNodePos:        {},       // nodeId → {cx,cy} position overrides (drag-to-move)
-    nodeMapActiveNodes:    [],       // built-in node IDs placed on canvas (null = legacy all-visible)
+    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth').map(n => n.id), // earth zone on by default
     performanceCases:      [],       // archived perf cases (Phase 10)
     warnings:              [],
   };
@@ -7658,6 +7660,155 @@ function progNmRemoveNode(nodeId) {
   progNmRenderPalette();
 }
 
+// ── Import orbit from calculator ─────────────────────────────────────────────
+
+/** Planet → node-map body/zone mapping. */
+function _nmPlanetToBodyZone(planet) {
+  const map = {
+    Earth:   { body: 'Earth', zone: 'earth'  },
+    Moon:    { body: 'Moon',  zone: 'lunar'  },
+    Mars:    { body: 'Mars',  zone: 'interp' },
+    Venus:   { body: 'Venus', zone: 'interp' },
+    Mercury: { body: 'Earth', zone: 'interp' }, // no Mercury node model; treat as deep-space
+    Jupiter: { body: 'Earth', zone: 'interp' },
+    Saturn:  { body: 'Earth', zone: 'interp' },
+    Uranus:  { body: 'Earth', zone: 'interp' },
+    Neptune: { body: 'Earth', zone: 'interp' },
+    Beyond:  { body: 'Earth', zone: 'interp' },
+  };
+  return map[planet] || { body: 'Earth', zone: 'earth' };
+}
+
+/** Convert an orbit-calculator orbit entry to a node-map orbit object. */
+function _nmOrbitCalcToOrbit(calcOrbit, planet) {
+  const { body } = _nmPlanetToBodyZone(planet);
+  if (calcOrbit.mode === 'orbit') {
+    const type = (calcOrbit.apogee === calcOrbit.perigee) ? 'circular' : 'elliptic';
+    return { type, body, perigee: calcOrbit.perigee, apogee: calcOrbit.apogee, inclination: calcOrbit.inc ?? 0 };
+  }
+  // escape/transit
+  if (planet === 'Moon') {
+    return { type: 'transit', body: 'Earth', c3: calcOrbit.c3 ?? -1.9, destination: 'Moon' };
+  }
+  const destMap = { Mars: 'Mars', Venus: 'Venus' };
+  if (destMap[planet]) {
+    return { type: 'transit', body: 'Sun', c3: calcOrbit.c3 ?? 8.7, departure_body: 'Earth', destination: destMap[planet] };
+  }
+  return { type: 'escape', body: 'Earth', c3: calcOrbit.c3 ?? 0 };
+}
+
+/** Open the import-orbit modal and populate the list. */
+function progNmOpenImportOrbit() {
+  openModal('modal-nm-import-orbit');
+  document.getElementById('nm-import-search').value = '';
+  progNmImportFilter();
+}
+
+/** Filter/render the import list based on search input. */
+function progNmImportFilter() {
+  const q   = (document.getElementById('nm-import-search')?.value || '').trim().toLowerCase();
+  const el  = document.getElementById('nm-import-list');
+  if (!el) return;
+
+  // Merge built-in + user-defined categories
+  const allCats = [...ORBIT_CATEGORIES];
+  // Append user-defined categories (including any extra planet keys)
+  for (const [catName, orbits] of Object.entries(userOrbitsByCategory || {})) {
+    const existing = allCats.find(c => c.planet === catName);
+    if (existing) {
+      // Merge user orbits into built-in category (deduplicated by name)
+      const merged = [...existing.orbits];
+      for (const uo of orbits) {
+        if (!merged.some(o => o.name === uo.name)) merged.push(uo);
+      }
+      // We'll render user orbits separately so just collect them
+    } else {
+      allCats.push({ planet: catName, icon: '★', color: '#a0a0c0', orbits });
+    }
+  }
+
+  let html = '';
+  for (const cat of allCats) {
+    // Combine built-in + user orbits for this planet
+    const userOrbits = (userOrbitsByCategory || {})[cat.planet] || [];
+    const builtinOrbits = cat.orbits;
+    const allOrbits = [...builtinOrbits, ...userOrbits.filter(u => !builtinOrbits.some(b => b.name === u.name))];
+    const filtered = q ? allOrbits.filter(o => o.name.toLowerCase().includes(q) || cat.planet.toLowerCase().includes(q)) : allOrbits;
+    if (!filtered.length) continue;
+
+    html += `<div style="padding:4px 10px 2px;font-family:var(--mono);font-size:8px;letter-spacing:.14em;color:${cat.color};opacity:.8;">${cat.icon} ${cat.planet.toUpperCase()}</div>`;
+    for (const orbit of filtered) {
+      const safeName = orbit.name.replace(/'/g, "\\'");
+      const safePlanet = cat.planet.replace(/'/g, "\\'");
+      const sub = orbit.mode === 'orbit'
+        ? `${orbit.perigee}×${orbit.apogee} km  ${orbit.inc ?? 0}°`
+        : `C3 = ${orbit.c3} km²/s²`;
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);">
+        <span style="flex:1;min-width:0;">
+          <span style="display:block;font-family:var(--mono);font-size:10px;color:var(--text);">${orbit.name}</span>
+          <span style="display:block;font-family:var(--mono);font-size:8px;color:var(--text-dim);">${sub}</span>
+        </span>
+        <button onclick="progNmImportOrbit('${safeName}','${safePlanet}')"
+          style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent);padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;">+ Add</button>
+      </div>`;
+    }
+  }
+
+  if (!html) html = `<div style="padding:20px;font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;">No matches</div>`;
+  el.innerHTML = html;
+}
+
+/**
+ * Import a named orbit from the calculator into the node map as a custom node.
+ * @param {string} orbitName  - orbit.name from ORBIT_CATEGORIES
+ * @param {string} planet     - category planet name
+ */
+function progNmImportOrbit(orbitName, planet) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+
+  // Find the orbit entry
+  const cat = ORBIT_CATEGORIES.find(c => c.planet === planet)
+    || { planet, orbits: [] };
+  const userOrbits = (userOrbitsByCategory || {})[planet] || [];
+  const allOrbits  = [...cat.orbits, ...userOrbits];
+  const calcOrbit  = allOrbits.find(o => o.name === orbitName);
+  if (!calcOrbit) return;
+
+  const { body, zone } = _nmPlanetToBodyZone(planet);
+  const orbitObj = _nmOrbitCalcToOrbit(calcOrbit, planet);
+
+  // Derive display label (≤ 10 chars) and sub
+  const label = orbitName.replace(/[^A-Z0-9°+\-\s]/gi, '').slice(0, 10).trim().toUpperCase() || 'ORBIT';
+  const sub   = orbitName;
+
+  // Altitude for positioning: use perigee for orbits, 0 for escapes (positioned at transit shelf)
+  const alt_km = (calcOrbit.mode === 'orbit') ? ((calcOrbit.apogee + calcOrbit.perigee) / 2) : -1;
+  const posZone = (calcOrbit.mode === 'orbit') ? zone : 'interp';
+  const { cx, cy: rawCy } = _progNmAutoPos(posZone, Math.max(alt_km, 0));
+  const cy = (calcOrbit.mode !== 'orbit') ? 148 : rawCy; // escapes go on transit shelf
+
+  // Zone color as a hex for the node dot
+  const colorMap = { earth: '#5db877', lunar: '#8890bc', interp: '#b85848' };
+  const color = colorMap[zone] || '#a0a0c0';
+
+  const nodeId = 'import-' + Date.now().toString(36);
+  const node = { nodeId, label, sub, body, zone, alt_km: Math.max(alt_km, 0), color, cx, cy, isCustom: true, orbit: orbitObj };
+
+  if (!PROG_ACTIVE_PROGRAM.nodeMapCustomNodes) PROG_ACTIVE_PROGRAM.nodeMapCustomNodes = [];
+  PROG_ACTIVE_PROGRAM.nodeMapCustomNodes.push(node);
+
+  progRenderNodeMap();
+
+  // Flash the button briefly as confirmation
+  event?.target && (() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    btn.style.color = 'var(--accent)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 900);
+  })();
+}
+
 // ── End Palette panel ─────────────────────────────────────────────────────────
 
 function progNmSvgClick(evt) {
@@ -8458,6 +8609,20 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
       <button class="modal-btn" onclick="progNmCancelEdgeModal()">Cancel</button>
       <button class="modal-btn primary" onclick="progNmConfirmEdge()">Add Edge</button>
     </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Import Orbit from Calculator ── -->
+<div class="modal-overlay" id="modal-nm-import-orbit" style="display:none">
+  <div class="modal-box" style="width:480px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+      <span class="modal-title">Import Orbit to Node Map</span>
+      <button onclick="closeModal('modal-nm-import-orbit')" class="modal-close">✕</button>
+    </div>
+    <input id="nm-import-search" type="text" placeholder="Search orbits…"
+      oninput="progNmImportFilter()"
+      style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 7px;outline:none;margin-bottom:8px;flex-shrink:0;">
+    <div id="nm-import-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 </div>
 
