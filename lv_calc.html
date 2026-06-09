@@ -4259,7 +4259,7 @@ function progMakeProgram(name) {
     nodeMapCustomNodes:    [],       // user-added nodes (Phase 8)
     nodeMapCustomEdges:    [],       // user-added edges between custom nodes
     nodeMapNodePos:        {},       // nodeId → {cx,cy} position overrides (drag-to-move)
-    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth').map(n => n.id), // earth zone on by default
+    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
     performanceCases:      [],       // archived perf cases (Phase 10)
     warnings:              [],
   };
@@ -6505,9 +6505,9 @@ function progNmHideTip() {
 //   escape/transit → near the SOI boundary or in open space between systems
 // All positions verified: no node overlaps each other or the planet body disc.
 const PROG_NM_NODES = [
-  // ── Earth system — body center (195, 255), bodyR=26, SOI r=150 ───────────────
-  // Surface sits just below the planet disc.
-  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:195, cy:313, r:22,
+  // ── Earth system — body center (195, 255), bodyR=26, SOI r=210 ───────────────
+  // Surface node lives AT the planet body center — the disc IS the node visually.
+  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:195, cy:255, r:26,
     orbit:{ type:'surface',  body:'Earth' } },
   // LEO directly above the planet (57 px from center → 19 px clear of disc top).
   { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:195, cy:190, r:20,
@@ -6530,8 +6530,8 @@ const PROG_NM_NODES = [
     orbit:{ type:'circular', body:'Moon',  perigee:100,   apogee:100,   inclination:90 } },
   { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:483, cy:138, r:18,
     orbit:{ type:'circular', body:'Moon',  perigee:68300, apogee:68300, inclination:0 } },
-  // Surface just below Moon disc.
-  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:450, cy:236, r:20,
+  // Surface node at Moon body center — disc is the node.
+  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:450, cy:192, r:12,
     orbit:{ type:'surface',  body:'Moon' } },
 
   // ── Mars system — body center (860, 205), bodyR=18, SOI r=80 ─────────────────
@@ -6540,7 +6540,8 @@ const PROG_NM_NODES = [
   // Orbit above, surface below.
   { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:860, cy:150, r:22,
     orbit:{ type:'circular', body:'Mars',  perigee:400,   apogee:400,   inclination:0 } },
-  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:860, cy:248, r:20,
+  // Surface node at Mars body center — disc is the node.
+  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:860, cy:205, r:18,
     orbit:{ type:'surface',  body:'Mars' } },
 
   // ── Venus system — body center (848, 380), bodyR=15, SOI r=67 ────────────────
@@ -6551,22 +6552,8 @@ const PROG_NM_NODES = [
     orbit:{ type:'circular', body:'Venus', perigee:300,   apogee:300,   inclination:0 } },
 ];
 
-// ΔV label pill positions (lx,ly) = midpoint of each edge.
-const PROG_NM_EDGES = [
-  { id:'surface-leo',  from:'earth-surface', to:'leo',           dv:9400,  lx:212, ly:408 },
-  { id:'leo-gto',      from:'leo',           to:'gto',           dv:2440,  lx:183, ly:297 },
-  { id:'gto-geo',      from:'gto',           to:'geo',           dv:1500,  lx:234, ly:237 },
-  { id:'leo-escape',   from:'leo',           to:'escape',        dv:3200,  lx:302, ly:248 },
-  { id:'leo-tlc',      from:'leo',           to:'tlc',           dv:3150,  lx:366, ly:298 },
-  { id:'tlc-dro',      from:'tlc',           to:'dro',           dv:820,   lx:506, ly:196 },
-  { id:'tlc-llo',      from:'tlc',           to:'llo',           dv:900,   lx:514, ly:310 },
-  { id:'llo-moon',     from:'llo',           to:'moon-surface',  dv:1870,  lx:568, ly:400 },
-  { id:'leo-mars',     from:'leo',           to:'mars-transit',  dv:3650,  lx:508, ly:262, dashed:true },
-  { id:'mars-moi',     from:'mars-transit',  to:'mars-orbit',    dv:900,   lx:882, ly:168 },
-  { id:'mars-land',    from:'mars-orbit',    to:'mars-surface',  dv:3800,  lx:1024,ly:198 },
-  { id:'leo-venus',    from:'leo',           to:'venus-transit', dv:3500,  lx:508, ly:360, dashed:true },
-  { id:'venus-voi',    from:'venus-transit', to:'venus-orbit',   dv:820,   lx:882, ly:392 },
-];
+// No pre-spawned edges — users draw their own via right-click → Add Edge From Here.
+const PROG_NM_EDGES = [];
 
 // ── Node Map renderer ─────────────────────────────────────────────────────────
 function progRenderNodeMap() {
@@ -6666,25 +6653,46 @@ function progRenderNodeMap() {
   s += `<g id="nm-world">`;
 
   // ── Planet system blobs ──────────────────────────────────────────────────────
-  // Each blob = layered concentric circles creating a soft "sphere of influence" glow.
-  // Decorative planet body circle at center (NOT interactive — nodes sit on top).
+  // Each blob = layered SOI glow + an interactive planet body disc.
+  // The body disc IS the surface node — no separate circle is rendered for surface nodes.
+  // nodeId: surface node this disc represents (null = Venus, decorative only).
   const PLANET_BLOBS = [
-    { cx:195, cy:255, r:210, col:nmEarth,  bodyR:26, label:'EARTH'  },
-    { cx:450, cy:192, r:100, col:nmLunar,  bodyR:12, label:'MOON'   },
-    { cx:860, cy:205, r:115, col:nmInterp, bodyR:18, label:'MARS'   },
-    { cx:848, cy:380, r:100, col:nmInterp, bodyR:15, label:'VENUS'  },
+    { cx:195, cy:255, r:210, col:nmEarth,  bodyR:26, label:'EARTH', nodeId:'earth-surface' },
+    { cx:450, cy:192, r:100, col:nmLunar,  bodyR:12, label:'MOON',  nodeId:'moon-surface'  },
+    { cx:860, cy:205, r:115, col:nmInterp, bodyR:18, label:'MARS',  nodeId:'mars-surface'  },
+    { cx:848, cy:380, r:100, col:nmInterp, bodyR:15, label:'VENUS', nodeId:null             },
   ];
   for (const b of PLANET_BLOBS) {
+    // Determine whether the surface node for this body is active / ghost / n/a
+    const surfActive = !b.nodeId || isLegacy || (activeIds || []).includes(b.nodeId);
+
     // Soft concentric fill layers (outermost → innermost, increasing opacity)
-    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}"       fill="${b.col}" fill-opacity=".04"/>`;
-    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.72}"   fill="${b.col}" fill-opacity=".05"/>`;
-    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.44}"   fill="${b.col}" fill-opacity=".07"/>`;
+    const blobOp = surfActive ? 1 : 0.4;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}"       fill="${b.col}" fill-opacity="${.04*blobOp}"/>`;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.72}"   fill="${b.col}" fill-opacity="${.05*blobOp}"/>`;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.44}"   fill="${b.col}" fill-opacity="${.07*blobOp}"/>`;
     // SOI boundary ring (dashed)
-    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="none" stroke="${b.col}" stroke-width="1" stroke-opacity=".18" stroke-dasharray="4,5"/>`;
-    // Planet body disc
-    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.bodyR}" fill="${b.col}" fill-opacity=".45" stroke="${b.col}" stroke-width="1.2" stroke-opacity=".6"/>`;
-    // Planet name label (dim, below body disc)
-    s += `<text x="${b.cx}" y="${b.cy + b.bodyR + 11}" text-anchor="middle" fill="${b.col}" fill-opacity=".5" font-size="8" font-family="monospace" font-weight="600" letter-spacing="1" style="pointer-events:none">${b.label}</text>`;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="none" stroke="${b.col}" stroke-width="1" stroke-opacity="${.18*blobOp}" stroke-dasharray="4,5"/>`;
+
+    // Planet body disc — interactive if it has a surface nodeId
+    if (b.nodeId) {
+      const discDash = surfActive ? '' : 'stroke-dasharray="4,3"';
+      const discFillOp = surfActive ? '.55' : '.18';
+      const discStrokeOp = surfActive ? '.75' : '.35';
+      const nodeAttrs = `data-nid="${b.nodeId}"`
+        + ` onmousedown="progNmNodeDown(event,'${b.nodeId}')"`
+        + ` oncontextmenu="progNmNodeRightClick(event,'${b.nodeId}');return false;"`
+        + ` style="cursor:grab;"`;
+      s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.bodyR}"
+              fill="${b.col}" fill-opacity="${discFillOp}"
+              stroke="${b.col}" stroke-width="1.8" stroke-opacity="${discStrokeOp}"
+              ${discDash} ${nodeAttrs}/>`;
+    } else {
+      // Decorative only
+      s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.bodyR}" fill="${b.col}" fill-opacity=".45" stroke="${b.col}" stroke-width="1.2" stroke-opacity=".6"/>`;
+    }
+    // Planet label below disc
+    s += `<text x="${b.cx}" y="${b.cy + b.bodyR + 11}" text-anchor="middle" fill="${b.col}" fill-opacity="${.5*blobOp}" font-size="8" font-family="monospace" font-weight="600" letter-spacing="1" style="pointer-events:none">${b.label}</text>`;
   }
 
   // ── Edges: dim → active → selected ──────────────────────────────────────────
@@ -6737,7 +6745,10 @@ function progRenderNodeMap() {
   }
 
   // ── Nodes ────────────────────────────────────────────────────────────────────
+  // Surface nodes are represented by the planet body disc above — skip them here.
+  const surfaceNodeIds = new Set(PLANET_BLOBS.filter(b => b.nodeId).map(b => b.nodeId));
   for (const node of allNodes) {
+    if (!node.isCustom && surfaceNodeIds.has(node.id)) continue; // rendered as planet disc
     const ncol   = node.isCustom ? (node.col || nmEdgeAct) : _zoneCol(node.zone);
     const da     = node.dashed ? 'stroke-dasharray="6,3"' : '';
     const sw     = node.r >= 20 ? 2.5 : 2;
@@ -6777,6 +6788,7 @@ function progRenderNodeMap() {
   if (ghostNodes.length > 0) {
     const nmGhost = cs.getPropertyValue('--nm-ghost').trim() || '#524f50';
     for (const node of ghostNodes) {
+      if (surfaceNodeIds.has(node.id)) continue; // ghost state shown via planet disc opacity
       const zc = _zoneCol(node.zone);
       const da = node.dashed ? '6,4' : '4,3';
       const sw = node.r >= 20 ? 2 : 1.5;
