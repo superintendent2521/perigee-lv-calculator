@@ -701,6 +701,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
       <button onclick="progLoadDemoMission()" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Demo</button>
       <button onclick="showConfirm('Clear Program','This will remove all vehicles, events, and custom nodes. Pads will be kept.',progClearMission,'Clear')" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Clear</button>
       <button onclick="progOpenSpacecraftEditor()" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Spacecraft</button>
+      <button onclick="progOpenArtManager()" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Art</button>
       <button onclick="progExportConops()"    style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Export</button>
       <button onclick="progSaveProgram()"     style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Save</button>
       <button onclick="progLoadProgramFromFile()" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 7px;cursor:pointer;letter-spacing:.05em;">Load</button>
@@ -4499,6 +4500,7 @@ function progMakeFlightVehicle(name, stages, orbitState, color) {
     vehicleId:       progUUID(),
     name:            name  ?? 'Vehicle',
     color:           color ?? PROG_VEHICLE_COLORS[_progColorIdx++ % PROG_VEHICLE_COLORS.length],
+    artKey:          null,              // artId from PROG_ART_REGISTRY, or null
     stages:          stages ?? [],      // LiveStage[], bottom → top
     orbitState:      orbitState ?? null,
     status:          'PRELAUNCH',       // PRELAUNCH | ASCENT | ORBIT | TRANSFER | LANDED | EXPENDED
@@ -4589,6 +4591,9 @@ function progExecLaunch(program, event) {
     if (scd) launchStages = [...launchStages, ...progSpacecraftToLiveStages(scd)];
   }
   const fv = progMakeFlightVehicle(event.label ?? 'Vehicle', launchStages, orbit, event.color ?? null);
+  // Inherit art from the vehicleDefinition with the same name (if present)
+  const _vdef = program.vehicleDefinitions?.find(v => v.name === fv.name);
+  fv.artKey = event.artKey ?? _vdef?.artKey ?? null;
   fv.status = 'ORBIT';
   program.vehicles[fv.vehicleId] = fv;
   event.vehicleId = fv.vehicleId;
@@ -5406,15 +5411,22 @@ function progRenderVehicleList() {
     el.innerHTML = '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:6px 8px;opacity:.5;">// none loaded</div>';
     return;
   }
-  el.innerHTML = prog.vehicleDefinitions.map((vd, i) =>
-    '<div style="padding:5px 8px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;"' +
-    ' title="' + (vd.stageData ? vd.stageData.length + ' stages' : '') + '">' +
-    '<span style="font-family:var(--mono);font-size:10px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">' +
-      (vd.name || 'Vehicle') + '</span>' +
-    '<button onclick="progRemoveVehicleDef(' + i + ')" title="Remove" ' +
-      'style="font-family:var(--mono);font-size:9px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>' +
-    '</div>'
-  ).join('');
+  el.innerHTML = prog.vehicleDefinitions.map((vd, i) => {
+    const ae = vd.artKey ? PROG_ART_REGISTRY[vd.artKey] : null;
+    const artSlot = ae
+      ? `<img src="${ae.dataURL}" onclick="event.stopPropagation();progOpenArtPicker(${i})" title="Change art"
+           style="width:18px;height:18px;object-fit:contain;flex-shrink:0;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);">`
+      : `<span onclick="event.stopPropagation();progOpenArtPicker(${i})" title="Assign art"
+           style="width:18px;height:18px;flex-shrink:0;cursor:pointer;border:1px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dim);opacity:.5;">+</span>`;
+    return '<div style="padding:4px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px;"' +
+      ' title="' + (vd.stageData ? vd.stageData.length + ' stages' : '') + '">' +
+      artSlot +
+      '<span style="font-family:var(--mono);font-size:10px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">' +
+        (vd.name || 'Vehicle') + '</span>' +
+      '<button onclick="progRemoveVehicleDef(' + i + ')" title="Remove" ' +
+        'style="font-family:var(--mono);font-size:9px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>' +
+      '</div>';
+  }).join('');
 }
 
 function progRemoveVehicleDef(idx) {
@@ -6501,7 +6513,7 @@ function _progBvDrawAxis(ctx,W,H,layout){const{AXIS_H,LEFT_W}=PROG_BV;ctx.fillSt
 
 function _progBvDrawZones(ctx,W,layout){const LW=PROG_BV.LEFT_W;for(const zone of layout.zones){ctx.fillStyle=zone.bg;ctx.fillRect(0,zone.y,W,zone.h);ctx.fillStyle='rgba(0,0,0,.20)';ctx.fillRect(0,zone.y,LW,zone.h);ctx.strokeStyle=zone.lc;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,zone.y);ctx.lineTo(W,zone.y);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.04)';ctx.beginPath();ctx.moveTo(LW,zone.y);ctx.lineTo(LW,zone.y+zone.h);ctx.stroke();if(zone.h<8)continue;ctx.save();ctx.translate(LW/2,zone.y+zone.h/2);ctx.rotate(-Math.PI/2);const lc=zone.lc.replace(/,[^)]+\)$/,',0.7)');ctx.fillStyle=zone.active?lc:'#2e2f40';ctx.font=(zone.active?'8':'7')+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(zone.label,0,0);ctx.restore();ctx.textAlign='left';ctx.textBaseline='alphabetic';}}
 
-function _progBvDrawTracks(ctx,prog,W,layout){const hitNodes=[],trackHits=[],LW=PROG_BV.LEFT_W;for(const fv of Object.values(prog.vehicles)){const col=fv.color||'#888',evs=(prog.events||[]).filter(e=>e.vehicleId===fv.vehicleId),segs=_progBvComputeSegments(fv,evs,layout,W);const initY=_progBvNodePxY(_progBvStateToNode(fv.orbitState),layout)??((layout.zones[layout.zones.length-1]?.y??0)+20);ctx.fillStyle=col+'cc';ctx.font='8px monospace';ctx.textBaseline='bottom';ctx.fillText(fv.name.substring(0,10),2,initY-2);ctx.textBaseline='alphabetic';const ys=segs.flatMap(s=>[s.y1,s.y2]);const minY=ys.length?Math.min(...ys):initY,maxY=ys.length?Math.max(...ys):initY;trackHits.push({vehicleId:fv.vehicleId,y0:minY-14,y1:maxY+14});for(const seg of segs){const x1=_progBvTx(seg.t1,W),x2=_progBvTx(Math.max(seg.t1+1,seg.t2),W);if(x2<LW-2||x1>W+2)continue;const cx1=Math.max(LW-1,Math.min(W+1,x1)),cx2=Math.max(LW-1,Math.min(W+1,x2));const sp=x2-x1,f1=sp>0.5?(cx1-x1)/sp:0,f2=sp>0.5?(cx2-x1)/sp:1;const cy1=seg.y1+(seg.y2-seg.y1)*f1,cy2=seg.y1+(seg.y2-seg.y1)*f2;ctx.globalAlpha=seg.dash?.72:.88;ctx.lineWidth=seg.dash?1.5:2;ctx.strokeStyle=col;if(seg.dash)ctx.setLineDash([4,2]);else ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(cx1,cy1);ctx.lineTo(cx2,cy2);ctx.stroke();}ctx.setLineDash([]);ctx.globalAlpha=1;for(const ev of evs){const x=_progBvTx(ev.tStart,W);if(x<LW-14||x>W+14)continue;const nid=ev.fromNode||(ev.type==='LAUNCH'?'earth-surface':null);const evY=(nid?_progBvNodePxY(nid,layout):null)??initY;const es=PROG_EV_STYLE[ev.type]||{sym:'●',col:'#888'};const ncol=_progBvResultCol(ev.result),isSel=PROG_BAND_STATE.selId===ev.eventId;const r=['BURN','ASCENT_SURFACE'].includes(ev.type)?_progBvDvR(ev.dvTarget):PROG_BV.ICON_R;ctx.beginPath();ctx.arc(x,evY,r,0,2*Math.PI);ctx.fillStyle=ncol;ctx.fill();if(isSel){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}ctx.font=`${r+2}px monospace`;ctx.fillStyle='#000000bb';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(es.sym,x,evY);ctx.textAlign='left';ctx.textBaseline='alphabetic';if(ev.warnings?.length){ctx.fillStyle='#e5c07b';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('⚠',x,evY-r-3);ctx.textAlign='left';}hitNodes.push({evId:ev.eventId,cx:x,cy:evY,r:Math.max(r,8)});}}PROG_BAND_STATE.hitNodes=hitNodes;PROG_BAND_STATE.trackHits=trackHits;}
+function _progBvDrawTracks(ctx,prog,W,layout){const hitNodes=[],trackHits=[],LW=PROG_BV.LEFT_W;for(const fv of Object.values(prog.vehicles)){const col=fv.color||'#888',evs=(prog.events||[]).filter(e=>e.vehicleId===fv.vehicleId),segs=_progBvComputeSegments(fv,evs,layout,W);const initY=_progBvNodePxY(_progBvStateToNode(fv.orbitState),layout)??((layout.zones[layout.zones.length-1]?.y??0)+20);ctx.fillStyle=col+'cc';ctx.font='8px monospace';ctx.textBaseline='bottom';ctx.fillText(fv.name.substring(0,10),2,initY-2);ctx.textBaseline='alphabetic';{const _ai=progArtGetImg(fv.artKey);if(_ai)ctx.drawImage(_ai,LW-22,initY-16,16,16);}const ys=segs.flatMap(s=>[s.y1,s.y2]);const minY=ys.length?Math.min(...ys):initY,maxY=ys.length?Math.max(...ys):initY;trackHits.push({vehicleId:fv.vehicleId,y0:minY-14,y1:maxY+14});for(const seg of segs){const x1=_progBvTx(seg.t1,W),x2=_progBvTx(Math.max(seg.t1+1,seg.t2),W);if(x2<LW-2||x1>W+2)continue;const cx1=Math.max(LW-1,Math.min(W+1,x1)),cx2=Math.max(LW-1,Math.min(W+1,x2));const sp=x2-x1,f1=sp>0.5?(cx1-x1)/sp:0,f2=sp>0.5?(cx2-x1)/sp:1;const cy1=seg.y1+(seg.y2-seg.y1)*f1,cy2=seg.y1+(seg.y2-seg.y1)*f2;ctx.globalAlpha=seg.dash?.72:.88;ctx.lineWidth=seg.dash?1.5:2;ctx.strokeStyle=col;if(seg.dash)ctx.setLineDash([4,2]);else ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(cx1,cy1);ctx.lineTo(cx2,cy2);ctx.stroke();}ctx.setLineDash([]);ctx.globalAlpha=1;for(const ev of evs){const x=_progBvTx(ev.tStart,W);if(x<LW-14||x>W+14)continue;const nid=ev.fromNode||(ev.type==='LAUNCH'?'earth-surface':null);const evY=(nid?_progBvNodePxY(nid,layout):null)??initY;const es=PROG_EV_STYLE[ev.type]||{sym:'●',col:'#888'};const ncol=_progBvResultCol(ev.result),isSel=PROG_BAND_STATE.selId===ev.eventId;const r=['BURN','ASCENT_SURFACE'].includes(ev.type)?_progBvDvR(ev.dvTarget):PROG_BV.ICON_R;ctx.beginPath();ctx.arc(x,evY,r,0,2*Math.PI);ctx.fillStyle=ncol;ctx.fill();if(isSel){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}ctx.font=`${r+2}px monospace`;ctx.fillStyle='#000000bb';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(es.sym,x,evY);ctx.textAlign='left';ctx.textBaseline='alphabetic';if(ev.warnings?.length){ctx.fillStyle='#e5c07b';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('⚠',x,evY-r-3);ctx.textAlign='left';}hitNodes.push({evId:ev.eventId,cx:x,cy:evY,r:Math.max(r,8)});}}PROG_BAND_STATE.hitNodes=hitNodes;PROG_BAND_STATE.trackHits=trackHits;}
 
 function _progBvDrawMinimap(ctx, prog, W, H, layout) {
   const { MINIMAP_H } = PROG_BV;
@@ -7179,7 +7191,7 @@ function progRenderNodeMap() {
       if (fv.status === 'EXPENDED') return;
       const nid = _progNmVehicleNode(fv);
       if (!vehicleTags[nid]) vehicleTags[nid] = [];
-      vehicleTags[nid].push({ name: fv.name, color: fv.color || nmEdgeAct });
+      vehicleTags[nid].push({ name: fv.name, color: fv.color || nmEdgeAct, artKey: fv.artKey ?? null });
     });
     for (const [nid, tags] of Object.entries(vehicleTags)) {
       const n = allNodes.find(nd => nd.id === nid);
@@ -7188,6 +7200,15 @@ function progRenderNodeMap() {
         const ringR = n.r + 7 + i * 7;
         s += `<circle cx="${n.cx}" cy="${n.cy}" r="${ringR}" fill="none"`
            + ` stroke="${tag.color}" stroke-width="1.8" stroke-dasharray="5,3" opacity=".6"/>`;
+        // Art icon — drawn inside the node circle for the first vehicle at this node
+        if (i === 0 && tag.artKey && PROG_ART_REGISTRY[tag.artKey]) {
+          const ae = PROG_ART_REGISTRY[tag.artKey];
+          const ir = Math.max(n.r - 3, 8);
+          const clipId = 'artclip_' + nid.replace(/[^a-z0-9]/gi,'_');
+          s += `<defs><clipPath id="${clipId}"><circle cx="${n.cx}" cy="${n.cy}" r="${ir}"/></clipPath></defs>`;
+          s += `<image href="${ae.dataURL}" x="${n.cx - ir}" y="${n.cy - ir}" width="${ir * 2}" height="${ir * 2}"`;
+          s += ` clip-path="url(#${clipId})" style="pointer-events:none" opacity=".9"/>`;
+        }
         const tagAngle = -Math.PI / 4 + i * 0.4;
         const tx = n.cx + (ringR + 6) * Math.cos(tagAngle);
         const ty = n.cy + (ringR + 6) * Math.sin(tagAngle);
@@ -8838,6 +8859,218 @@ function progUpdateStageDef(scId, stageId, field, val) {
   if (st) st[field] = val;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── ART REGISTRY ──────────────────────────────────────────────────────────────
+// Vehicle artwork: user-supplied images (PNG / SVG / JPG / WebP) stored in
+// IndexedDB so they survive page reload.  The in-memory registry maps
+// artId → { artId, name, dataURL, mimeType, width, height }.
+// A pre-loaded HTMLImageElement cache (keyed by artId) means ctx.drawImage()
+// never has to wait for a load event during render.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let   PROG_ART_REGISTRY = {};           // artId → entry object
+const _progArtImgCache  = new Map();    // artId → HTMLImageElement (ready)
+let   _progArtDB        = null;
+
+// ── IndexedDB wrapper ─────────────────────────────────────────────────────────
+
+function _progArtDbOpen() {
+  if (_progArtDB) return Promise.resolve(_progArtDB);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('rp_art', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('art')) db.createObjectStore('art', { keyPath: 'artId' });
+    };
+    req.onsuccess = e => { _progArtDB = e.target.result; resolve(_progArtDB); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function _progArtDbPut(entry) {
+  return _progArtDbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction('art', 'readwrite');
+    tx.objectStore('art').put(entry);
+    tx.oncomplete = () => res(); tx.onerror = e => rej(e.target.error);
+  }));
+}
+function _progArtDbDelete(artId) {
+  return _progArtDbOpen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction('art', 'readwrite');
+    tx.objectStore('art').delete(artId);
+    tx.oncomplete = () => res(); tx.onerror = e => rej(e.target.error);
+  }));
+}
+function _progArtDbGetAll() {
+  return _progArtDbOpen().then(db => new Promise((res, rej) => {
+    const tx  = db.transaction('art', 'readonly');
+    const req = tx.objectStore('art').getAll();
+    req.onsuccess = e => res(e.target.result || []);
+    req.onerror   = e => rej(e.target.error);
+  }));
+}
+
+// ── Registry helpers ──────────────────────────────────────────────────────────
+
+/** Pre-load one registry entry into the image cache; re-renders band view on load. */
+function _progArtPreload(entry) {
+  const img = new Image();
+  img.onload = () => {
+    _progArtImgCache.set(entry.artId, img);
+    if (typeof progRenderBandView === 'function') progRenderBandView();
+  };
+  img.src = entry.dataURL;
+}
+
+/** Load all stored art from IndexedDB into the registry and image cache. */
+function progArtInit() {
+  _progArtDbGetAll().then(entries => {
+    entries.forEach(entry => {
+      PROG_ART_REGISTRY[entry.artId] = entry;
+      _progArtPreload(entry);
+    });
+    if (entries.length) _progArtRebuildManagerList();
+  }).catch(err => console.warn('[Art] registry init:', err));
+}
+
+/**
+ * Return a pre-loaded HTMLImageElement ready for ctx.drawImage(), or null.
+ * Never triggers a load — always synchronous.
+ */
+function progArtGetImg(artId) {
+  return artId ? (_progArtImgCache.get(artId) ?? null) : null;
+}
+
+/** Handle file input: read as DataURL, add to registry and IndexedDB. */
+function progArtUploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataURL    = e.target.result;
+    const nameEl     = document.getElementById('art-upload-name');
+    const name       = (nameEl?.value.trim() || file.name.replace(/\.[^.]+$/, '') || 'Art');
+    const artId      = 'art_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const probe      = new Image();
+    probe.onload = () => {
+      const entry = { artId, name, dataURL, mimeType: file.type || 'image/png',
+                      width: probe.naturalWidth, height: probe.naturalHeight };
+      PROG_ART_REGISTRY[artId] = entry;
+      _progArtPreload(entry);
+      _progArtDbPut(entry).catch(err => console.warn('[Art] DB write:', err));
+      if (nameEl) nameEl.value = '';
+      input.value = '';
+      _progArtRebuildManagerList();
+    };
+    probe.src = dataURL;
+  };
+  reader.readAsDataURL(file);
+}
+
+/** Remove an art entry; unassigns from all vehicleDefs and live FlightVehicles. */
+function progArtDelete(artId) {
+  if (!confirm('Delete this art? Vehicles using it will lose their icon.')) return;
+  delete PROG_ART_REGISTRY[artId];
+  _progArtImgCache.delete(artId);
+  _progArtDbDelete(artId).catch(err => console.warn('[Art] DB delete:', err));
+  if (PROG_ACTIVE_PROGRAM) {
+    (PROG_ACTIVE_PROGRAM.vehicleDefinitions || []).forEach(vd => { if (vd.artKey === artId) vd.artKey = null; });
+    Object.values(PROG_ACTIVE_PROGRAM.vehicles || {}).forEach(fv => { if (fv.artKey === artId) fv.artKey = null; });
+  }
+  _progArtRebuildManagerList();
+  if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
+  if (typeof progRenderBandView    === 'function') progRenderBandView();
+}
+
+// ── Art Manager modal ─────────────────────────────────────────────────────────
+
+function progOpenArtManager() {
+  openModal('modal-prog-art-manager');
+  _progArtRebuildManagerList();
+}
+
+function _progArtRebuildManagerList() {
+  const el = document.getElementById('art-manager-list');
+  if (!el) return;
+  const entries = Object.values(PROG_ART_REGISTRY);
+  if (!entries.length) {
+    el.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;">// No art uploaded yet</div>';
+    return;
+  }
+  el.innerHTML = entries.map(entry => {
+    const sid = entry.artId.replace(/'/g, "\\'");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border);">
+      <img src="${entry.dataURL}" style="width:32px;height:32px;object-fit:contain;flex-shrink:0;
+        background:rgba(255,255,255,.04);border:1px solid var(--border);">
+      <span style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${entry.name}">${entry.name}</span>
+      <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);
+        white-space:nowrap;flex-shrink:0;">${entry.width}×${entry.height}</span>
+      <button onclick="progArtDelete('${sid}')" title="Delete"
+        style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
+          color:#e06c75;padding:2px 7px;cursor:pointer;flex-shrink:0;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Art Picker (assign art to a vehicleDefinition) ────────────────────────────
+
+let _progArtPickerIdx = -1;
+
+function progOpenArtPicker(vdefIdx) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  _progArtPickerIdx = vdefIdx;
+  const vd      = PROG_ACTIVE_PROGRAM.vehicleDefinitions?.[vdefIdx];
+  const entries = Object.values(PROG_ART_REGISTRY);
+  const el      = document.getElementById('art-picker-list');
+  if (!el) return;
+
+  if (!entries.length) {
+    el.innerHTML = `<div style="padding:20px 16px;font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;">
+      // No art in library.<br>Upload via the toolbar → Art manager.</div>`;
+  } else {
+    const header = `<div style="padding:5px 12px 6px;font-family:var(--mono);font-size:8px;
+      color:var(--text-dim);letter-spacing:.12em;border-bottom:1px solid var(--border);">
+      ASSIGN TO: ${vd?.name ?? ''}</div>`;
+    const rows = entries.map(entry => {
+      const sid   = entry.artId.replace(/'/g, "\\'");
+      const isCur = vd?.artKey === entry.artId;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);">
+        <img src="${entry.dataURL}" style="width:26px;height:26px;object-fit:contain;flex-shrink:0;
+          background:rgba(255,255,255,.04);border:1px solid var(--border);">
+        <span style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.name}</span>
+        <button onclick="progAssignArt('${sid}')"
+          style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
+            color:${isCur ? 'var(--text-dim)' : 'var(--accent)'};padding:2px 8px;cursor:pointer;
+            white-space:nowrap;flex-shrink:0;">${isCur ? '✓ Set' : '+ Assign'}</button>
+      </div>`;
+    }).join('');
+    const remove = vd?.artKey
+      ? `<div style="padding:7px 12px;"><button onclick="progAssignArt(null)"
+          style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;
+            border:1px solid var(--border);color:#e06c75;padding:3px 0;cursor:pointer;">
+          ✕ Remove Art</button></div>` : '';
+    el.innerHTML = header + rows + remove;
+  }
+  openModal('modal-prog-art-picker');
+}
+
+/** Set (or clear) artKey on the vehicleDefinition and any matching live FlightVehicles. */
+function progAssignArt(artId) {
+  if (!PROG_ACTIVE_PROGRAM || _progArtPickerIdx < 0) return;
+  const vd = PROG_ACTIVE_PROGRAM.vehicleDefinitions[_progArtPickerIdx];
+  if (vd) {
+    vd.artKey = artId ?? null;
+    // Propagate to live vehicles with the same name
+    Object.values(PROG_ACTIVE_PROGRAM.vehicles || {}).forEach(fv => {
+      if (fv.name === vd.name) fv.artKey = artId ?? null;
+    });
+  }
+  closeModal('modal-prog-art-picker');
+  if (typeof progRenderVehicleList === 'function') progRenderVehicleList();
+  if (typeof progRenderBandView    === 'function') progRenderBandView();
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 const PROG_P9_TEST_RESULTS = (() => { try {
   const sc = progMakeSpacecraftDefinition('CSM');
@@ -9112,9 +9345,13 @@ function progRenderClosureBar() {
     const allDone = evs.length > 0 && evs.every(e => e.result === 'SUCCESS' || e.result === 'MARGINAL' || e.result === 'FAILED');
     const status  = hasFail ? 'FAIL' : hasMarg ? 'MARG' : allDone ? 'OK' : 'PEND';
     const scol    = { FAIL:'#e06c75', MARG:'#e5c07b', PEND:'#abb2bf', OK:'#98c379' }[status];
+    const _cae = fv.artKey ? PROG_ART_REGISTRY[fv.artKey] : null;
+    const _dot = _cae
+      ? `<img src="${_cae.dataURL}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;">`
+      : `<span style="width:6px;height:6px;border-radius:50%;background:${fv.color||'#888'};flex-shrink:0;display:inline-block;"></span>`;
     return `<span style="display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;` +
            `padding:1px 7px;border:1px solid var(--border);margin-right:3px;white-space:nowrap;">` +
-           `<span style="width:6px;height:6px;border-radius:50%;background:${fv.color||'#888'};flex-shrink:0;display:inline-block;"></span>` +
+           _dot +
            `<span style="color:var(--text-dim);">${fv.name}</span>` +
            `<span style="color:${scol};letter-spacing:.04em;">${status}</span></span>`;
   }).join('');
@@ -9248,6 +9485,7 @@ progRenderTestResults();
 progInitPorkchop();
 progInitBandView();
 progRenderNodeMap();
+progArtInit(); // load art registry from IndexedDB
 
 // Delegated listeners for user-defined tracking
 document.getElementById('stage-tbody').addEventListener('input',e=>{
@@ -9332,6 +9570,49 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
       <button class="modal-btn" onclick="progNmCancelEdgeModal()">Cancel</button>
       <button class="modal-btn primary" onclick="progNmConfirmEdge()">Add Edge</button>
     </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Art Manager ── -->
+<div class="modal-overlay" id="modal-prog-art-manager" style="display:none">
+  <div class="modal-box" style="width:520px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
+      <span class="modal-title">Art Manager</span>
+      <button onclick="closeModal('modal-prog-art-manager')" class="modal-close">✕</button>
+    </div>
+    <!-- Upload section -->
+    <div style="padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">UPLOAD NEW ART</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="art-upload-name" type="text" placeholder="Name (leave blank to use filename)"
+          style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);
+            font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;">
+        <label style="cursor:pointer;font-family:var(--mono);font-size:9px;background:transparent;
+          border:1px solid var(--accent);color:var(--accent);padding:5px 12px;white-space:nowrap;letter-spacing:.06em;">
+          ↑ CHOOSE FILE
+          <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" style="display:none;"
+            onchange="progArtUploadFile(this)">
+        </label>
+      </div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim);">
+        PNG · SVG · JPG · WebP accepted. Art is stored in your browser's IndexedDB and persists across sessions.
+      </div>
+    </div>
+    <!-- Library -->
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);
+      padding:8px 0 5px;flex-shrink:0;">LIBRARY</div>
+    <div id="art-manager-list" style="flex:1;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- ── MODAL: Art Picker ── -->
+<div class="modal-overlay" id="modal-prog-art-picker" style="display:none">
+  <div class="modal-box" style="width:380px;max-height:70vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+      <span class="modal-title">Assign Art</span>
+      <button onclick="closeModal('modal-prog-art-picker')" class="modal-close">✕</button>
+    </div>
+    <div id="art-picker-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 </div>
 
