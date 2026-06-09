@@ -1687,6 +1687,19 @@ function _luMapB14643Field(key, val, out) {
     out._propellant = val.replace(/\[.*?\]/g, '').trim();
     return;
   }
+  // Burn time (s) — stored internally for ISP derivation
+  if (/burn[\s\-]?time/.test(key)) {
+    const m = String(val).replace(/,/g,'').match(/([\d.]+)/);
+    if (m) out._burnTime = parseFloat(m[1]);
+    return;
+  }
+  // Total impulse (vac only) — stored internally for ISP derivation
+  if (/total[\s\-]?impulse/.test(baseKey)) {
+    if (!isVac) return; // skip sea-level total impulse
+    const v = _luParseNs(val);
+    if (v) out._totalImpulseVac = v;
+    return;
+  }
   // Liftoff weight (t or kg) → gross mass
   if (/liftoff weight/.test(key)) {
     const v = luParseKG(val);
@@ -1729,6 +1742,18 @@ function _luMapB14643Field(key, val, out) {
     if (v && (!out.isp || isVac)) out.isp = { raw: val, value: v, unit: 's', checked: true };
     return;
   }
+}
+
+// Parse total-impulse text → N·s  (handles GN·s, MN·s, kN·s, N·s, with * or · separator)
+function _luParseNs(text) {
+  if (!text) return null;
+  const t = String(text).replace(/,/g,'').trim();
+  let m;
+  if ((m = t.match(/([\d.]+)\s*GN[*·.\s]?s/i))) return parseFloat(m[1]) * 1e9;
+  if ((m = t.match(/([\d.]+)\s*MN[*·.\s]?s/i))) return parseFloat(m[1]) * 1e6;
+  if ((m = t.match(/([\d.]+)\s*kN[*·.\s]?s/i))) return parseFloat(m[1]) * 1e3;
+  if ((m = t.match(/([\d.]+)\s*N[*·.\s]?s/i)))  return parseFloat(m[1]);
+  return null;
 }
 
 // Parse N·s/kg → seconds (Ve / g₀)
@@ -1787,6 +1812,8 @@ function _luParseGeneric(html) {
 }
 
 // Derive missing mass field from the other two (gross, dry, prop)
+// Also derives vacuum ISP from total impulse (vac) or thrust×burn_time, overwriting
+// the sea-level specific impulse that b14643 always provides.
 function _luDeriveProps(out) {
   if (out.grossMass && out.dry && !out.prop) {
     const p = Math.round(out.grossMass.value - out.dry.value);
@@ -1795,6 +1822,15 @@ function _luDeriveProps(out) {
   if (out.grossMass && out.prop && !out.dry) {
     const d = Math.round(out.grossMass.value - out.prop.value);
     if (d > 0) out.dry = { raw: `${out.grossMass.raw} − ${out.prop.raw}`, value: d, unit: 'kg', checked: true };
+  }
+  // Vacuum ISP from total impulse (vac) ÷ (prop mass × g₀) — always preferred over SL value
+  if (out._totalImpulseVac && out.prop) {
+    const v = Math.round(out._totalImpulseVac / (out.prop.value * 9.80665));
+    if (v > 50) out.isp = { raw: 'I_vac / (m_prop·g₀)', value: v, unit: 's', checked: true };
+  // Fallback: thrust × burn time ÷ (prop mass × g₀)
+  } else if (out.thrust && out._burnTime && out.prop) {
+    const v = Math.round(out.thrust.value * 1000 * out._burnTime / (out.prop.value * 9.80665));
+    if (v > 50) out.isp = { raw: 'F·t_burn / (m_prop·g₀)', value: v, unit: 's', checked: true };
   }
 }
 
