@@ -644,10 +644,10 @@ function renderStageEditor(stage, cat, idx) {
     <div class="fs">
       <div class="fs-title">Stage-and-a-Half (1½)</div>
       <div class="rg" style="margin-bottom:8px;">
-        <label><input type="checkbox" id="se-s15" ${stage.s15?'checked':''} onchange="seToggleS15()">
+        <label><input type="checkbox" id="se-s15" ${_seIsS15(stage)?'checked':''} onchange="seToggleS15()">
           This stage uses stage-and-a-half configuration (booster engines jettisoned mid-flight)</label>
       </div>
-      <div id="se-s15-block" style="display:${stage.s15?'flex':'none'};gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div id="se-s15-block" style="display:${_seIsS15(stage)?'flex':'none'};gap:12px;flex-wrap:wrap;align-items:flex-end;">
         <div class="ff narrow"><label>Sust. Thrust (kN)</label><input id="se-s15t" type="number" value="${stage.s15_sust_thrust||0}"></div>
         <div class="ff narrow"><label>Sust. Isp (s)</label><input id="se-s15i" type="number" value="${stage.s15_sust_isp||0}"></div>
         <div class="ff narrow"><label>Jettison Mass (kg)</label><input id="se-s15j" type="number" value="${stage.s15_jet_mass||0}"></div>
@@ -682,6 +682,13 @@ function saveStageEdits(oldCat, idx) {
     stage.s15_sust_isp    = numF('se-s15i');
     stage.s15_jet_mass    = numF('se-s15j');
     stage.s15_beco_twr    = numF('se-s15w');
+  } else {
+    // Explicitly clear so unchecking removes stale values
+    delete stage.s15;
+    delete stage.s15_sust_thrust;
+    delete stage.s15_sust_isp;
+    delete stage.s15_jet_mass;
+    delete stage.s15_beco_twr;
   }
   purgeUndefined(stage);
 
@@ -1007,6 +1014,11 @@ function veRemoveStageRow(btn) {
 function veToggleS15(cb) {
   const next = cb.closest('tr').nextElementSibling;
   if (next?.classList.contains('s15-extra')) next.style.display = cb.checked ? 'table-row' : 'none';
+}
+// True if a stage object should show the s15 block, regardless of which flag/field/tag was used
+function _seIsS15(s) {
+  return !!(s.s15 || s.s15_sust_thrust || s.s15_sust_isp ||
+            (s.tags || []).includes('Stage-and-a-half'));
 }
 function seToggleS15() {
   const cb = document.getElementById('se-s15');
