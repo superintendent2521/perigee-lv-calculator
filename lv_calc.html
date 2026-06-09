@@ -759,7 +759,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
         <!-- Footer: action buttons -->
         <div style="padding:6px 8px;border-top:1px solid var(--border);flex-shrink:0;background:var(--nm-pal-hdr);display:flex;flex-direction:column;gap:4px;">
           <button onclick="progNmOpenImportOrbit()"
-            style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 0;cursor:pointer;letter-spacing:.08em;">↑ UPLOAD ORBIT</button>
+            style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 0;cursor:pointer;letter-spacing:.08em;">↑ IMPORT ORBIT</button>
           <button onclick="progNmOpenCustomNodeModal()"
             style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent);padding:4px 0;cursor:pointer;letter-spacing:.08em;">+ CUSTOM ORBIT</button>
         </div>
@@ -771,6 +771,8 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
           onmouseleave="progNmHideTip()"
           onclick="progNmSvgClick(event)"
           oncontextmenu="progNmSvgRightClick(event);return false;"
+          onwheel="progNmHandleWheel(event)"
+          onmousedown="progNmBgDown(event)"
           ondragover="event.preventDefault()"
           ondrop="progNmSvgDrop(event)"></svg>
         <!-- Node Map context menu -->
@@ -6494,37 +6496,42 @@ function progNmHideTip() {
 // using vis-viva / patched-conic without routing through the graph.
 // orbit.type: 'surface' | 'circular' | 'elliptic' | 'escape' | 'transit'
 // transit nodes represent a trajectory between bodies (TLI, TMI, etc.)
+// Node positions are in world-space coords. The canvas uses a zoomable/pannable
+// <g id="nm-world"> so these coords are independent of the SVG viewBox size.
+// Planet systems are arranged like a compressed solar system (left=Earth, right=planets).
+// Each system's nodes orbit radially above their planet-body center.
 const PROG_NM_NODES = [
-  // ── Earth zone ──────────────────────────────────────────────────────────────
-  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:175, cy:456, r:24,
+  // ── Earth system — center (195, 270), SOI r≈125 ──────────────────────────────
+  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:195, cy:270, r:22,
     orbit:{ type:'surface',  body:'Earth' } },
-  { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:240, cy:352, r:20,
+  { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:195, cy:228, r:20,
     orbit:{ type:'circular', body:'Earth', perigee:185,   apogee:185,   inclination:28.5 } },
-  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:148, cy:244, r:18,
+  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:195, cy:207, r:18,
     orbit:{ type:'elliptic', body:'Earth', perigee:185,   apogee:35786, inclination:28.5 } },
-  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:320, cy:244, r:18,
+  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:195, cy:191, r:18,
     orbit:{ type:'circular', body:'Earth', perigee:35786, apogee:35786, inclination:0    } },
-  { id:'escape',        label:'ESCAPE',  sub:'C3 ≥ 0',         zone:'earth',  cx:356, cy:148, r:17, dashed:true,
+  { id:'escape',        label:'ESCAPE',  sub:'C3 ≥ 0',         zone:'earth',  cx:195, cy:160, r:17, dashed:true,
     orbit:{ type:'escape',   body:'Earth', c3:0.1 } },
-  // ── Lunar zone ──────────────────────────────────────────────────────────────
-  { id:'tlc',           label:'TLC',     sub:'trans-lunar',    zone:'lunar',  cx:484, cy:256, r:17, dashed:true,
+  // ── Lunar system — center (448, 208), SOI r≈52 ───────────────────────────────
+  { id:'tlc',           label:'TLC',     sub:'trans-lunar',    zone:'lunar',  cx:335, cy:250, r:17, dashed:true,
     orbit:{ type:'transit',  body:'Earth', c3:-1.9, destination:'Moon' } },
-  { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:540, cy:148, r:20,
+  { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:448, cy:168, r:18,
     orbit:{ type:'circular', body:'Moon',  perigee:68300, apogee:68300, inclination:0 } },
-  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:540, cy:352, r:20,
+  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:448, cy:183, r:18,
     orbit:{ type:'circular', body:'Moon',  perigee:100,   apogee:100,   inclination:90 } },
-  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:610, cy:440, r:20,
+  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:448, cy:208, r:20,
     orbit:{ type:'surface',  body:'Moon' } },
-  // ── Interplanetary ──────────────────────────────────────────────────────────
-  { id:'mars-transit',  label:'TRANSIT', sub:'Earth → Mars',   zone:'interp', cx:790, cy:196, r:17, dashed:true,
+  // ── Mars system — center (840, 238), SOI r≈62 ────────────────────────────────
+  { id:'mars-transit',  label:'TRANSIT', sub:'Earth → Mars',   zone:'interp', cx:650, cy:242, r:17, dashed:true,
     orbit:{ type:'transit',  body:'Sun', c3:8.7,  departure_body:'Earth', destination:'Mars'  } },
-  { id:'venus-transit', label:'TRANSIT', sub:'Earth → Venus',  zone:'interp', cx:790, cy:372, r:17, dashed:true,
-    orbit:{ type:'transit',  body:'Sun', c3:6.3,  departure_body:'Earth', destination:'Venus' } },
-  { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:970, cy:148, r:22,
+  { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:840, cy:190, r:22,
     orbit:{ type:'circular', body:'Mars',  perigee:400,   apogee:400,   inclination:0 } },
-  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:1064,cy:256, r:20,
+  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:840, cy:238, r:20,
     orbit:{ type:'surface',  body:'Mars' } },
-  { id:'venus-orbit',   label:'VENUS',   sub:'orbit',          zone:'interp', cx:970, cy:408, r:20,
+  // ── Venus system — center (825, 392), SOI r≈56 ───────────────────────────────
+  { id:'venus-transit', label:'TRANSIT', sub:'Earth → Venus',  zone:'interp', cx:650, cy:368, r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:6.3,  departure_body:'Earth', destination:'Venus' } },
+  { id:'venus-orbit',   label:'VENUS',   sub:'orbit 300 km',   zone:'interp', cx:825, cy:344, r:20,
     orbit:{ type:'circular', body:'Venus', perigee:300,   apogee:300,   inclination:0 } },
 ];
 
@@ -6635,40 +6642,34 @@ function progRenderNodeMap() {
      + `<path d="M0,0 L0,6 L8,3 z" fill="${nmLunar}" opacity=".8"/></marker>`;
   s += '</defs>';
 
-  // ── Background ──────────────────────────────────────────────────────────────
+  // ── Background (fixed — not in world transform) ─────────────────────────────
   s += `<rect x="0" y="0" width="${W}" height="${H}" fill="${nmBg}"/>`;
 
-  // Altitude shelf guide lines
-  const SHELVES = [
-    { y:148, label:'ESCAPE / TRANSIT' },
-    { y:244, label:'HIGH ORBIT'       },
-    { y:352, label:'LOW ORBIT'        },
-    { y:456, label:'SURFACE'          },
-  ];
-  for (const sh of SHELVES) {
-    s += `<line x1="64" y1="${sh.y}" x2="${W-12}" y2="${sh.y}" stroke="${nmLabel}" stroke-opacity=".12" stroke-width="1" stroke-dasharray="3,8"/>`;
-    s += `<text x="60" y="${sh.y+3}" text-anchor="end" fill="${nmLabel}" fill-opacity=".35" font-size="7" font-family="monospace">${sh.label}</text>`;
-  }
+  // ── World-space content begins here ─────────────────────────────────────────
+  // Transform is applied after innerHTML via _nmApplyWorldTransform()
+  s += `<g id="nm-world">`;
 
-  // ── Zone backgrounds & accents ───────────────────────────────────────────────
-  const ZONES = [
-    { x:72,  w:308, zone:'earth',  lbl:'EARTH'          },
-    { x:404, w:256, zone:'lunar',  lbl:'LUNAR'          },
-    { x:684, w:408, zone:'interp', lbl:'INTERPLANETARY' },
+  // ── Planet system blobs ──────────────────────────────────────────────────────
+  // Each blob = layered concentric circles creating a soft "sphere of influence" glow.
+  // Decorative planet body circle at center (NOT interactive — nodes sit on top).
+  const PLANET_BLOBS = [
+    { cx:195, cy:270, r:125, col:nmEarth,  bodyR:22, label:'EARTH'  },
+    { cx:448, cy:208, r:52,  col:nmLunar,  bodyR:11, label:'MOON'   },
+    { cx:840, cy:238, r:62,  col:nmInterp, bodyR:16, label:'MARS'   },
+    { cx:825, cy:392, r:56,  col:nmInterp, bodyR:13, label:'VENUS'  },
   ];
-  for (const z of ZONES) {
-    const zc = _zoneCol(z.zone);
-    s += `<rect x="${z.x}" y="14" width="${z.w}" height="${H-22}" fill="${zc}" fill-opacity=".06" rx="3"/>`;
-    s += `<rect x="${z.x}" y="14" width="3" height="${H-22}" fill="${zc}" opacity=".3" rx="2"/>`;
-    const lw2 = z.lbl.length * 5.5 + 14;
-    const lx2 = z.x + z.w / 2;
-    s += `<rect x="${lx2-lw2/2}" y="18" width="${lw2}" height="14" rx="4" fill="${zc}" fill-opacity=".12"/>`;
-    s += `<text x="${lx2}" y="28" text-anchor="middle" fill="${zc}" font-size="8" font-family="monospace" font-weight="600" letter-spacing="1.5" opacity=".7">${z.lbl}</text>`;
+  for (const b of PLANET_BLOBS) {
+    // Soft concentric fill layers (outermost → innermost, increasing opacity)
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}"       fill="${b.col}" fill-opacity=".04"/>`;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.72}"   fill="${b.col}" fill-opacity=".05"/>`;
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r*.44}"   fill="${b.col}" fill-opacity=".07"/>`;
+    // SOI boundary ring (dashed)
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="none" stroke="${b.col}" stroke-width="1" stroke-opacity=".18" stroke-dasharray="4,5"/>`;
+    // Planet body disc
+    s += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.bodyR}" fill="${b.col}" fill-opacity=".45" stroke="${b.col}" stroke-width="1.2" stroke-opacity=".6"/>`;
+    // Planet name label (dim, below body disc)
+    s += `<text x="${b.cx}" y="${b.cy + b.bodyR + 11}" text-anchor="middle" fill="${b.col}" fill-opacity=".5" font-size="8" font-family="monospace" font-weight="600" letter-spacing="1" style="pointer-events:none">${b.label}</text>`;
   }
-
-  // Zone dividers
-  s += `<line x1="404" y1="0" x2="404" y2="${H}" stroke="${nmEdge}" stroke-opacity=".25" stroke-width="1"/>`;
-  s += `<line x1="684" y1="0" x2="684" y2="${H}" stroke="${nmEdge}" stroke-opacity=".25" stroke-width="1"/>`;
 
   // ── Edges: dim → active → selected ──────────────────────────────────────────
   for (const pass of ['dim', 'active', 'sel']) {
@@ -6800,7 +6801,21 @@ function progRenderNodeMap() {
     }
   }
 
+  // ── Close world-space group ──────────────────────────────────────────────────
+  s += `</g>`; // #nm-world
+
+  // ── Fixed HUD (not affected by zoom/pan) ────────────────────────────────────
+  // Reset-view button in top-right corner
+  s += `<g onclick="progNmResetView()" style="cursor:pointer;" opacity=".7"
+         onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">`;
+  s += `<rect x="${W-72}" y="8" width="64" height="18" rx="4" fill="${nmPillBg}" stroke="${nmPillBd}" stroke-width="1"/>`;
+  s += `<text x="${W-40}" y="20" text-anchor="middle" fill="${nmLabel}" font-size="9" font-family="monospace">⟳ Reset</text>`;
+  s += `</g>`;
+
   svg.innerHTML = s;
+
+  // Restore the world-space transform (zoom/pan state persists across re-renders)
+  _nmApplyWorldTransform();
 
   // Update palette panel to reflect current active nodes
   progNmRenderPalette();
@@ -7368,19 +7383,89 @@ function progNmAutoFillEdgeDv() {
   }
 }
 
+// ── Zoom / pan state ─────────────────────────────────────────────────────────
+
+let _nmView = { tx: 0, ty: 0, scale: 1.0 };
+let _nmPan  = null; // { startX, startY, startTx, startTy }
+
+/** Apply the current _nmView transform to the world group (no re-render). */
+function _nmApplyWorldTransform() {
+  const g = document.getElementById('nm-world');
+  if (g) g.setAttribute('transform',
+    `translate(${_nmView.tx.toFixed(2)},${_nmView.ty.toFixed(2)}) scale(${_nmView.scale.toFixed(4)})`);
+}
+
+/** Zoom toward the mouse cursor position. */
+function progNmHandleWheel(evt) {
+  evt.preventDefault();
+  const svg  = document.getElementById('prog-nm-canvas');
+  const rect = svg.getBoundingClientRect();
+  const vb   = svg.viewBox.baseVal;
+  // Mouse position in SVG viewBox coords
+  const mx   = (evt.clientX - rect.left) / rect.width  * vb.width;
+  const my   = (evt.clientY - rect.top)  / rect.height * vb.height;
+  const factor  = evt.deltaY < 0 ? 1.14 : 1 / 1.14;
+  const newScale = Math.max(0.18, Math.min(5, _nmView.scale * factor));
+  const ratio    = newScale / _nmView.scale;
+  _nmView.tx    = mx - (mx - _nmView.tx) * ratio;
+  _nmView.ty    = my - (my - _nmView.ty) * ratio;
+  _nmView.scale = newScale;
+  _nmApplyWorldTransform();
+}
+
+/** Reset zoom/pan to default (everything visible). */
+function progNmResetView() {
+  _nmView = { tx: 0, ty: 0, scale: 1.0 };
+  _nmApplyWorldTransform();
+}
+
+/** Mousedown on SVG background: start pan if not over a node. */
+function progNmBgDown(evt) {
+  if (evt.button !== 0) return;
+  const nid = evt.target?.getAttribute?.('data-nid');
+  if (nid) return; // let node handler take it
+  evt.preventDefault();
+  _nmPan = { startX: evt.clientX, startY: evt.clientY,
+             startTx: _nmView.tx, startTy: _nmView.ty };
+}
+
+// Pan mousemove/mouseup on document
+document.addEventListener('mousemove', evt => {
+  if (!_nmPan) return;
+  const svg  = document.getElementById('prog-nm-canvas');
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  const vb   = svg.viewBox.baseVal;
+  const scaleX = vb.width  / rect.width;
+  const scaleY = vb.height / rect.height;
+  _nmView.tx = _nmPan.startTx + (evt.clientX - _nmPan.startX) * scaleX;
+  _nmView.ty = _nmPan.startTy + (evt.clientY - _nmPan.startY) * scaleY;
+  _nmApplyWorldTransform();
+});
+document.addEventListener('mouseup', () => { _nmPan = null; });
+
 // ── Node drag-to-move ─────────────────────────────────────────────────────────
 
 let _NM_DRAG = null;       // { nodeId, svgStartX, svgStartY, origCx, origCy, moved }
 let _progNmTipTimeout = null;
 
-/** Convert a mouse event's client coords to SVG viewBox coords. */
+/**
+ * Convert a mouse event's client coords to world-space coords
+ * (accounts for the zoom/pan transform on #nm-world).
+ */
 function _nmClientToSvg(evt) {
   const svg = document.getElementById('prog-nm-canvas');
   if (!svg || !svg.getScreenCTM) return { x: 0, y: 0 };
   const pt = svg.createSVGPoint();
   pt.x = evt.clientX;
   pt.y = evt.clientY;
-  return pt.matrixTransform(svg.getScreenCTM().inverse());
+  // Raw SVG viewBox coords
+  const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
+  // Undo world transform (translate + scale) to get world coords
+  return {
+    x: (svgPt.x - _nmView.tx) / _nmView.scale,
+    y: (svgPt.y - _nmView.ty) / _nmView.scale,
+  };
 }
 
 /** Get the effective (possibly overridden) position of a node. */
@@ -7600,12 +7685,14 @@ function progNmSvgDrop(evt) {
   const builtin = PROG_NM_NODES.find(n => n.id === nodeId);
   if (!builtin) return;
 
-  // Convert drop client coords → SVG viewBox coords
-  const svg = document.getElementById('prog-nm-canvas');
+  // Convert drop client coords → world-space coords (undo zoom/pan transform)
+  const svg  = document.getElementById('prog-nm-canvas');
   const rect = svg.getBoundingClientRect();
   const vb   = svg.viewBox.baseVal;
-  const cx   = vb.x + (evt.clientX - rect.left) / rect.width  * vb.width;
-  const cy   = vb.y + (evt.clientY - rect.top)  / rect.height * vb.height;
+  const svgX = vb.x + (evt.clientX - rect.left) / rect.width  * vb.width;
+  const svgY = vb.y + (evt.clientY - rect.top)  / rect.height * vb.height;
+  const cx   = (svgX - _nmView.tx) / _nmView.scale;
+  const cy   = (svgY - _nmView.ty) / _nmView.scale;
 
   progNmAddNode(nodeId, Math.round(cx), Math.round(cy));
 }
