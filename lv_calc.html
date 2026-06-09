@@ -8315,6 +8315,8 @@ function progSwitchView(mode) {
     if (bw)   bw.style.display   = 'none';
     if (nmv)  nmv.style.display  = 'flex';
     if (pads) pads.style.display = 'none';
+    const sp = document.getElementById('prog-spaceport');
+    if (sp) sp.style.display = 'none';
     if (tlB) { tlB.style.background = 'transparent'; tlB.style.borderColor = 'var(--border)'; tlB.style.color = 'var(--text-dim)'; }
     if (nmB) { nmB.style.background = 'rgba(136,198,87,.1)'; nmB.style.borderColor = 'var(--accent)'; nmB.style.color = 'var(--accent)'; }
     progRenderNodeMap(); // also calls progNmRenderPalette() internally
@@ -8322,6 +8324,8 @@ function progSwitchView(mode) {
     if (bw)   bw.style.display   = 'block';
     if (nmv)  nmv.style.display  = 'none';
     if (pads) pads.style.display = 'flex';
+    const sp = document.getElementById('prog-spaceport');
+    if (sp) sp.style.display = 'flex';
     if (tlB) { tlB.style.background = 'rgba(136,198,87,.1)'; tlB.style.borderColor = 'var(--accent)'; tlB.style.color = 'var(--accent)'; }
     if (nmB) { nmB.style.background = 'transparent'; nmB.style.borderColor = 'var(--border)'; nmB.style.color = 'var(--text-dim)'; }
     progRenderBandView();
