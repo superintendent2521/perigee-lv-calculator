@@ -110,12 +110,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 
 /* IN-APP DIALOG */
 #pm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center;}
-#pm-dialog{background:var(--surface2);border:1px solid var(--border2);min-width:300px;max-width:460px;width:100%;}
+#pm-dialog{background:var(--surface2);border:1px solid var(--border2);min-width:300px;max-width:480px;width:100%;}
 #pm-dlg-title{padding:11px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text-bright);}
 #pm-dlg-body{padding:16px;}
 #pm-dlg-body p{font-size:13px;line-height:1.55;color:var(--text);margin:0 0 12px;}
-#pm-dlg-body input{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;margin-top:2px;}
-#pm-dlg-body input:focus{border-color:var(--accent);}
+#pm-dlg-body input,#pm-dlg-body select{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;margin-top:2px;}
+#pm-dlg-body input:focus,#pm-dlg-body select:focus{border-color:var(--accent);}
+#pm-dlg-body select option{background:var(--surface2);}
+#pm-dlg-body .dlg-field{margin-bottom:12px;}
+#pm-dlg-body .dlg-field label{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px;}
+#pm-dlg-body .dlg-field:last-child{margin-bottom:0;}
 #pm-dlg-btns{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
 </style>
 </head>
@@ -125,8 +129,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 <div id="pm-overlay">
   <div id="pm-dialog">
     <div id="pm-dlg-title">Notice</div>
-    <div id="pm-dlg-body"><p id="pm-dlg-msg"></p><input id="pm-dlg-input" type="text" style="display:none;"></div>
-    <div id="pm-dlg-btns" id="pm-dlg-btns"></div>
+    <div id="pm-dlg-body"></div>
+    <div id="pm-dlg-btns"></div>
   </div>
 </div>
 
@@ -177,18 +181,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 // ══════════════════════════════════════════════════════════
 //  IN-APP DIALOG SYSTEM  (replaces alert / confirm / prompt)
 // ══════════════════════════════════════════════════════════
-function _pmDlg({ title, msg, input, inputVal, inputPlaceholder, buttons }) {
+/**
+ * Show an in-app dialog.
+ *   title   – header text
+ *   bodyHTML – arbitrary HTML injected into the body div
+ *   buttons  – [{label, primary, danger, action}]
+ *              action() is called after the dialog closes
+ */
+function _pmDlg({ title, bodyHTML, buttons }) {
   document.getElementById('pm-dlg-title').textContent = title || 'Notice';
-  document.getElementById('pm-dlg-msg').textContent   = msg   || '';
-  const inp = document.getElementById('pm-dlg-input');
-  if (input) {
-    inp.style.display = 'block';
-    inp.value = inputVal || '';
-    inp.placeholder = inputPlaceholder || '';
-    setTimeout(() => { inp.focus(); inp.select(); }, 60);
-  } else {
-    inp.style.display = 'none';
-  }
+  const body = document.getElementById('pm-dlg-body');
+  body.innerHTML = bodyHTML || '';
+
   const btns = document.getElementById('pm-dlg-btns');
   btns.innerHTML = '';
   (buttons || [{ label: 'OK', primary: true }]).forEach(b => {
@@ -198,35 +202,61 @@ function _pmDlg({ title, msg, input, inputVal, inputPlaceholder, buttons }) {
     el.onclick = () => { _pmClose(); b.action && b.action(); };
     btns.appendChild(el);
   });
-  const ov = document.getElementById('pm-overlay');
-  ov.style.display = 'flex';
-  if (input) {
-    inp.onkeydown = e => {
-      if (e.key === 'Enter') { const ok = buttons?.find(b => b.primary); if (ok) { _pmClose(); ok.action && ok.action(inp.value); } }
-      if (e.key === 'Escape') _pmClose();
-    };
-  }
+
+  document.getElementById('pm-overlay').style.display = 'flex';
+
+  // Auto-focus first interactive element
+  setTimeout(() => {
+    const first = body.querySelector('input,select,textarea');
+    if (first) { first.focus(); if (first.select) first.select(); }
+  }, 50);
+
+  // Enter in any single-line input → primary button; Escape → cancel
+  body.onkeydown = e => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      const ok = buttons?.find(b => b.primary);
+      if (ok) { _pmClose(); ok.action && ok.action(); }
+    }
+    if (e.key === 'Escape') _pmClose();
+  };
 }
+
 function _pmClose() { document.getElementById('pm-overlay').style.display = 'none'; }
 
+// Single message, one OK button
 function pmAlert(msg, title) {
-  _pmDlg({ title: title || 'Notice', msg, buttons: [{ label: 'OK', primary: true }] });
+  _pmDlg({ title: title || 'Notice',
+    bodyHTML: `<p>${esc(msg)}</p>`,
+    buttons: [{ label: 'OK', primary: true }] });
 }
+
+// Yes/No confirmation
 function pmConfirm(title, msg, onOk, okLabel) {
-  _pmDlg({ title, msg, buttons: [
-    { label: 'Cancel' },
-    { label: okLabel || 'Confirm', danger: !okLabel || okLabel==='Delete', primary: !!okLabel, action: onOk },
-  ]});
-}
-function pmPrompt(title, msg, def, onOk, placeholder) {
-  _pmDlg({ title, msg, input: true, inputVal: def || '', inputPlaceholder: placeholder || '',
+  _pmDlg({ title,
+    bodyHTML: `<p>${esc(msg)}</p>`,
     buttons: [
       { label: 'Cancel' },
-      { label: 'OK', primary: true, action: (val) => { if (typeof onOk === 'function') onOk(document.getElementById('pm-dlg-input').value.trim()); } },
+      { label: okLabel || 'Confirm', danger: okLabel === 'Delete', primary: true, action: onOk },
+    ]});
+}
+
+// Single text-field prompt
+function pmPrompt(title, msg, def, onOk, placeholder) {
+  const id = 'pm-prompt-inp';
+  _pmDlg({ title,
+    bodyHTML: `${msg ? `<p>${esc(msg)}</p>` : ''}
+      <div class="dlg-field">
+        <input id="${id}" type="text" value="${esc(def||'')}" placeholder="${esc(placeholder||'')}">
+      </div>`,
+    buttons: [
+      { label: 'Cancel' },
+      { label: 'OK', primary: true,
+        action: () => { const v = document.getElementById(id)?.value.trim(); if (onOk) onOk(v); } },
     ]
   });
 }
-// Close on overlay click
+
+// Close on bare overlay click
 document.addEventListener('click', e => { if (e.target.id === 'pm-overlay') _pmClose(); });
 
 // ══════════════════════════════════════════════════════════
@@ -534,35 +564,55 @@ function deleteStage(cat, idx) {
   }, 'Delete');
 }
 
+// Create a blank stage in the given category and open it for editing immediately.
 function addStageToCategory(cat) {
-  pmPrompt('New Stage', 'Stage name:', 'New Stage', name => {
-    if (!name) return;
-    if (!stageLib[cat]) stageLib[cat] = [];
-    stageLib[cat].push({name, dry:0, prop:0, thrust:0, isp:300, res:2, tags:[]});
-    const idx = stageLib[cat].length - 1;
-    setDirty(true);
-    renderStagesList();
-    selectStage(cat, idx);
-  });
+  if (!stageLib[cat]) stageLib[cat] = [];
+  stageLib[cat].push({name:'New Stage', dry:0, prop:0, thrust:0, isp:300, res:2, tags:[]});
+  const idx = stageLib[cat].length - 1;
+  setDirty(true);
+  renderStagesList();
+  selectStage(cat, idx);
 }
 
+// Single-field dialog — just the new category name.
 function promptAddCategory() {
-  pmPrompt('New Category', 'Category name:', '', name => {
+  pmPrompt('New Category', '', '', name => {
     if (!name || stageLib[name]) return;
     stageLib[name] = [];
     setDirty(true);
     renderStagesList();
-  });
+  }, 'Category name…');
 }
 
+// Proper form: category <select> + stage name field.
 function promptAddStage() {
   const cats = Object.keys(stageLib);
   if (!cats.length) { pmAlert('Add a category first.', 'No Categories'); return; }
-  pmPrompt('Add Stage', 'Category (name or number):\n' + cats.map((c,i)=>`${i+1}. ${c}`).join(', '), '', ans => {
-    if (!ans) return;
-    const resolved = isNaN(ans) ? ans : cats[parseInt(ans)-1];
-    if (!resolved || !stageLib[resolved]) { pmAlert('Invalid selection.', 'Unknown Category'); return; }
-    addStageToCategory(resolved);
+  const opts = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  _pmDlg({
+    title: 'Add Stage',
+    bodyHTML: `
+      <div class="dlg-field">
+        <label>Category</label>
+        <select id="pm-ns-cat">${opts}</select>
+      </div>
+      <div class="dlg-field">
+        <label>Stage Name</label>
+        <input id="pm-ns-name" type="text" value="New Stage" placeholder="Stage name…">
+      </div>`,
+    buttons: [
+      { label: 'Cancel' },
+      { label: 'Add Stage', primary: true, action: () => {
+        const cat  = document.getElementById('pm-ns-cat')?.value;
+        const name = document.getElementById('pm-ns-name')?.value.trim() || 'New Stage';
+        if (!cat || !stageLib[cat]) return;
+        stageLib[cat].push({name, dry:0, prop:0, thrust:0, isp:300, res:2, tags:[]});
+        const idx = stageLib[cat].length - 1;
+        setDirty(true);
+        renderStagesList();
+        selectStage(cat, idx);
+      }},
+    ],
   });
 }
 
@@ -928,20 +978,17 @@ function deleteVehicle(idx) {
 }
 
 function addVehicle() {
-  pmPrompt('New Vehicle', 'Vehicle name:', 'New Vehicle', name => {
-    if (!name) return;
   presets.push({
-    name, payload: 100, fairingMass: 0, fairingJettison: 0,
+    name: 'New Vehicle', payload: 100, fairingMass: 0, fairingJettison: 0,
     stageNames: [], stages: 1,
-      boosterName: null, boosterCount: 0,
-      site: {lat:28.5, azMin:37, azMax:120},
-      mode: 'orbit', orbit: {perigee:185, apogee:185, inc:28.5},
-      tags: [],
-    });
-    setDirty(true);
-    renderVehiclesList();
-    selectVehicle(presets.length - 1);
+    boosterName: null, boosterCount: 0,
+    site: {lat:28.5, azMin:37, azMax:120},
+    mode: 'orbit', orbit: {perigee:185, apogee:185, inc:28.5},
+    tags: [],
   });
+  setDirty(true);
+  renderVehiclesList();
+  selectVehicle(presets.length - 1);
 }
 
 // ══════════════════════════════════════════════════════════
