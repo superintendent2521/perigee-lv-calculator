@@ -641,6 +641,20 @@ function renderStageEditor(stage, cat, idx) {
       </div>
     </div>
 
+    <div class="fs">
+      <div class="fs-title">Stage-and-a-Half (1½)</div>
+      <div class="rg" style="margin-bottom:8px;">
+        <label><input type="checkbox" id="se-s15" ${stage.s15?'checked':''} onchange="seToggleS15()">
+          This stage uses stage-and-a-half configuration (booster engines jettisoned mid-flight)</label>
+      </div>
+      <div id="se-s15-block" style="display:${stage.s15?'flex':'none'};gap:12px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="ff narrow"><label>Sust. Thrust (kN)</label><input id="se-s15t" type="number" value="${stage.s15_sust_thrust||0}"></div>
+        <div class="ff narrow"><label>Sust. Isp (s)</label><input id="se-s15i" type="number" value="${stage.s15_sust_isp||0}"></div>
+        <div class="ff narrow"><label>Jettison Mass (kg)</label><input id="se-s15j" type="number" value="${stage.s15_jet_mass||0}"></div>
+        <div class="ff xnarrow"><label>BECO TWR</label><input id="se-s15w" type="number" value="${stage.s15_beco_twr||1.2}" step="0.01"></div>
+      </div>
+    </div>
+
     <div class="form-actions">
       <button class="btn primary" onclick="saveStageEdits('${esc(cat)}',${idx})">Save Changes</button>
       <button class="btn danger" onclick="deleteStage('${esc(cat)}',${idx})">Delete Stage</button>
@@ -661,6 +675,14 @@ function saveStageEdits(oldCat, idx) {
     note:    document.getElementById('se-note').value.trim()    || undefined,
     tags:    document.getElementById('se-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
   };
+  // Stage-and-a-half fields
+  if (document.getElementById('se-s15')?.checked) {
+    stage.s15             = true;
+    stage.s15_sust_thrust = numF('se-s15t');
+    stage.s15_sust_isp    = numF('se-s15i');
+    stage.s15_jet_mass    = numF('se-s15j');
+    stage.s15_beco_twr    = numF('se-s15w');
+  }
   purgeUndefined(stage);
 
   if (newCat !== oldCat) {
@@ -985,6 +1007,10 @@ function veRemoveStageRow(btn) {
 function veToggleS15(cb) {
   const next = cb.closest('tr').nextElementSibling;
   if (next?.classList.contains('s15-extra')) next.style.display = cb.checked ? 'table-row' : 'none';
+}
+function seToggleS15() {
+  const cb = document.getElementById('se-s15');
+  document.getElementById('se-s15-block').style.display = cb?.checked ? 'flex' : 'none';
 }
 
 /* ─── visibility toggles ─── */
@@ -1667,6 +1693,18 @@ function _luMapB14643Field(key, val, out) {
     if (v) out.payload = { raw: val, value: v, unit: 'kg', checked: true };
     return;
   }
+  // Sustainer thrust (stage-and-a-half) — must precede general thrust handler
+  if (/sustainer/.test(key) && /thrust/.test(baseKey)) {
+    const v = luParseKN(val);
+    if (v) out.sustThrust = { raw: val, value: v, unit: 'kN', checked: true };
+    return;
+  }
+  // Sustainer Isp (stage-and-a-half)
+  if (/sustainer/.test(key) && /specific impulse/.test(baseKey)) {
+    const v = _luParseNskg(val);
+    if (v) out.sustIsp = { raw: val, value: v, unit: 's', checked: true };
+    return;
+  }
   // Total thrust (kN) — prefer vacuum
   if (/total thrust/.test(baseKey)) {
     const v = luParseKN(val);
@@ -1750,12 +1788,16 @@ function _luDeriveProps(out) {
 
 // ── Field Mapping ─────────────────────────────────────────────────
 const LU_STAGE_MAP = {
-  dry:       { label: 'Dry Mass',      unit: 'kg',  formId: 'se-dry' },
-  prop:      { label: 'Propellant',    unit: 'kg',  formId: 'se-prop' },
-  thrust:    { label: 'Thrust (vac)',  unit: 'kN',  formId: 'se-thrust' },
-  isp:       { label: 'Isp (vac)',     unit: 's',   formId: 'se-isp' },
-  engines:   { label: 'Engine(s)',     unit: '',    formId: 'se-engines' },
-  name:      { label: 'Name',          unit: '',    formId: 'se-name' },
+  dry:        { label: 'Dry Mass',           unit: 'kg',  formId: 'se-dry' },
+  prop:       { label: 'Propellant',         unit: 'kg',  formId: 'se-prop' },
+  thrust:     { label: 'Thrust (vac)',       unit: 'kN',  formId: 'se-thrust' },
+  isp:        { label: 'Isp (vac)',          unit: 's',   formId: 'se-isp' },
+  engines:    { label: 'Engine(s)',          unit: '',    formId: 'se-engines' },
+  name:       { label: 'Name',              unit: '',    formId: 'se-name' },
+  // Stage-and-a-half sustainer fields
+  sustThrust: { label: 'Sust. Thrust (1½)', unit: 'kN',  formId: 'se-s15t' },
+  sustIsp:    { label: 'Sust. Isp (1½)',    unit: 's',   formId: 'se-s15i' },
+  jetMass:    { label: 'Jettison Mass (1½)',unit: 'kg',  formId: 'se-s15j' },
 };
 const LU_VEH_MAP = {
   name:      { label: 'Name',          unit: '',    formId: 've-name' },
@@ -1884,6 +1926,11 @@ function luParseKG(text) {
 function luParseKN(text) {
   if (!text) return null;
   text = String(text).replace(/,/g,'').replace(/\[.*?\]/g,'').trim();
+
+  // Collapse "667.2 (+8.9)" additive-parenthetical patterns by summing the parts
+  // (b14643 uses this for main thrust + vernier thrust, e.g. Thor: 667.2 (+8.9) kN)
+  text = text.replace(/([\d.]+)\s*\(\s*\+\s*([\d.]+)\s*\)/g,
+    (_, a, b) => String(Math.round((parseFloat(a) + parseFloat(b)) * 10) / 10));
 
   // Collect all (value, unit, position) matches from potentially multi-line cells
   const pat = /([\d.]+)\s*(MN|kN|tf|lbf)/gi;
@@ -2031,8 +2078,14 @@ function luApply() {
   const map = _luMode === 'stage' ? LU_STAGE_MAP : LU_VEH_MAP;
   const fields = _luActiveFields;
   let applied = 0;
-  document.querySelectorAll('#lu-detail .lu-cb:checked').forEach(cb => {
-    const key = cb.dataset.key;
+  // Collect checked keys first so we can pre-enable s15 block if needed
+  const checkedKeys = [...document.querySelectorAll('#lu-detail .lu-cb:checked')].map(cb => cb.dataset.key);
+  const S15_KEYS = new Set(['sustThrust','sustIsp','jetMass']);
+  if (checkedKeys.some(k => S15_KEYS.has(k))) {
+    const cb15 = document.getElementById('se-s15');
+    if (cb15 && !cb15.checked) { cb15.checked = true; seToggleS15(); }
+  }
+  checkedKeys.forEach(key => {
     if (key === 'grossMass') return;
     const f = fields[key];
     const m = map[key];
