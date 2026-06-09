@@ -427,15 +427,28 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 <div id="page-vehicles" class="page active">
 
   <!-- BEGINNER VIEW: Composition + Library -->
-  <div id="vehicles-beginner" style="display:grid;grid-template-columns:160px 2fr 2fr;gap:14px;align-items:stretch;margin-bottom:14px;">
+  <div id="vehicles-beginner" style="display:grid;grid-template-columns:200px 2fr 2fr;gap:14px;align-items:stretch;margin-bottom:14px;">
 
-    <!-- ART PANEL: rocket visualization -->
+    <!-- ART PANEL: rocket canvas -->
     <div class="lib-panel" id="veh-art-panel" style="margin-top:0;min-width:0;padding:10px;display:flex;flex-direction:column;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-shrink:0;">
         <span class="sl" style="margin-bottom:0;flex:1;font-size:9px;">Rocket</span>
+        <button onclick="vehCanvasAutoLayout()" title="Auto-arrange assigned art"
+          style="font-family:var(--mono);font-size:8px;background:transparent;border:1px solid var(--border);
+            color:var(--text-dim);padding:2px 6px;cursor:pointer;letter-spacing:.04em;">Auto</button>
+        <button onclick="vehCanvasClear()" title="Clear canvas"
+          style="font-family:var(--mono);font-size:8px;background:transparent;border:1px solid var(--border);
+            color:var(--text-dim);padding:2px 6px;cursor:pointer;">✕</button>
       </div>
-      <div id="veh-art-body" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);">
-        <!-- built by buildRocketArtPanel() -->
+      <!-- Stage assignment strip -->
+      <div id="veh-stage-assign" style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;flex-shrink:0;">
+        <!-- built by vehBuildAssignStrip() -->
+      </div>
+      <!-- Freeform canvas -->
+      <div id="veh-canvas" style="flex:1;min-height:0;position:relative;overflow:hidden;
+        background:rgba(0,0,0,.35);border:1px solid var(--border);
+        background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px;">
       </div>
     </div>
 
@@ -1094,6 +1107,24 @@ const ROWS=[
   {key:'thrust',label:'Thrust (kN)',     def:[5000,600,100,30,10,4,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.5]},
   {key:'isp',   label:'Isp (s)',         def:[290,345,380,290,285,280,275,270,268,265,265,265,265,265,265]},
   {key:'res',   label:'Residuals (%)',   def:[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]},
+];
+
+// ─── BUILTIN ART ──────────────────────────────
+// Add stage/vehicle artwork here as base64 data URLs.
+// These are loaded into PROG_ART_REGISTRY at startup and are always
+// available (no upload required), making them work on Squarespace.
+// Set monochrome:true for black-and-white line drawings so they
+// auto-invert on dark themes.
+//
+// Format:
+//   { artId:'builtin_<name>', name:'Display Name',
+//     dataURL:'data:image/png;base64,...',
+//     monochrome:true, builtin:true }
+//
+const BUILTIN_ART = [
+  // Paste entries here, e.g.:
+  // { artId:'builtin_atlas_slv3', name:'Atlas SLV-3', monochrome:true, builtin:true,
+  //   dataURL:'data:image/png;base64,iVBORw0KGgo...' },
 ];
 
 // ─── BUILTIN PRESETS ──────────────────────────
@@ -3461,70 +3492,156 @@ function buildStageComposition(){
     wrap.appendChild(row);
     body.appendChild(wrap);
   }
-  buildRocketArtPanel();
+  vehCanvasOnStagesChanged();
+  vehBuildAssignStrip();
 }
 
-// ─── VEHICLE ART PANEL ───────────────────────
-let stageArtMap = {};       // slotKey ('s0','s1',...,'booster') → artId
+// ─── VEHICLE CANVAS ───────────────────────────
+let stageArtMap = {};         // slotKey ('s0','s1',...,'booster') → artId
+let vehicleCanvasItems = [];  // freeform canvas items [{id,artId,x,y,w,h}]
+let _vehCiDrag = null;
 let _vehArtPickerSlot = null;
 
-function buildRocketArtPanel() {
-  const body = document.getElementById('veh-art-body');
-  if (!body) return;
-
-  // Collect prop masses for proportional block heights
-  const stageProps = [];
-  for (let s = 0; s < numStages; s++) stageProps.push(parseFloat(stageStore[s]?.prop) || 0);
-  const bProp = useBooster ? (parseFloat(document.getElementById('b_prop')?.value) || 0) : 0;
-  const allProps = stageProps.concat(bProp > 0 ? [bProp] : []);
-  const maxProp = Math.max(...allProps, 1);
-  const minH = 36, maxH = 108;
-  const getH = p => Math.round(minH + (p / maxProp) * (maxH - minH));
-
-  let html = '';
-
-  // Payload stub at the top
-  html += `<div style="flex-shrink:0;height:18px;border:1px dashed var(--border);display:flex;`
-        + `align-items:center;justify-content:center;font-family:var(--mono);font-size:7px;`
-        + `letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;opacity:.55;">PAYLOAD</div>`;
-
-  // Stages — rendered top → bottom (last index = top stage, index 0 = first stage)
-  for (let s = numStages - 1; s >= 0; s--) {
-    const h    = getH(stageProps[s]);
-    const artId = stageArtMap['s' + s];
-    const art   = artId ? PROG_ART_REGISTRY[artId] : null;
-    const badge = stageStore[s]?.s15 ? '½ ' : '';
-    html += `<div class="veh-art-block" style="height:${h}px;" onclick="vehArtOpenPicker('s${s}')">`;
-    if (art) {
-      html += `<img src="${art.dataURL}"${art.monochrome?' class="art-mono"':''} style="width:100%;height:100%;object-fit:contain;display:block;">`;
-    } else {
-      html += `<div style="width:100%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(0,0,0,0) 100%);border-top:2px solid var(--border);"></div>`;
-    }
-    html += `<div class="veh-art-block-lbl">${badge}S${s + 1}</div>`;
-    html += `<div class="veh-art-block-add">${art ? '✎' : '+ art'}</div>`;
-    html += `</div>`;
-  }
-
-  // Booster band at the bottom (if enabled)
-  if (useBooster && bProp > 0) {
-    const h      = getH(bProp);
-    const bCount = parseInt(document.getElementById('num-boosters')?.value) || 0;
-    const artId  = stageArtMap['booster'];
-    const art    = artId ? PROG_ART_REGISTRY[artId] : null;
-    html += `<div class="veh-art-block" style="height:${h}px;" onclick="vehArtOpenPicker('booster')">`;
-    if (art) {
-      html += `<img src="${art.dataURL}"${art.monochrome?' class="art-mono"':''} style="width:100%;height:100%;object-fit:contain;display:block;">`;
-    } else {
-      html += `<div style="width:100%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(0,0,0,0) 100%);border-top:2px solid var(--border);"></div>`;
-    }
-    html += `<div class="veh-art-block-lbl">×${bCount} BOOSTER</div>`;
-    html += `<div class="veh-art-block-add">${art ? '✎' : '+ art'}</div>`;
-    html += `</div>`;
-  }
-
-  body.innerHTML = html;
+/** Render all vehicle canvas items into #veh-canvas. */
+function vehCanvasRender() {
+  const canvas = document.getElementById('veh-canvas');
+  if (!canvas) return;
+  canvas.innerHTML = vehicleCanvasItems.map(item => {
+    const art = PROG_ART_REGISTRY[item.artId];
+    if (!art) return '';
+    return `<div class="art-ci" id="vci-${item.id}"
+        style="left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;"
+        onmousedown="vehCiMousedown(event,'${item.id}','move')">
+      <img src="${art.dataURL}"${art.monochrome?' class="art-mono"':''} style="width:100%;height:100%;object-fit:contain;display:block;">
+      <div class="art-ci-del" onmousedown="event.stopPropagation()"
+        onclick="event.stopPropagation();vehCanvasRemove('${item.id}')">✕</div>
+      <div class="art-ci-rsz"
+        onmousedown="event.stopPropagation();vehCiMousedown(event,'${item.id}','resize')"></div>
+    </div>`;
+  }).join('');
 }
 
+function vehCanvasRemove(id) {
+  vehicleCanvasItems = vehicleCanvasItems.filter(i => i.id !== id);
+  vehCanvasRender();
+}
+
+function vehCanvasClear() {
+  vehicleCanvasItems = [];
+  vehCanvasRender();
+}
+
+/** Place assigned stage art proportionally (top = last stage, bottom = first/booster). */
+function vehCanvasAutoLayout() {
+  vehicleCanvasItems = [];
+  const canvas = document.getElementById('veh-canvas');
+  if (!canvas) return;
+  const cw = canvas.offsetWidth  || 180;
+  const ch = canvas.offsetHeight || 400;
+
+  const slots = [];
+  for (let s = numStages - 1; s >= 0; s--) {
+    const artId = stageArtMap['s' + s];
+    if (artId && PROG_ART_REGISTRY[artId])
+      slots.push({ artId, prop: Math.max(1, parseFloat(stageStore[s]?.prop) || 1) });
+  }
+  if (useBooster) {
+    const artId = stageArtMap['booster'];
+    if (artId && PROG_ART_REGISTRY[artId])
+      slots.push({ artId, prop: Math.max(1, parseFloat(document.getElementById('b_prop')?.value) || 1) });
+  }
+  if (!slots.length) { vehCanvasRender(); return; }
+
+  const maxProp = Math.max(...slots.map(s => s.prop));
+  const gap     = 3;
+  const totalGap = (slots.length - 1) * gap;
+  const availH  = ch - 16 - totalGap;
+  const getH    = p => Math.max(18, Math.round((p / maxProp) * availH / slots.length * 2));
+  const w       = Math.min(cw - 16, 150);
+  const x       = Math.round((cw - w) / 2);
+  const totalH  = slots.reduce((a, s) => a + getH(s.prop), 0) + totalGap;
+  let y         = Math.max(8, Math.round((ch - totalH) / 2));
+
+  slots.forEach(slot => {
+    const h  = getH(slot.prop);
+    const id = 'vci' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    vehicleCanvasItems.push({ id, artId: slot.artId, x, y, w, h });
+    y += h + gap;
+  });
+  vehCanvasRender();
+}
+
+/** Called when stages change — auto-layouts only if canvas is currently empty. */
+function vehCanvasOnStagesChanged() {
+  if (vehicleCanvasItems.length === 0) vehCanvasAutoLayout();
+}
+
+/** Rebuild the per-stage art assignment strip above the canvas. */
+function vehBuildAssignStrip() {
+  const strip = document.getElementById('veh-stage-assign');
+  if (!strip) return;
+  let html = '';
+  const slotSize = 28;
+  const slots = [];
+  for (let s = 0; s < numStages; s++) slots.push({ key: 's' + s, lbl: 'S' + (s + 1) });
+  if (useBooster) slots.push({ key: 'booster', lbl: 'B' });
+
+  slots.forEach(slot => {
+    const artId = stageArtMap[slot.key];
+    const art   = artId ? PROG_ART_REGISTRY[artId] : null;
+    html += `<div onclick="vehArtOpenPicker('${slot.key}')" title="Assign art to ${slot.lbl}"
+      style="width:${slotSize}px;height:${slotSize}px;flex-shrink:0;cursor:pointer;
+        border:1px ${art ? 'solid var(--accent)' : 'dashed var(--border)'};
+        display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">`;
+    if (art) {
+      html += `<img src="${art.dataURL}"${art.monochrome?' class="art-mono"':''} style="width:100%;height:100%;object-fit:contain;">`;
+    } else {
+      html += `<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">${slot.lbl}</span>`;
+    }
+    html += `</div>`;
+  });
+  strip.innerHTML = html;
+}
+
+function vehCiMousedown(e, id, type) {
+  e.preventDefault();
+  const item = vehicleCanvasItems.find(i => i.id === id);
+  if (!item) return;
+  // Bring to front
+  vehicleCanvasItems = vehicleCanvasItems.filter(i => i.id !== id);
+  vehicleCanvasItems.push(item);
+  vehCanvasRender();
+  _vehCiDrag = { type, id, sx: e.clientX, sy: e.clientY, ox: item.x, oy: item.y, ow: item.w, oh: item.h };
+  document.getElementById('vci-' + id)?.classList.add('sel');
+  document.addEventListener('mousemove', _vehDragMove, { passive: false });
+  document.addEventListener('mouseup',   _vehDragEnd,  { once: true });
+}
+
+function _vehDragMove(e) {
+  if (!_vehCiDrag) return;
+  const dx = e.clientX - _vehCiDrag.sx, dy = e.clientY - _vehCiDrag.sy;
+  const item = vehicleCanvasItems.find(i => i.id === _vehCiDrag.id);
+  if (!item) return;
+  const canvas = document.getElementById('veh-canvas');
+  const cw = canvas ? canvas.offsetWidth  : 9999;
+  const ch = canvas ? canvas.offsetHeight : 9999;
+  if (_vehCiDrag.type === 'move') {
+    item.x = Math.max(0, Math.min(_vehCiDrag.ox + dx, cw - item.w));
+    item.y = Math.max(0, Math.min(_vehCiDrag.oy + dy, ch - item.h));
+  } else {
+    item.w = Math.max(20, _vehCiDrag.ow + dx);
+    item.h = Math.max(20, _vehCiDrag.oh + dy);
+  }
+  const el = document.getElementById('vci-' + item.id);
+  if (el) { el.style.left=item.x+'px'; el.style.top=item.y+'px'; el.style.width=item.w+'px'; el.style.height=item.h+'px'; }
+}
+
+function _vehDragEnd() {
+  document.removeEventListener('mousemove', _vehDragMove);
+  if (_vehCiDrag) { document.getElementById('vci-'+_vehCiDrag.id)?.classList.remove('sel'); _vehCiDrag = null; }
+}
+
+/** Open the art picker for a stage/booster slot. */
 function vehArtOpenPicker(slotKey) {
   _vehArtPickerSlot = slotKey;
   const el      = document.getElementById('veh-art-picker-list');
@@ -3532,42 +3649,32 @@ function vehArtOpenPicker(slotKey) {
   const entries = Object.values(PROG_ART_REGISTRY);
   const curId   = stageArtMap[slotKey] || null;
   const slotLbl = slotKey === 'booster' ? 'BOOSTER' : 'S' + (parseInt(slotKey.slice(1)) + 1);
-
   if (entries.length === 0) {
-    el.innerHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:14px;text-align:center;">`
-      + `No art in library.<br>Open <b>Art Lib</b> to upload images.</div>`;
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:14px;text-align:center;">
+      No art in library.<br>Go to the <b>Art</b> tab to upload images.</div>`;
   } else {
-    const header = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);`
-      + `letter-spacing:.1em;padding:0 0 8px;flex-shrink:0;">CHOOSE ART FOR ${slotLbl}</div>`;
-    const rows = entries.map(entry => {
-      const sid   = entry.artId;
-      const isCur = sid === curId;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">`
-        + `<img src="${entry.dataURL}"${entry.monochrome?' class="art-mono"':''} style="width:26px;height:26px;object-fit:contain;flex-shrink:0;`
-        + `background:rgba(255,255,255,.04);border:1px solid var(--border);">`
-        + `<span style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);`
-        + `overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.name}</span>`
-        + `<button onclick="vehArtAssign('${sid}')" style="font-family:var(--mono);font-size:9px;`
-        + `background:transparent;border:1px solid var(--border);cursor:pointer;padding:2px 8px;`
-        + `white-space:nowrap;flex-shrink:0;color:${isCur ? 'var(--text-dim)' : 'var(--accent)'};">`
-        + `${isCur ? '✓ Set' : '+ Assign'}</button></div>`;
-    }).join('');
-    const remove = curId
-      ? `<div style="padding:7px 0;"><button onclick="vehArtAssign(null)"
-          style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;
-          border:1px solid var(--border);color:var(--accent2);padding:3px 0;cursor:pointer;">
-          ✕ Remove Art</button></div>` : '';
-    el.innerHTML = header + rows + remove;
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;padding-bottom:8px;">CHOOSE ART FOR ${slotLbl}</div>`
+      + entries.map(entry => {
+        const sid   = entry.artId;
+        const isCur = sid === curId;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">`
+          + `<img src="${entry.dataURL}"${entry.monochrome?' class="art-mono"':''} style="width:26px;height:26px;object-fit:contain;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid var(--border);">`
+          + `<span style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.name}</span>`
+          + `<button onclick="vehArtAssign('${sid}')" style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);cursor:pointer;padding:2px 8px;white-space:nowrap;flex-shrink:0;color:${isCur?'var(--text-dim)':'var(--accent)'};">${isCur?'✓ Set':'+ Assign'}</button></div>`;
+      }).join('')
+      + (curId ? `<div style="padding:7px 0;"><button onclick="vehArtAssign(null)" style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent2);padding:3px 0;cursor:pointer;">✕ Remove Art</button></div>` : '');
   }
   openModal('modal-veh-art-picker');
 }
 
 function vehArtAssign(artId) {
   if (!_vehArtPickerSlot) return;
-  if (artId) { stageArtMap[_vehArtPickerSlot] = artId; }
-  else        { delete stageArtMap[_vehArtPickerSlot]; }
+  if (artId) stageArtMap[_vehArtPickerSlot] = artId;
+  else       delete stageArtMap[_vehArtPickerSlot];
   closeModal('modal-veh-art-picker');
-  buildRocketArtPanel();
+  vehBuildAssignStrip();
+  // Refresh canvas if auto-layout was used (re-run to pick up new assignment)
+  if (vehicleCanvasItems.length === 0 || vehicleCanvasItems.every(i => i._auto)) vehCanvasAutoLayout();
 }
 
 // Track booster name
@@ -9113,6 +9220,23 @@ function _progArtPreload(entry) {
   img.src = entry.dataURL;
 }
 
+/** Load BUILTIN_ART into the registry (never saved to IndexedDB, always available). */
+function progArtInitBuiltin() {
+  BUILTIN_ART.forEach(entry => {
+    if (PROG_ART_REGISTRY[entry.artId]) return; // user upload with same id wins
+    const e = { ...entry };
+    if (e.monochrome === undefined) {
+      // Detect on load if not explicitly set
+      const img = new Image();
+      img.onload = () => { e.monochrome = _artSampleMonochrome(img); _progArtImgCache.set(e.artId, img); _progArtRebuildManagerList(); };
+      img.src = e.dataURL;
+    } else {
+      _progArtPreload(e);
+    }
+    PROG_ART_REGISTRY[e.artId] = e;
+  });
+}
+
 /** Load all stored art from IndexedDB into the registry and image cache. */
 function progArtInit() {
   _progArtDbGetAll().then(entries => {
@@ -9198,9 +9322,11 @@ function _progArtRebuildManagerList() {
       <button onclick="artCanvasAdd('${sid}')" title="Add to canvas"
         style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
           color:var(--accent);padding:2px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.04em;">Add →</button>
-      <button onclick="progArtDelete('${sid}')" title="Delete"
-        style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
-          color:var(--accent2);padding:2px 6px;cursor:pointer;flex-shrink:0;">✕</button>
+      ${entry.builtin
+        ? `<span style="font-family:var(--mono);font-size:7px;color:var(--text-dim);opacity:.5;flex-shrink:0;letter-spacing:.06em;">BUILT-IN</span>`
+        : `<button onclick="progArtDelete('${sid}')" title="Delete"
+          style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
+            color:var(--accent2);padding:2px 6px;cursor:pointer;flex-shrink:0;">✕</button>`}
     </div>`;
   }).join('');
 }
@@ -9785,7 +9911,8 @@ progRenderTestResults();
 progInitPorkchop();
 progInitBandView();
 progRenderNodeMap();
-progArtInit(); // load art registry from IndexedDB
+progArtInitBuiltin(); // load built-in art (always available, no upload needed)
+progArtInit();        // load user-uploaded art from IndexedDB
 artUpdateInvertFilter(); // set --art-invert based on initial theme
 
 // Delegated listeners for user-defined tracking
