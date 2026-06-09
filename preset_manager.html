@@ -1422,18 +1422,66 @@ async function _luFetchProxy(url, parser) {
 //   col 1: "Name" label
 //   col 2+: engine/stage designation string
 
-async function _luFetchB14643(url) {
-  // Rewrite live URL → raw GitHub URL
-  let fetchURL = url
-    .replace(/^https?:\/\/b14643\.eu\//i,
-             'https://raw.githubusercontent.com/fjmoeller/b14643/main/b14643/')
-    .replace(/Frame\.htm([?#].*)?$/i, 'Text.htm');
+// Convert any b14643.eu URL to its raw.githubusercontent.com equivalent.
+function _b14643GhURL(url) {
+  return url.replace(/^https?:\/\/b14643\.eu\//i,
+    'https://raw.githubusercontent.com/fjmoeller/b14643/main/b14643/');
+}
 
-  const resp = await fetch(fetchURL);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' — ' + fetchURL);
-  const html = await resp.text();
-  if (html.length < 200) throw new Error('Page too short — may be a 404 redirect');
+// Fetch a raw URL and return text; throws on HTTP error or tiny response.
+async function _b14643Fetch(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + url);
+  const t = await r.text();
+  if (t.length < 100) throw new Error('Page too short: ' + url);
+  return t;
+}
+
+async function _luFetchB14643(url) {
+  const gh = _b14643GhURL(url);
+
+  // ── Strategy 1: URL is already inside a /Design/ directory ──────
+  // (and isn't a frameset — Frame.htm just wraps the real page)
+  if (/\/Design\//i.test(gh) && !/Frame\.htm/i.test(gh)) {
+    const html = await _b14643Fetch(gh);
+    const result = _luParseB14643(html);
+    if (_b14643HasData(result)) return result;
+    // If the design page itself had no stage tables, fall through to Nav strategy
+  }
+
+  // ── Strategy 2: Find the "Vehicle Design" page via Nav.htm ──────
+  // Nav.htm lives in the same directory as the page the user pasted.
+  // It contains a link labeled "Vehicle Design" → ../Design/SomeName.htm
+  const dir = gh.replace(/[^/]+$/, '');          // strip filename, keep trailing /
+  const navURL = dir + 'Nav.htm';
+  let designURL = null;
+  try {
+    const navHtml = await _b14643Fetch(navURL);
+    const navDoc = new DOMParser().parseFromString(navHtml, 'text/html');
+    for (const a of navDoc.querySelectorAll('a[href]')) {
+      if (/vehicle\s*design/i.test(a.textContent)) {
+        // Resolve relative href against the Nav.htm URL
+        designURL = new URL(a.getAttribute('href'), navURL).href;
+        break;
+      }
+    }
+  } catch(_) { /* Nav.htm missing — try the URL directly */ }
+
+  if (designURL) {
+    const html = await _b14643Fetch(designURL);
+    const result = _luParseB14643(html);
+    if (_b14643HasData(result)) return result;
+  }
+
+  // ── Strategy 3: Last resort — parse whatever URL was given directly ─
+  const html = await _b14643Fetch(gh.replace(/Frame\.htm([?#].*)?$/i, 'Text.htm'));
   return _luParseB14643(html);
+}
+
+// Returns true if the parsed result has at least one stage or one non-private field.
+function _b14643HasData(r) {
+  if (r._stages?.length) return true;
+  return Object.keys(r).some(k => !k.startsWith('_'));
 }
 
 function _luParseB14643(html) {
@@ -1444,6 +1492,8 @@ function _luParseB14643(html) {
 
   const stageHdrRE = /^(?:stage\s+\d+|booster|core\s+stage|strap[\s\-]?on|solid\s+rocket)/i;
   const isGrayCell = c => /^#?c0c0c0$/i.test(c.getAttribute('bgcolor') || '');
+  // Trim including non-breaking spaces ( ) which String.trim() doesn't remove
+  const nbTrim = s => s.replace(/^[\s ]+|[\s ]+$/g, '');
 
   doc.querySelectorAll('tr').forEach(row => {
     const cells = [...row.querySelectorAll('td,th')];
@@ -1451,12 +1501,13 @@ function _luParseB14643(html) {
 
     // ── Stage header row: first cell is gray AND text looks like "Stage N" ──
     if (isGrayCell(cells[0])) {
-      const stageLabel = cells[0].textContent.trim().replace(/\s+/g, ' ');
+      const stageLabel = nbTrim(cells[0].textContent).replace(/\s+/g, ' ');
       if (stageHdrRE.test(stageLabel)) {
-        // Engine/designation is in col 2+ (col 1 = "Name" label)
-        const designation = cells.length > 2
-          ? cells.slice(2).map(c => c.textContent.trim()).filter(Boolean).join(' / ')
-          : '';
+        // Engine/designation: cols 2+ of the gray row (col 0 = stage number, col 1 = "Name" label)
+        const designation = cells.slice(2)
+          .map(c => nbTrim(c.textContent).replace(/\s+/g, ' '))
+          .filter(s => s.length > 0)
+          .join(' / ');
         const sFields = {};
         if (designation) sFields.engines = { raw: designation, value: designation, unit: '', checked: true };
         stages.push({ name: designation || stageLabel, fields: sFields });
@@ -1465,12 +1516,12 @@ function _luParseB14643(html) {
       return;
     }
 
-    // ── Data row: need at least 3 cells (label | unit | value) ──
+    // ── Data row: label | unit | value ──
     if (cells.length < 2) return;
-    const key     = cells[0].textContent.trim().toLowerCase().replace(/\s+/g, ' ');
-    const unitTxt = cells.length >= 3 ? cells[1].textContent.trim() : '';
-    const numTxt  = cells[cells.length - 1].textContent.trim();
-    // Combine into a single parseable string, e.g. "54.43 t" or "667.2 kN"
+    const key     = nbTrim(cells[0].textContent).toLowerCase().replace(/\s+/g, ' ');
+    const unitTxt = cells.length >= 3 ? nbTrim(cells[1].textContent) : '';
+    const numTxt  = nbTrim(cells[cells.length - 1].textContent);
+    // Combine into a single parseable string e.g. "54.43 t" or "667.2 kN"
     const val = unitTxt ? numTxt + ' ' + unitTxt : numTxt;
 
     _luMapB14643Field(key, val, current ?? vehicleFields);
