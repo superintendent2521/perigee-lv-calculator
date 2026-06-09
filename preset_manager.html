@@ -1458,12 +1458,15 @@ async function _luFetchB14643(url) {
   try {
     const navHtml = await _b14643Fetch(navURL);
     const navDoc = new DOMParser().parseFromString(navHtml, 'text/html');
-    for (const a of navDoc.querySelectorAll('a[href]')) {
-      if (/vehicle\s*design/i.test(a.textContent)) {
-        // Resolve relative href against the Nav.htm URL
-        designURL = new URL(a.getAttribute('href'), navURL).href;
-        break;
-      }
+    // Collect all links that point into a /Design/ subdirectory
+    const designLinks = [...navDoc.querySelectorAll('a[href]')].filter(a => {
+      const href = a.getAttribute('href') || '';
+      return /vehicle\s*design/i.test(a.textContent) || /\/Design\//i.test(href) || /Design[/\\]/i.test(href);
+    });
+    if (designLinks.length) {
+      // Prefer a link whose text says "Vehicle Design"; otherwise take the first Design link
+      const preferred = designLinks.find(a => /vehicle\s*design/i.test(a.textContent)) || designLinks[0];
+      designURL = new URL(preferred.getAttribute('href'), navURL).href;
     }
   } catch(_) { /* Nav.htm missing — try the URL directly */ }
 
