@@ -383,6 +383,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
     <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
     <button class="nav-btn" id="nav-results" onclick="showPage('results')">Results</button>
     <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
+    <button class="nav-btn" id="nav-art" onclick="showPage('art')">Art</button>
   </nav>
   <div id="veh-view-wrap" style="display:flex;align-items:center;gap:8px;">
     <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;">View</span>
@@ -415,7 +416,6 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
     <div class="lib-panel" id="veh-art-panel" style="margin-top:0;min-width:0;padding:10px;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;">
         <span class="sl" style="margin-bottom:0;flex:1;font-size:9px;">Rocket</span>
-        <button class="act-btn" onclick="progOpenArtManager()" style="font-size:8px;padding:2px 6px;" title="Open art library">Art</button>
       </div>
       <div id="veh-art-body" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);">
         <!-- built by buildRocketArtPanel() -->
@@ -1464,6 +1464,7 @@ function showPage(p){
   document.getElementById('nav-'+p).classList.add('active');
   const vvw=document.getElementById('veh-view-wrap');
   if(vvw){vvw.style.display=(p==='vehicles')?'flex':'none';}
+  if(p==='art') _progArtRebuildManagerList();
 }
 
 // ─── BUILD TABLE ──────────────────────────────
@@ -9120,8 +9121,7 @@ function progArtDelete(artId) {
 // ── Art Manager modal ─────────────────────────────────────────────────────────
 
 function progOpenArtManager() {
-  openModal('modal-prog-art-manager');
-  _progArtRebuildManagerList();
+  showPage('art');
 }
 
 function _progArtRebuildManagerList() {
@@ -9709,41 +9709,52 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   </div>
 </div>
 
-<!-- ── MODAL: Art Manager ── -->
-<div class="modal-overlay" id="modal-prog-art-manager" style="display:none">
-  <div class="modal-box" style="width:520px;max-height:80vh;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
-      <span class="modal-title">Art Manager</span>
-      <button onclick="closeModal('modal-prog-art-manager')" class="modal-close">✕</button>
-    </div>
-    <!-- Upload section -->
-    <div style="padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">UPLOAD NEW ART</div>
-      <div style="display:flex;gap:8px;align-items:center;">
+<!-- ═══════════════════════════════════════════════ PAGE: ART -->
+<div id="page-art" class="page" style="display:none;">
+  <div style="padding:20px 24px;max-width:640px;">
+    <div class="sl" style="margin-bottom:16px;">Art Library</div>
+
+    <!-- Upload panel -->
+    <div style="background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:14px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:10px;">UPLOAD NEW ART</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
         <input id="art-upload-name" type="text" placeholder="Name (leave blank to use filename)"
-          style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);
-            font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;">
+          style="flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--text);
+            font-family:var(--mono);font-size:10px;padding:5px 8px;outline:none;">
         <label style="cursor:pointer;font-family:var(--mono);font-size:9px;background:transparent;
-          border:1px solid var(--accent);color:var(--accent);padding:5px 12px;white-space:nowrap;letter-spacing:.06em;">
+          border:1px solid var(--accent);color:var(--accent);padding:6px 14px;white-space:nowrap;letter-spacing:.06em;">
           ↑ CHOOSE FILE
           <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" style="display:none;"
             onchange="progArtUploadFile(this)">
         </label>
       </div>
       <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim);">
-        PNG · SVG · JPG · WebP accepted. Art is stored in your browser's IndexedDB and persists across sessions.
+        PNG · SVG · JPG · WebP accepted. Stored in your browser's IndexedDB — persists across sessions.
       </div>
     </div>
-    <!-- Library -->
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);
-      padding:8px 0 5px;flex-shrink:0;">LIBRARY</div>
-    <div id="art-manager-list" style="flex:1;overflow-y:auto;"></div>
+
+    <!-- Library list -->
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:8px;">LIBRARY</div>
+    <div id="art-manager-list" style="background:var(--panel);border:1px solid var(--border);"></div>
+  </div>
+</div>
+
+<!-- ── MODAL: Art Manager (legacy — page-art is now primary) ── -->
+<div class="modal-overlay" id="modal-prog-art-manager" style="display:none">
+  <div class="modal" style="width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">Art Manager</span>
+      <button onclick="closeModal('modal-prog-art-manager')" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">
+      Use the <b style="color:var(--text);">Art</b> tab in the top navigation to manage your art library.
+    </div>
   </div>
 </div>
 
 <!-- ── MODAL: Art Picker ── -->
 <div class="modal-overlay" id="modal-prog-art-picker" style="display:none">
-  <div class="modal-box" style="width:380px;max-height:70vh;display:flex;flex-direction:column;">
+  <div class="modal" style="width:380px;max-height:70vh;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
       <span class="modal-title">Assign Art</span>
       <button onclick="closeModal('modal-prog-art-picker')" class="modal-close">✕</button>
@@ -9754,7 +9765,7 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
 
 <!-- ── MODAL: Vehicle Stage Art Picker ── -->
 <div class="modal-overlay" id="modal-veh-art-picker" style="display:none">
-  <div class="modal-box" style="width:380px;max-height:70vh;display:flex;flex-direction:column;">
+  <div class="modal" style="width:380px;max-height:70vh;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
       <span class="modal-title">Assign Stage Art</span>
       <button onclick="closeModal('modal-veh-art-picker')" class="modal-close">✕</button>
