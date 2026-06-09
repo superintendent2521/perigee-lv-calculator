@@ -108,6 +108,49 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
+/* ── LOOKUP MODAL ─────────────────────────────────────────── */
+#lu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;}
+#lu-modal{background:var(--surface);border:1px solid var(--border2);width:min(940px,100%);height:min(660px,100%);display:flex;flex-direction:column;overflow:hidden;}
+#lu-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface2);}
+#lu-hdr h2{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);flex:1;margin:0;}
+#lu-search-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;flex-wrap:wrap;}
+#lu-search-input{flex:1;min-width:160px;background:rgba(0,0,0,.35);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;outline:none;}
+#lu-search-input:focus{border-color:var(--accent);}
+.lu-src-btn{font-family:var(--mono);font-size:9px;padding:5px 11px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text-dim);letter-spacing:.05em;}
+.lu-src-btn:hover{color:var(--text);}
+.lu-src-btn.wiki:hover,.lu-src-btn.wiki.active{border-color:#80b0ff;color:#80b0ff;}
+.lu-src-btn.anx:hover,.lu-src-btn.anx.active{border-color:#ffaa60;color:#ffaa60;}
+.lu-src-btn.sky:hover,.lu-src-btn.sky.active{border-color:#a0e870;color:#a0e870;}
+#lu-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+#lu-results{width:260px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:var(--surface);}
+#lu-detail{flex:1;overflow-y:auto;padding:14px;background:var(--bg);}
+.lu-ri{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.lu-ri:hover{background:rgba(255,255,255,.04);}
+.lu-ri.sel{background:var(--accent-dim);border-left:2px solid var(--accent);}
+.lu-ri-title{font-size:12px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lu-ri-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lu-badge{font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:2px;display:inline-block;margin-bottom:3px;}
+.lu-badge.wiki{background:rgba(100,160,255,.15);color:#80b0ff;}
+.lu-badge.anx{background:rgba(255,160,80,.15);color:#ffaa60;}
+.lu-badge.sky{background:rgba(160,255,120,.15);color:#a0e870;}
+.lu-dim,.lu-loading,.lu-err{font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:24px;text-align:center;line-height:1.7;}
+.lu-err{color:var(--danger);}
+.lu-section{margin-bottom:14px;}
+.lu-section-title{font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.lu-ftbl{width:100%;border-collapse:collapse;}
+.lu-ftbl th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:4px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.lu-ftbl td{padding:5px 8px;border-bottom:1px solid var(--border);font-size:12px;}
+.lu-ftbl tr:hover td{background:rgba(255,255,255,.03);}
+.lu-fname{color:var(--text-dim);font-family:var(--mono);font-size:10px;}
+.lu-fval{color:var(--text-bright);font-family:var(--mono);font-size:11px;}
+.lu-fmapped{color:var(--text-dim);font-size:10px;}
+#lu-apply-bar{padding:10px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--surface2);}
+#lu-apply-bar .note{font-family:var(--mono);font-size:9px;color:var(--text-dim);}
+.lu-btn{font-family:var(--mono);font-size:10px;padding:5px 13px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text-dim);letter-spacing:.05em;}
+.lu-btn.primary{border-color:var(--accent);color:var(--accent);}
+.lu-btn:hover.primary{background:var(--accent-dim);}
+input[type=checkbox].lu-cb{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
+
 /* IN-APP DIALOG */
 #pm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center;}
 #pm-dialog{background:var(--surface2);border:1px solid var(--border2);min-width:300px;max-width:480px;width:100%;}
@@ -174,6 +217,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 </div>
 
 <div id="toast"></div>
+
+<!-- ── LOOKUP MODAL ─────────────────────────────────────────────── -->
+<div id="lu-overlay">
+  <div id="lu-modal">
+    <div id="lu-hdr">
+      <h2>Web Data Lookup</h2>
+      <span id="lu-mode-badge" class="lu-badge wiki" style="font-size:9px;"></span>
+      <button class="lu-btn" onclick="closeLookup()" style="margin-left:auto;">✕ Close</button>
+    </div>
+    <div id="lu-search-bar">
+      <input id="lu-search-input" type="text" placeholder="Stage or rocket name…" onkeydown="if(event.key==='Enter')luSearch('all')">
+      <button class="lu-src-btn wiki" onclick="luSearch('wiki')">Wikipedia</button>
+      <button class="lu-src-btn anx"  onclick="luSearch('anx')">Astronautix</button>
+      <button class="lu-src-btn sky"  onclick="luSearch('sky')">Skyrocket</button>
+      <button class="btn sm primary"  onclick="luSearch('all')">Search All</button>
+    </div>
+    <div id="lu-body">
+      <div id="lu-results"><div class="lu-dim">Enter a name above and search</div></div>
+      <div id="lu-detail"><div class="lu-dim">Select a result to preview extracted data</div></div>
+    </div>
+    <div id="lu-apply-bar">
+      <span class="note" id="lu-apply-note">No data loaded</span>
+      <div style="display:flex;gap:8px;">
+        <button class="lu-btn" onclick="luSelectAll(true)">Select All</button>
+        <button class="lu-btn" onclick="luSelectAll(false)">None</button>
+        <button class="lu-btn primary" id="lu-apply-btn" onclick="luApply()">Apply Selected to Form</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -480,8 +553,11 @@ function renderStageEditor(stage, cat, idx) {
   ).join('');
 
   el.innerHTML = `
-    <div class="ed-title">${esc(stage.name||'New Stage')}
-      <span class="ed-subtitle">in ${esc(cat)}</span>
+    <div class="ed-title" style="display:flex;align-items:center;gap:10px;">
+      <span style="flex:1;">${esc(stage.name||'New Stage')}
+        <span class="ed-subtitle">in ${esc(cat)}</span>
+      </span>
+      <button class="btn sm" onclick="openLookup('stage')" title="Search Wikipedia, Astronautix, Skyrocket for this stage">🔍 Lookup</button>
     </div>
 
     <div class="fs">
@@ -683,7 +759,10 @@ function renderVehicleEditor(p, idx) {
   let sdHtml = (p.stageData||[]).map((s,i) => stageDataRow(s,i)).join('');
 
   el.innerHTML = `
-    <div class="ed-title">${esc(p.name||'New Vehicle')}</div>
+    <div class="ed-title" style="display:flex;align-items:center;gap:10px;">
+      <span style="flex:1;">${esc(p.name||'New Vehicle')}</span>
+      <button class="btn sm" onclick="openLookup('vehicle')" title="Search Wikipedia, Astronautix, Skyrocket for this vehicle">🔍 Lookup</button>
+    </div>
 
     <div class="fs">
       <div class="fs-title">Identity</div>
@@ -1014,7 +1093,371 @@ function showToast(msg) {
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); if (!document.getElementById('btn-save').disabled) doSave(); }
   if ((e.ctrlKey||e.metaKey) && e.key === 'o') { e.preventDefault(); document.getElementById('file-input').click(); }
+  if (e.key === 'Escape') closeLookup();
 });
+
+// ══════════════════════════════════════════════════════════════════
+//  WEB DATA LOOKUP TOOL
+// ══════════════════════════════════════════════════════════════════
+const LU_PROXY = 'https://api.allorigins.win/raw?url=';
+let _luMode = 'stage';          // 'stage' | 'vehicle'
+let _luResults = [];            // [{title,sub,source,url}]
+let _luExtracted = {};          // {fieldKey: {raw,value,unit,checked}}
+
+// ── Open / Close ──────────────────────────────────────────────────
+function openLookup(mode) {
+  _luMode = mode;
+  const name = mode === 'stage'
+    ? document.getElementById('se-name')?.value
+    : document.getElementById('ve-name')?.value;
+  document.getElementById('lu-search-input').value = name || '';
+  document.getElementById('lu-mode-badge').textContent = mode === 'stage' ? 'Stage' : 'Vehicle';
+  document.getElementById('lu-results').innerHTML = '<div class="lu-dim">Enter a name above and search</div>';
+  document.getElementById('lu-detail').innerHTML  = '<div class="lu-dim">Select a result to preview extracted data</div>';
+  document.getElementById('lu-apply-note').textContent = 'No data loaded';
+  _luResults = []; _luExtracted = {};
+  document.getElementById('lu-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('lu-search-input').focus(), 60);
+}
+function closeLookup() {
+  document.getElementById('lu-overlay').style.display = 'none';
+}
+document.getElementById('lu-overlay').addEventListener('click', e => { if (e.target.id === 'lu-overlay') closeLookup(); });
+
+// ── Search ────────────────────────────────────────────────────────
+async function luSearch(source) {
+  const q = document.getElementById('lu-search-input').value.trim();
+  if (!q) return;
+  _luResults = [];
+  document.getElementById('lu-results').innerHTML = '<div class="lu-loading">Searching…</div>';
+
+  const jobs = [];
+  if (source === 'all' || source === 'wiki')  jobs.push(_luSearchWiki(q));
+  if (source === 'all' || source === 'anx')   jobs.push(_luGuessAnx(q));
+  if (source === 'all' || source === 'sky')   jobs.push(_luGuessSky(q));
+
+  await Promise.allSettled(jobs);
+  _luRenderResults();
+}
+
+async function _luSearchWiki(q) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=10&format=json&origin=*`;
+  const d = await (await fetch(url)).json();
+  (d.query?.search || []).forEach(r => {
+    _luResults.push({
+      title: r.title,
+      sub: r.snippet.replace(/<[^>]+>/g,'').slice(0,90),
+      source: 'wiki',
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title)}`,
+      fetchId: r.title,
+    });
+  });
+}
+
+function _luGuessAnx(q) {
+  // Astronautix URL pattern: /[firstletter]/[namenospacesnopunct].html
+  const slug = q.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const letter = slug[0] || 'a';
+  const url = `http://www.astronautix.com/${letter}/${slug}.html`;
+  _luResults.push({ title: q + ' — Astronautix', sub: url, source: 'anx', url, fetchId: url });
+  // Also try with common suffixes
+  ['stage','engine','rocket','sat'].forEach(suffix => {
+    const s2 = slug + suffix;
+    const u2 = `http://www.astronautix.com/${s2[0]}/${s2}.html`;
+    _luResults.push({ title: q + ' ' + suffix + ' — Astronautix', sub: u2, source: 'anx', url: u2, fetchId: u2 });
+  });
+}
+
+function _luGuessSky(q) {
+  // Skyrocket URL pattern: /doc_lau/[name-with-hyphens].htm
+  const slug = q.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
+  const url = `https://space.skyrocket.de/doc_lau/${slug}.htm`;
+  _luResults.push({ title: q + ' — Skyrocket', sub: url, source: 'sky', url, fetchId: url });
+  // Try doc_eng (engine pages)
+  const url2 = `https://space.skyrocket.de/doc_eng/${slug}.htm`;
+  _luResults.push({ title: q + ' engine — Skyrocket', sub: url2, source: 'sky', url: url2, fetchId: url2 });
+}
+
+function _luRenderResults() {
+  const el = document.getElementById('lu-results');
+  if (!_luResults.length) { el.innerHTML = '<div class="lu-dim">No results found</div>'; return; }
+  el.innerHTML = _luResults.map((r,i) => `
+    <div class="lu-ri" onclick="luSelectResult(${i})">
+      <span class="lu-badge ${r.source}">${r.source === 'wiki' ? 'Wikipedia' : r.source === 'anx' ? 'Astronautix' : 'Skyrocket'}</span>
+      <div class="lu-ri-title">${esc(r.title)}</div>
+      <div class="lu-ri-sub">${esc(r.sub)}</div>
+    </div>`).join('');
+}
+
+// ── Fetch & Extract ───────────────────────────────────────────────
+async function luSelectResult(idx) {
+  document.querySelectorAll('.lu-ri').forEach((el,i) => el.classList.toggle('sel', i===idx));
+  const r = _luResults[idx];
+  document.getElementById('lu-detail').innerHTML = '<div class="lu-loading">Fetching page…</div>';
+
+  try {
+    let extracted = {};
+    if (r.source === 'wiki')  extracted = await _luFetchWiki(r.fetchId);
+    if (r.source === 'anx')   extracted = await _luFetchProxy(r.fetchId, _luParseAnx);
+    if (r.source === 'sky')   extracted = await _luFetchProxy(r.fetchId, _luParseSky);
+    _luExtracted = extracted;
+    _luRenderDetail(r);
+  } catch(e) {
+    document.getElementById('lu-detail').innerHTML =
+      `<div class="lu-err">Failed to load:<br>${esc(e.message)}<br><br>
+       <a href="${esc(r.url)}" target="_blank" style="color:var(--accent);">Open in browser ↗</a></div>`;
+  }
+}
+
+// Wikipedia: use parse API to get HTML, parse infobox
+async function _luFetchWiki(title) {
+  const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json&origin=*`;
+  const d = await (await fetch(url)).json();
+  if (d.error) throw new Error(d.error.info);
+  const html = d.parse?.text?.['*'] || '';
+  return _luParseWikiHTML(html);
+}
+
+function _luParseWikiHTML(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  const infobox = doc.querySelector('table.infobox');
+  if (!infobox) {
+    // Fallback: scan any table for mass/thrust/isp rows
+    doc.querySelectorAll('table tr').forEach(row => _luMapWikiRow(row, out));
+  } else {
+    infobox.querySelectorAll('tr').forEach(row => _luMapWikiRow(row, out));
+  }
+  // Compute prop from gross - dry
+  if (out.grossMass && out.dry && !out.prop) {
+    const p = Math.round(out.grossMass.value - out.dry.value);
+    if (p > 0) out.prop = { raw: `${out.grossMass.raw} − ${out.dry.raw}`, value: p, unit: 'kg', checked: true };
+  }
+  return out;
+}
+
+function _luMapWikiRow(row, out) {
+  const cells = row.querySelectorAll('th,td');
+  if (cells.length < 2) return;
+  const key = cells[0].textContent.trim().toLowerCase().replace(/\s+/g,' ');
+  const val = cells[cells.length-1].textContent.trim().replace(/\[\d+\]/g,'');
+  _luMapField(key, val, out, 'wiki');
+}
+
+// Astronautix via proxy
+async function _luFetchProxy(url, parser) {
+  const proxyURL = LU_PROXY + encodeURIComponent(url);
+  const resp = await fetch(proxyURL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' — page may not exist at this URL');
+  const html = await resp.text();
+  if (html.length < 200) throw new Error('Page is empty or blocked by proxy');
+  return parser(html, url);
+}
+
+function _luParseAnx(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  // Astronautix data is in <td> pairs or labeled rows
+  doc.querySelectorAll('table tr, p').forEach(el => {
+    const text = el.textContent;
+    _luScanText(text, out, 'anx');
+  });
+  return out;
+}
+
+function _luParseSky(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = {};
+  doc.querySelectorAll('table tr').forEach(row => {
+    const cells = row.querySelectorAll('td,th');
+    if (cells.length >= 2) {
+      const key = cells[0].textContent.trim().toLowerCase();
+      const val = cells[1].textContent.trim();
+      _luMapField(key, val, out, 'sky');
+    }
+  });
+  // Also scan free-text
+  doc.querySelectorAll('p').forEach(p => _luScanText(p.textContent, out, 'sky'));
+  return out;
+}
+
+// ── Field Mapping ─────────────────────────────────────────────────
+const LU_STAGE_MAP = {
+  dry:     { label: 'Dry Mass',       unit: 'kg',  formId: 'se-dry' },
+  prop:    { label: 'Propellant',     unit: 'kg',  formId: 'se-prop' },
+  thrust:  { label: 'Thrust (vac)',   unit: 'kN',  formId: 'se-thrust' },
+  isp:     { label: 'Isp (vac)',      unit: 's',   formId: 'se-isp' },
+  engines: { label: 'Engine(s)',      unit: '',    formId: 'se-engines' },
+  name:    { label: 'Name',           unit: '',    formId: 'se-name' },
+};
+const LU_VEH_MAP = {
+  name:    { label: 'Name',           unit: '',    formId: 've-name' },
+  payload: { label: 'Payload (LEO)',  unit: 'kg',  formId: 've-payload' },
+  note:    { label: 'Note',           unit: '',    formId: 've-note' },
+};
+
+function _luMapField(key, val, out, src) {
+  // Dry / empty mass
+  if (/dry.?mass|empty.?mass|inert.?mass/.test(key)) {
+    const v = luParseKG(val); if (v) out.dry = { raw: val, value: v, unit: 'kg', checked: true };
+  }
+  // Gross / launch / fueled mass → used to compute prop
+  if (/gross.?mass|launch.?mass|fueled.?mass|loaded.?mass|wet.?mass/.test(key)) {
+    const v = luParseKG(val); if (v) out.grossMass = { raw: val, value: v, unit: 'kg', checked: false };
+  }
+  // Propellant mass (direct)
+  if (/propellant.?mass|fuel.?mass/.test(key)) {
+    const v = luParseKG(val); if (v) out.prop = { raw: val, value: v, unit: 'kg', checked: true };
+  }
+  // Thrust — prefer vacuum
+  if (/thrust/.test(key) && !/twr|weight|ratio/.test(key)) {
+    const v = luParseKN(val);
+    if (v) {
+      const isVac = /vac/i.test(key + val);
+      if (!out.thrust || isVac) out.thrust = { raw: val, value: v, unit: 'kN', checked: true };
+    }
+  }
+  // Isp — prefer vacuum
+  if (/specific.?impulse|isp/.test(key)) {
+    const v = luParseSec(val);
+    if (v) {
+      const isVac = /vac/i.test(key + val);
+      if (!out.isp || isVac) out.isp = { raw: val, value: v, unit: 's', checked: true };
+    }
+  }
+  // Engine name
+  if (/engine|propulsion|motor/.test(key) && !out.engines) {
+    const clean = val.replace(/\[.*?\]/g,'').trim();
+    if (clean && clean.length < 80) out.engines = { raw: clean, value: clean, unit: '', checked: true };
+  }
+  // Payload (for vehicle)
+  if (/payload.*(leo|lto|low earth)|leo.*capacity/.test(key)) {
+    const v = luParseKG(val); if (v) out.payload = { raw: val, value: v, unit: 'kg', checked: true };
+  }
+}
+
+// Free-text scan for Astronautix-style "Field: value" lines
+function _luScanText(text, out, src) {
+  const patterns = [
+    [/gross\s*mass:\s*([\d,. ]+(?:kg|lb|t))/i,   (m) => { const v=luParseKG(m[1]); if(v) out.grossMass={raw:m[1],value:v,unit:'kg',checked:false}; }],
+    [/empty\s*mass:\s*([\d,. ]+(?:kg|lb|t))/i,    (m) => { const v=luParseKG(m[1]); if(v) out.dry={raw:m[1],value:v,unit:'kg',checked:true}; }],
+    [/dry\s*mass:\s*([\d,. ]+(?:kg|lb|t))/i,      (m) => { const v=luParseKG(m[1]); if(v) out.dry={raw:m[1],value:v,unit:'kg',checked:true}; }],
+    [/thrust:\s*([\d,.]+\s*(?:kN|lbf|tf|MN))/i,   (m) => { const v=luParseKN(m[1]); if(v&&!out.thrust) out.thrust={raw:m[1],value:v,unit:'kN',checked:true}; }],
+    [/isp:\s*([\d.]+)\s*s/i,                       (m) => { const v=parseFloat(m[1]); if(v) out.isp={raw:m[1]+'s',value:v,unit:'s',checked:true}; }],
+    [/specific\s*impulse:\s*([\d.]+)/i,             (m) => { const v=parseFloat(m[1]); if(v&&!out.isp) out.isp={raw:m[1]+'s',value:v,unit:'s',checked:true}; }],
+  ];
+  patterns.forEach(([re,fn]) => { const m=text.match(re); if(m) fn(m); });
+}
+
+// ── Unit parsers ──────────────────────────────────────────────────
+function luParseKG(text) {
+  if (!text) return null;
+  text = text.replace(/,/g,'').replace(/\[.*?\]/g,'');
+  let m;
+  if ((m=text.match(/([\d.]+)\s*[Tt](?:onnes?|[^fF]|$)/))) return Math.round(parseFloat(m[1])*1000);
+  if ((m=text.match(/([\d.]+)\s*[Mm][Gg]/)))   return Math.round(parseFloat(m[1])*1000);
+  if ((m=text.match(/([\d.]+)\s*[Kk][Gg]/)))   return Math.round(parseFloat(m[1]));
+  if ((m=text.match(/([\d.]+)\s*lb(?!f)/i)))   return Math.round(parseFloat(m[1])*0.453592);
+  if ((m=text.match(/^([\d.]+)$/)))            return Math.round(parseFloat(m[1]));
+  return null;
+}
+function luParseKN(text) {
+  if (!text) return null;
+  text = text.replace(/,/g,'').replace(/\[.*?\]/g,'');
+  let m;
+  if ((m=text.match(/([\d.]+)\s*[Mm][Nn]/)))        return Math.round(parseFloat(m[1])*1000*10)/10;
+  if ((m=text.match(/([\d.]+)\s*[Kk][Nn]/)))        return Math.round(parseFloat(m[1])*10)/10;
+  if ((m=text.match(/([\d.]+)\s*[Tt][Ff]/)))        return Math.round(parseFloat(m[1])*9.80665*10)/10;
+  if ((m=text.match(/([\d.]+)\s*lbf/i)))            return Math.round(parseFloat(m[1])*0.0044482*10)/10;
+  if ((m=text.match(/([\d.]+)\s*[Ll][Bb][Ff]/)))    return Math.round(parseFloat(m[1])*0.0044482*10)/10;
+  return null;
+}
+function luParseSec(text) {
+  if (!text) return null;
+  text = text.replace(/\[.*?\]/g,'');
+  let m;
+  // "282 s (sea level) / 311 s (vacuum)" → take vacuum
+  if ((m=text.match(/([\d.]+)\s*s[^\d]*vac/i)))   return parseFloat(m[1]);
+  if ((m=text.match(/vac[^\d]*([\d.]+)\s*s/i)))   return parseFloat(m[1]);
+  // last number before 's'
+  const all = [...text.matchAll(/([\d.]+)\s*s/gi)];
+  if (all.length) return parseFloat(all[all.length-1][1]);
+  return null;
+}
+
+// ── Render detail panel ───────────────────────────────────────────
+function _luRenderDetail(result) {
+  const map = _luMode === 'stage' ? LU_STAGE_MAP : LU_VEH_MAP;
+  const keys = Object.keys(_luExtracted).filter(k => k !== 'grossMass');
+  const hasData = keys.length > 0;
+
+  if (!hasData) {
+    document.getElementById('lu-detail').innerHTML =
+      `<div class="lu-err">No structured data found on this page.<br>
+       <a href="${esc(result.url)}" target="_blank" style="color:var(--accent);font-family:var(--mono);font-size:10px;">Open page in browser ↗</a></div>`;
+    document.getElementById('lu-apply-note').textContent = 'No data extracted';
+    return;
+  }
+
+  const rows = keys.map(k => {
+    const f = _luExtracted[k];
+    const mapped = map[k];
+    const targetLabel = mapped ? mapped.label : k;
+    return `<tr>
+      <td><input type="checkbox" class="lu-cb" data-key="${k}" ${f.checked?'checked':''}></td>
+      <td class="lu-fname">${esc(targetLabel)}</td>
+      <td class="lu-fval">${esc(String(f.value))}${f.unit?' <span style="color:var(--text-dim);font-size:9px;">'+esc(f.unit)+'</span>':''}</td>
+      <td class="lu-fmapped" style="color:var(--text-dim);font-size:10px;">${esc(f.raw?.slice(0,60)||'')}</td>
+    </tr>`;
+  }).join('');
+
+  // Also show gross mass as reference if present
+  const gm = _luExtracted.grossMass;
+  const gmRow = gm ? `<tr style="opacity:.5;">
+    <td><input type="checkbox" class="lu-cb" data-key="grossMass" ${gm.checked?'checked':''}></td>
+    <td class="lu-fname">Gross Mass (ref)</td>
+    <td class="lu-fval">${gm.value} <span style="color:var(--text-dim);font-size:9px;">kg</span></td>
+    <td class="lu-fmapped" style="font-size:10px;color:var(--text-dim);">${esc(gm.raw?.slice(0,60)||'')}</td>
+  </tr>` : '';
+
+  document.getElementById('lu-detail').innerHTML = `
+    <div class="lu-section">
+      <div class="lu-section-title">
+        Extracted Fields
+        <a href="${esc(result.url)}" target="_blank" style="float:right;color:var(--accent);font-family:var(--mono);font-size:8px;text-decoration:none;">Open source ↗</a>
+      </div>
+      <table class="lu-ftbl">
+        <thead><tr><th></th><th>Field</th><th>Value</th><th>Raw text</th></tr></thead>
+        <tbody>${rows}${gmRow}</tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('lu-apply-note').textContent = `${keys.length} field${keys.length!==1?'s':''} extracted`;
+}
+
+// ── Apply ─────────────────────────────────────────────────────────
+function luApply() {
+  const map = _luMode === 'stage' ? LU_STAGE_MAP : LU_VEH_MAP;
+  let applied = 0;
+  document.querySelectorAll('#lu-detail .lu-cb:checked').forEach(cb => {
+    const key = cb.dataset.key;
+    if (key === 'grossMass') return; // reference only
+    const f = _luExtracted[key];
+    const m = map[key];
+    const el = m ? document.getElementById(m.formId) : null;
+    if (el && f) {
+      el.value = typeof f.value === 'number' ? f.value : f.value;
+      el.dispatchEvent(new Event('input'));
+      applied++;
+    }
+  });
+  showToast(`Applied ${applied} field${applied!==1?'s':''} to form`);
+  closeLookup();
+}
+
+function luSelectAll(state) {
+  document.querySelectorAll('#lu-detail .lu-cb').forEach(cb => cb.checked = state);
+}
 </script>
 </body>
 </html>
