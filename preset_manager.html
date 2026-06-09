@@ -1018,7 +1018,8 @@ function veToggleS15(cb) {
 // True if a stage object should show the s15 block, regardless of which flag/field/tag was used
 function _seIsS15(s) {
   return !!(s.s15 || s.s15_sust_thrust || s.s15_sust_isp ||
-            (s.tags || []).includes('Stage-and-a-half'));
+            (s.tags || []).some(t => /stage.and.a.half/i.test(t)) ||
+            /stage.and.a.half/i.test(s.note || ''));
 }
 function seToggleS15() {
   const cb = document.getElementById('se-s15');
