@@ -371,6 +371,20 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 #vehicles-stage-params{padding:0 4px;}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
 @media(max-width:900px){#vehicles-beginner{grid-template-columns:1fr !important;}}
+
+/* ── ART CANVAS ── */
+#art-canvas{background:rgba(0,0,0,.35);flex:1;position:relative;overflow:hidden;min-height:300px;
+  background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:24px 24px;}
+.art-ci{position:absolute;box-sizing:border-box;border:1px solid transparent;cursor:move;user-select:none;}
+.art-ci:hover,.art-ci.sel{border-color:var(--accent);}
+.art-ci img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
+.art-ci-del{position:absolute;top:-9px;right:-9px;width:17px;height:17px;background:var(--panel);
+  border:1px solid var(--border);color:var(--text-dim);font-size:9px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-family:var(--mono);border-radius:50%;}
+.art-ci:hover .art-ci-del,.art-ci.sel .art-ci-del{display:flex;}
+.art-ci-rsz{position:absolute;bottom:0;right:0;width:12px;height:12px;cursor:se-resize;
+  background:var(--accent);opacity:0;transition:opacity .15s;}
+.art-ci:hover .art-ci-rsz,.art-ci.sel .art-ci-rsz{opacity:.8;}
 </style>
 </head>
 <body>
@@ -1460,7 +1474,7 @@ function showPage(p){
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   const pg=document.getElementById('page-'+p);
   pg.classList.add('active');
-  pg.style.display=(p==='program')?'flex':'block';
+  pg.style.display=(p==='program'||p==='art')?'flex':'block';
   document.getElementById('nav-'+p).classList.add('active');
   const vvw=document.getElementById('veh-view-wrap');
   if(vvw){vvw.style.display=(p==='vehicles')?'flex':'none';}
@@ -9134,18 +9148,126 @@ function _progArtRebuildManagerList() {
   }
   el.innerHTML = entries.map(entry => {
     const sid = entry.artId.replace(/'/g, "\\'");
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border);">
-      <img src="${entry.dataURL}" style="width:32px;height:32px;object-fit:contain;flex-shrink:0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);">
+      <img src="${entry.dataURL}" style="width:28px;height:28px;object-fit:contain;flex-shrink:0;
         background:rgba(255,255,255,.04);border:1px solid var(--border);">
       <span style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--text);
         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${entry.name}">${entry.name}</span>
-      <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);
-        white-space:nowrap;flex-shrink:0;">${entry.width}×${entry.height}</span>
+      <button onclick="artCanvasAdd('${sid}')" title="Add to canvas"
+        style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
+          color:var(--accent);padding:2px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.04em;">Add →</button>
       <button onclick="progArtDelete('${sid}')" title="Delete"
         style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);
-          color:#e06c75;padding:2px 7px;cursor:pointer;flex-shrink:0;">✕</button>
+          color:var(--accent2);padding:2px 6px;cursor:pointer;flex-shrink:0;">✕</button>
     </div>`;
   }).join('');
+}
+
+// ── Art Canvas (freeform stage assembly) ─────────────────────────────────────
+
+let artCanvasItems = [];          // [{id, artId, x, y, w, h}]
+let _artDrag = null;              // active drag/resize state
+
+function artCanvasAdd(artId) {
+  const art = PROG_ART_REGISTRY[artId];
+  if (!art) return;
+  const canvas = document.getElementById('art-canvas');
+  if (!canvas) return;
+  const cw = canvas.offsetWidth || 600, ch = canvas.offsetHeight || 400;
+  const maxW = Math.min(200, cw * 0.4);
+  const w = Math.round(Math.min(maxW, art.width || 200));
+  const h = art.width ? Math.round(w * art.height / art.width) : w;
+  const id = 'ci' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  artCanvasItems.push({
+    id, artId,
+    x: Math.max(0, Math.round((cw - w) / 2)),
+    y: Math.max(0, Math.round((ch - h) / 2)),
+    w, h
+  });
+  artCanvasRender();
+  // Hide hint once something is on the canvas
+  const hint = document.getElementById('art-canvas-hint');
+  if (hint) hint.style.display = 'none';
+}
+
+function artCanvasRender() {
+  const canvas = document.getElementById('art-canvas');
+  if (!canvas) return;
+  canvas.innerHTML = artCanvasItems.map(item => {
+    const art = PROG_ART_REGISTRY[item.artId];
+    if (!art) return '';
+    return `<div class="art-ci" id="aci-${item.id}"
+        style="left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;"
+        onmousedown="artCiMousedown(event,'${item.id}','move')">
+      <img src="${art.dataURL}">
+      <div class="art-ci-del" onmousedown="event.stopPropagation()"
+        onclick="event.stopPropagation();artCanvasRemove('${item.id}')">✕</div>
+      <div class="art-ci-rsz"
+        onmousedown="event.stopPropagation();artCiMousedown(event,'${item.id}','resize')"></div>
+    </div>`;
+  }).join('');
+}
+
+function artCanvasRemove(id) {
+  artCanvasItems = artCanvasItems.filter(i => i.id !== id);
+  artCanvasRender();
+  if (!artCanvasItems.length) {
+    const hint = document.getElementById('art-canvas-hint');
+    if (hint) hint.style.display = '';
+  }
+}
+
+function artCanvasClear() {
+  artCanvasItems = [];
+  artCanvasRender();
+  const hint = document.getElementById('art-canvas-hint');
+  if (hint) hint.style.display = '';
+}
+
+function artCiMousedown(e, id, type) {
+  e.preventDefault();
+  const item = artCanvasItems.find(i => i.id === id);
+  if (!item) return;
+  // Bring to front by moving to end of array
+  artCanvasItems = artCanvasItems.filter(i => i.id !== id);
+  artCanvasItems.push(item);
+  artCanvasRender();
+  _artDrag = { type, id, sx: e.clientX, sy: e.clientY, ox: item.x, oy: item.y, ow: item.w, oh: item.h };
+  document.getElementById('aci-' + id)?.classList.add('sel');
+  document.addEventListener('mousemove', _artDragMove, { passive: false });
+  document.addEventListener('mouseup',   _artDragEnd,  { once: true });
+}
+
+function _artDragMove(e) {
+  if (!_artDrag) return;
+  const dx = e.clientX - _artDrag.sx, dy = e.clientY - _artDrag.sy;
+  const item = artCanvasItems.find(i => i.id === _artDrag.id);
+  if (!item) return;
+  const canvas = document.getElementById('art-canvas');
+  const cw = canvas ? canvas.offsetWidth  : 9999;
+  const ch = canvas ? canvas.offsetHeight : 9999;
+  if (_artDrag.type === 'move') {
+    item.x = Math.max(0, Math.min(_artDrag.ox + dx, cw - item.w));
+    item.y = Math.max(0, Math.min(_artDrag.oy + dy, ch - item.h));
+  } else {
+    item.w = Math.max(20, _artDrag.ow + dx);
+    item.h = Math.max(20, _artDrag.oh + dy);
+  }
+  const el = document.getElementById('aci-' + item.id);
+  if (el) {
+    el.style.left   = item.x + 'px';
+    el.style.top    = item.y + 'px';
+    el.style.width  = item.w + 'px';
+    el.style.height = item.h + 'px';
+  }
+}
+
+function _artDragEnd() {
+  document.removeEventListener('mousemove', _artDragMove);
+  if (_artDrag) {
+    document.getElementById('aci-' + _artDrag.id)?.classList.remove('sel');
+    _artDrag = null;
+  }
 }
 
 // ── Art Picker (assign art to a vehicleDefinition) ────────────────────────────
@@ -9710,32 +9832,51 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: ART -->
-<div id="page-art" class="page" style="display:none;">
-  <div style="padding:20px 24px;max-width:640px;">
-    <div class="sl" style="margin-bottom:16px;">Art Library</div>
+<div id="page-art" class="page" style="display:none;gap:0;">
+  <div style="display:flex;height:100%;min-height:0;gap:0;">
 
-    <!-- Upload panel -->
-    <div style="background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:14px;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:10px;">UPLOAD NEW ART</div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-        <input id="art-upload-name" type="text" placeholder="Name (leave blank to use filename)"
-          style="flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--text);
-            font-family:var(--mono);font-size:10px;padding:5px 8px;outline:none;">
-        <label style="cursor:pointer;font-family:var(--mono);font-size:9px;background:transparent;
-          border:1px solid var(--accent);color:var(--accent);padding:6px 14px;white-space:nowrap;letter-spacing:.06em;">
-          ↑ CHOOSE FILE
-          <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" style="display:none;"
-            onchange="progArtUploadFile(this)">
-        </label>
+    <!-- LEFT: upload + library strip -->
+    <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+
+      <!-- Upload panel -->
+      <div style="padding:14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:8px;">UPLOAD NEW ART</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input id="art-upload-name" type="text" placeholder="Name (optional)"
+            style="flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--text);
+              font-family:var(--mono);font-size:10px;padding:5px 8px;outline:none;">
+          <label style="cursor:pointer;font-family:var(--mono);font-size:9px;background:transparent;
+            border:1px solid var(--accent);color:var(--accent);padding:5px 10px;white-space:nowrap;letter-spacing:.06em;flex-shrink:0;">
+            ↑ FILE
+            <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" style="display:none;"
+              onchange="progArtUploadFile(this)">
+          </label>
+        </div>
+        <div style="font-family:var(--mono);font-size:7px;color:var(--text-dim);opacity:.6;">
+          PNG · SVG · JPG · WebP · persists in IndexedDB
+        </div>
       </div>
-      <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim);">
-        PNG · SVG · JPG · WebP accepted. Stored in your browser's IndexedDB — persists across sessions.
-      </div>
+
+      <!-- Library list -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);
+        padding:8px 14px 4px;flex-shrink:0;">LIBRARY</div>
+      <div id="art-manager-list" style="flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);"></div>
     </div>
 
-    <!-- Library list -->
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:8px;">LIBRARY</div>
-    <div id="art-manager-list" style="background:var(--panel);border:1px solid var(--border);"></div>
+    <!-- RIGHT: freeform canvas -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+      <!-- Canvas toolbar -->
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.18);">
+        <span style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;">Canvas</span>
+        <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        <span id="art-canvas-hint" style="font-family:var(--mono);font-size:8px;color:var(--text-dim);opacity:.5;">← Add art from library</span>
+        <button onclick="artCanvasClear()" style="font-family:var(--mono);font-size:9px;background:transparent;
+          border:1px solid var(--border);color:var(--text-dim);padding:3px 10px;cursor:pointer;letter-spacing:.05em;">Clear</button>
+      </div>
+      <!-- The canvas itself -->
+      <div id="art-canvas"></div>
+    </div>
+
   </div>
 </div>
 
