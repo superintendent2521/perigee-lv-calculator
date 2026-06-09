@@ -6490,65 +6490,69 @@ function progNmHideTip() {
 
 // ── Node Map data ─────────────────────────────────────────────────────────────
 // viewBox 0 0 1100 520.
-// Zone columns: Earth x=80–380, Lunar x=400–660, Interplanetary x=680–1080.
-// Y axis loosely maps to energy/altitude: surface ~460, LEO ~360, GEO ~240, escape ~130.
 // Each node carries a full orbital definition so ΔV can be computed directly
 // using vis-viva / patched-conic without routing through the graph.
 // orbit.type: 'surface' | 'circular' | 'elliptic' | 'escape' | 'transit'
 // transit nodes represent a trajectory between bodies (TLI, TMI, etc.)
-// Node positions are in world-space coords. The canvas uses a zoomable/pannable
-// <g id="nm-world"> so these coords are independent of the SVG viewBox size.
-// Systems are laid out like a compressed solar system (Earth left → planets right).
-// Within each system nodes fan RADIALLY around the planet body:
-//   surface → just outside/below the planet disc
-//   orbitals → spread above at increasing distances, angled apart so they don't crowd
-//   escape/transit → near the SOI boundary or in open space between systems
-// All positions verified: no node overlaps each other or the planet body disc.
+//
+// Node positions are computed at render time using log-scale radial distance from the
+// planet body centre (see _nmLogPos). cx/cy in PROG_NM_NODES are fallback positions
+// used only for transit nodes and nodes whose body isn't in NM_BODY_BLOBS.
+// 'angle' = degrees clockwise from straight-up (0° = directly above planet).
+
+// Planet-system geometry shared between PROG_NM_NODES positioning and the blob renderer.
+// soiR     = visual SOI radius in world-space px.
+// refMaxKm = orbital altitude (km) that maps to ~88% of soiR on the log scale.
+const NM_BODY_BLOBS = {
+  Earth: { cx:195, cy:255, bodyR:26, soiR:210, refMaxKm:50000 },
+  Moon:  { cx:450, cy:192, bodyR:12, soiR:100, refMaxKm:80000 },
+  Mars:  { cx:860, cy:205, bodyR:18, soiR:115, refMaxKm:5000  },
+  Venus: { cx:848, cy:380, bodyR:15, soiR:100, refMaxKm:5000  },
+};
+
 const PROG_NM_NODES = [
-  // ── Earth system — body center (195, 255), bodyR=26, SOI r=210 ───────────────
-  // Surface node lives AT the planet body center — the disc IS the node visually.
+  // ── Earth system ──────────────────────────────────────────────────────────────
+  // Surface node lives AT the planet body centre — the disc IS the node visually.
   { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:195, cy:255, r:26,
     orbit:{ type:'surface',  body:'Earth' } },
-  // LEO directly above the planet (57 px from center → 19 px clear of disc top).
-  { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:195, cy:190, r:20,
+  // LEO directly above; GTO upper-left (−30°); GEO upper-right (+30°); escape straight up at SOI edge.
+  { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:195, cy:152, r:20, angle:0,
     orbit:{ type:'circular', body:'Earth', perigee:185,   apogee:185,   inclination:28.5 } },
-  // GTO upper-left; GEO upper-right — same altitude band, fanned ±30° from vertical.
-  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:140, cy:168, r:18,
+  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:110, cy:108, r:18, angle:-30,
     orbit:{ type:'elliptic', body:'Earth', perigee:185,   apogee:35786, inclination:28.5 } },
-  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:252, cy:163, r:18,
+  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:285, cy:99,  r:18, angle:30,
     orbit:{ type:'circular', body:'Earth', perigee:35786, apogee:35786, inclination:0    } },
-  // Escape near the SOI boundary, centred above.
-  { id:'escape',        label:'ESCAPE',  sub:'C3 ≥ 0',         zone:'earth',  cx:195, cy:122, r:17, dashed:true,
+  { id:'escape',        label:'ESCAPE',  sub:'C3 ≥ 0',         zone:'earth',  cx:195, cy:62,  r:17, dashed:true, angle:0,
     orbit:{ type:'escape',   body:'Earth', c3:0.1 } },
 
-  // ── Lunar system — body center (450, 192), bodyR=12, SOI r=70 ────────────────
-  // TLC floats in the transfer corridor, well outside both SOIs.
+  // ── Lunar system ──────────────────────────────────────────────────────────────
+  // TLC floats in the transfer corridor — manual position, no blob attachment.
   { id:'tlc',           label:'TLC',     sub:'trans-lunar',    zone:'lunar',  cx:352, cy:244, r:17, dashed:true,
     orbit:{ type:'transit',  body:'Earth', c3:-1.9, destination:'Moon' } },
-  // LLO upper-left of Moon, DRO upper-right — angled apart so they're clear.
-  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:418, cy:152, r:18,
+  // LLO upper-left (−35°); DRO upper-right (+30°) of Moon body.
+  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:425, cy:156, r:18, angle:-35,
     orbit:{ type:'circular', body:'Moon',  perigee:100,   apogee:100,   inclination:90 } },
-  { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:483, cy:138, r:18,
+  { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:494, cy:117, r:18, angle:30,
     orbit:{ type:'circular', body:'Moon',  perigee:68300, apogee:68300, inclination:0 } },
-  // Surface node at Moon body center — disc is the node.
+  // Surface node at Moon body centre — disc is the node.
   { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:450, cy:192, r:12,
     orbit:{ type:'surface',  body:'Moon' } },
 
-  // ── Mars system — body center (860, 205), bodyR=18, SOI r=80 ─────────────────
+  // ── Mars system ───────────────────────────────────────────────────────────────
   { id:'mars-transit',  label:'TRANSIT', sub:'Earth → Mars',   zone:'interp', cx:655, cy:244, r:17, dashed:true,
     orbit:{ type:'transit',  body:'Sun', c3:8.7,  departure_body:'Earth', destination:'Mars'  } },
-  // Orbit above, surface below.
-  { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:860, cy:150, r:22,
+  // Mars orbit directly above disc.
+  { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:860, cy:129, r:22, angle:0,
     orbit:{ type:'circular', body:'Mars',  perigee:400,   apogee:400,   inclination:0 } },
-  // Surface node at Mars body center — disc is the node.
+  // Surface node at Mars body centre — disc is the node.
   { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:860, cy:205, r:18,
     orbit:{ type:'surface',  body:'Mars' } },
 
-  // ── Venus system — body center (848, 380), bodyR=15, SOI r=67 ────────────────
+  // ── Venus system ──────────────────────────────────────────────────────────────
   { id:'venus-transit', label:'TRANSIT', sub:'Earth → Venus',  zone:'interp', cx:655, cy:366, r:17, dashed:true,
     orbit:{ type:'transit',  body:'Sun', c3:6.3,  departure_body:'Earth', destination:'Venus' } },
-  // Orbit above Venus disc.
-  { id:'venus-orbit',   label:'VENUS',   sub:'orbit 300 km',   zone:'interp', cx:848, cy:318, r:20,
+  // Venus orbit directly above disc.
+  { id:'venus-orbit',   label:'VENUS',   sub:'orbit 300 km',   zone:'interp', cx:848, cy:316, r:20, angle:0,
     orbit:{ type:'circular', body:'Venus', perigee:300,   apogee:300,   inclination:0 } },
 ];
 
@@ -6591,8 +6595,12 @@ function progRenderNodeMap() {
 
   const posOvr = prog?.nodeMapNodePos || {};
   const builtinWithPos = PROG_NM_NODES.map(nd => {
+    // Compute log-scale radial position from planet body centre (angle field required).
+    const logPos = _nmLogPos(nd);
+    const base   = logPos ? { ...nd, cx: logPos.cx, cy: logPos.cy } : nd;
+    // Manual drag override takes precedence over everything.
     const ovr = posOvr[nd.id];
-    return ovr ? { ...nd, cx: ovr.cx, cy: ovr.cy } : nd;
+    return ovr ? { ...base, cx: ovr.cx, cy: ovr.cy } : base;
   });
 
   // Active built-in nodes appear fully on canvas; ghost nodes appear faded
@@ -6656,11 +6664,12 @@ function progRenderNodeMap() {
   // Each blob = layered SOI glow + an interactive planet body disc.
   // The body disc IS the surface node — no separate circle is rendered for surface nodes.
   // nodeId: surface node this disc represents (null = Venus, decorative only).
+  // Derive visual blob positions from the shared NM_BODY_BLOBS constant (soiR = blob r).
   const PLANET_BLOBS = [
-    { cx:195, cy:255, r:210, col:nmEarth,  bodyR:26, label:'EARTH', nodeId:'earth-surface' },
-    { cx:450, cy:192, r:100, col:nmLunar,  bodyR:12, label:'MOON',  nodeId:'moon-surface'  },
-    { cx:860, cy:205, r:115, col:nmInterp, bodyR:18, label:'MARS',  nodeId:'mars-surface'  },
-    { cx:848, cy:380, r:100, col:nmInterp, bodyR:15, label:'VENUS', nodeId:null             },
+    { ...NM_BODY_BLOBS.Earth, r:NM_BODY_BLOBS.Earth.soiR, col:nmEarth,  label:'EARTH', nodeId:'earth-surface' },
+    { ...NM_BODY_BLOBS.Moon,  r:NM_BODY_BLOBS.Moon.soiR,  col:nmLunar,  label:'MOON',  nodeId:'moon-surface'  },
+    { ...NM_BODY_BLOBS.Mars,  r:NM_BODY_BLOBS.Mars.soiR,  col:nmInterp, label:'MARS',  nodeId:'mars-surface'  },
+    { ...NM_BODY_BLOBS.Venus, r:NM_BODY_BLOBS.Venus.soiR, col:nmInterp, label:'VENUS', nodeId:null             },
   ];
   for (const b of PLANET_BLOBS) {
     // Determine whether the surface node for this body is active / ghost / n/a
@@ -6990,14 +6999,65 @@ function progNmOpenAddNode() {
 }
 
 /** Auto-compute canvas position for a custom node based on zone + altitude. */
+/**
+ * Compute world-space (cx, cy) for a built-in orbital node using log-altitude radial scaling.
+ * Returns null for surface/transit nodes or nodes whose body isn't in NM_BODY_BLOBS.
+ * node.angle = degrees clockwise from straight-up (0 = directly above planet).
+ */
+function _nmLogPos(node) {
+  const orbit = node.orbit;
+  if (!orbit || orbit.type === 'surface' || orbit.type === 'transit') return null;
+  if (node.angle == null) return null; // no angle = manual/transit node, keep cx/cy
+  const blob = NM_BODY_BLOBS[orbit.body];
+  if (!blob) return null;
+
+  const rad  = node.angle * Math.PI / 180; // clockwise from up in SVG coords
+  const sinA = Math.sin(rad);
+  const cosA = Math.cos(rad);
+
+  if (orbit.type === 'escape') {
+    const r = blob.soiR * 0.91;
+    return { cx: Math.round(blob.cx + r * sinA), cy: Math.round(blob.cy - r * cosA) };
+  }
+
+  // Circular: use perigee. Elliptic: use SMA (average altitude).
+  const alt = orbit.type === 'elliptic'
+    ? (orbit.perigee + orbit.apogee) / 2
+    : (orbit.perigee ?? orbit.apogee ?? 0);
+  if (alt <= 0) return null;
+
+  const span = blob.soiR * 0.88 - blob.bodyR;
+  const r    = blob.bodyR + span * Math.log10(alt + 1) / Math.log10(blob.refMaxKm + 1);
+  return { cx: Math.round(blob.cx + r * sinA), cy: Math.round(blob.cy - r * cosA) };
+}
+
+/**
+ * Auto-position a new custom/imported node using the same log-radial scale as built-in nodes.
+ * zone: 'earth' | 'lunar' | 'interp'   alt_km: orbital altitude
+ */
 function _progNmAutoPos(zone, alt_km) {
-  // Zone center X values
-  const zx = { earth: 226, lunar: 532, interp: 888 };
-  const cx = (zx[zone] ?? 226) + (Math.random() * 40 - 20);
-  // Y from altitude: surface→456, LEO→352, GEO→244, escape→148
-  // log-ish mapping: cy = 456 - 108 * log10(max(alt,1) / 185 + 1)
-  const cy = alt_km <= 0 ? 456
-           : Math.max(120, 456 - 100 * Math.log10(Math.max(alt_km, 1) / 185 + 1));
+  const bodyByZone = { earth: 'Earth', lunar: 'Moon', interp: null };
+  const bodyName   = bodyByZone[zone];
+  const blob       = bodyName ? NM_BODY_BLOBS[bodyName] : null;
+
+  if (blob) {
+    // Random angle in the upper semicircle (−70° to +70° from straight up)
+    const angleDeg = Math.random() * 140 - 70;
+    const fakeNode = {
+      orbit: { type: alt_km > 0 ? 'circular' : 'surface', body: bodyName, perigee: alt_km, apogee: alt_km },
+      angle: angleDeg,
+    };
+    const pos = _nmLogPos(fakeNode);
+    if (pos) {
+      // Tiny jitter so multiple imports at identical altitude don't exactly overlap
+      return { cx: Math.round(pos.cx + (Math.random() * 16 - 8)), cy: Math.round(pos.cy + (Math.random() * 10 - 5)) };
+    }
+  }
+
+  // Fallback for interp zone (multiple possible planets) or unknown bodies
+  const zx = { earth: 195, lunar: 450, interp: 750 };
+  const cx = (zx[zone] ?? 195) + (Math.random() * 40 - 20);
+  const cy = alt_km <= 0 ? 240 : Math.max(80, 240 - 100 * Math.log10(Math.max(alt_km, 1) / 400 + 1));
   return { cx: Math.round(cx), cy: Math.round(cy) };
 }
 
