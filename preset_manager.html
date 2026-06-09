@@ -113,7 +113,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 
 <div id="hdr">
   <h1>RP — Preset Manager</h1>
-  <button class="btn primary" onclick="doOpen()">Open lv_calc.html</button>
+  <label class="btn primary" style="cursor:pointer;">Open lv_calc.html<input type="file" id="file-input" accept=".html" style="display:none;" onchange="doOpen(this)"></label>
   <span id="fname">No file loaded</span>
   <span class="sep"></span>
   <span id="dirty-badge">● Unsaved</span>
@@ -158,56 +158,54 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-size:14px;font
 // ══════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════
-let fh       = null;   // FileSystemFileHandle
-let src      = '';     // raw file text
-let stageLib = {};     // STAGE_LIBRARY  {cat:[{...}]}
-let presets  = [];     // BUILTIN_PRESETS [{...}]
+let _filename = 'lv_calc.html'; // last opened filename
+let src      = '';              // raw file text
+let stageLib = {};              // STAGE_LIBRARY  {cat:[{...}]}
+let presets  = [];              // BUILTIN_PRESETS [{...}]
 let _dirty   = false;
-let selStage   = null; // {cat,idx}
-let selVehicle = null; // number
+let selStage   = null;          // {cat,idx}
+let selVehicle = null;          // number
 
 // ══════════════════════════════════════════════════════════
 //  FILE OPS
 // ══════════════════════════════════════════════════════════
-async function doOpen() {
-  if (!window.showOpenFilePicker) {
-    alert('File System Access API not supported.\nUse Chrome or Edge 86+.');
-    return;
-  }
-  try {
-    [fh] = await window.showOpenFilePicker({
-      types: [{ description: 'HTML file', accept: { 'text/html': ['.html'] } }],
-      id: 'lv-calc'
-    });
-    const file = await fh.getFile();
-    src = await file.text();
+function doOpen(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _filename = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    src = e.target.result;
     parseAll();
     renderStagesList();
     renderVehiclesList();
-    document.getElementById('fname').textContent = fh.name;
+    document.getElementById('fname').textContent = file.name;
     document.getElementById('btn-save').disabled = false;
     document.getElementById('stage-editor').innerHTML  = '<div class="placeholder">Select a stage to edit</div>';
     document.getElementById('vehicle-editor').innerHTML = '<div class="placeholder">Select a vehicle to edit</div>';
     setDirty(false);
     showToast('Loaded ' + Object.keys(stageLib).length + ' categories, ' + presets.length + ' vehicles');
-  } catch (e) {
-    if (e.name !== 'AbortError') alert('Open error: ' + e.message);
-  }
+    // Reset input so the same file can be re-opened if needed
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
-async function doSave() {
-  if (!fh) return;
-  try {
-    const newSrc = buildNewSource();
-    const w = await fh.createWritable();
-    await w.write(newSrc);
-    await w.close();
-    src = newSrc;
-    setDirty(false);
-    showToast('Saved ✓');
-  } catch (e) {
-    alert('Save error: ' + e.message);
-  }
+function doSave() {
+  if (!src) return;
+  const newSrc = buildNewSource();
+  src = newSrc;
+  const blob = new Blob([newSrc], {type: 'text/html'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = _filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setDirty(false);
+  showToast('Saved — replace the original file with the download ✓');
 }
 
 function setDirty(d) {
@@ -886,7 +884,7 @@ function showToast(msg) {
 // Ctrl+S to save
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); if (!document.getElementById('btn-save').disabled) doSave(); }
-  if ((e.ctrlKey||e.metaKey) && e.key === 'o') { e.preventDefault(); doOpen(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'o') { e.preventDefault(); document.getElementById('file-input').click(); }
 });
 </script>
 </body>
