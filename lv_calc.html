@@ -9755,32 +9755,33 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
 <!-- ── MODAL: Art Picker ── -->
 <div class="modal-overlay" id="modal-prog-art-picker" style="display:none">
   <div class="modal" style="width:380px;max-height:70vh;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+    <div class="modal-header">
       <span class="modal-title">Assign Art</span>
       <button onclick="closeModal('modal-prog-art-picker')" class="modal-close">✕</button>
     </div>
-    <div id="art-picker-list" style="flex:1;overflow-y:auto;"></div>
+    <div class="modal-body" id="art-picker-list"></div>
   </div>
 </div>
 
 <!-- ── MODAL: Vehicle Stage Art Picker ── -->
 <div class="modal-overlay" id="modal-veh-art-picker" style="display:none">
   <div class="modal" style="width:380px;max-height:70vh;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+    <div class="modal-header">
       <span class="modal-title">Assign Stage Art</span>
       <button onclick="closeModal('modal-veh-art-picker')" class="modal-close">✕</button>
     </div>
-    <div id="veh-art-picker-list" style="flex:1;overflow-y:auto;"></div>
+    <div class="modal-body" id="veh-art-picker-list"></div>
   </div>
 </div>
 
 <!-- ── MODAL: Import Vehicle from Presets ── -->
 <div class="modal-overlay" id="modal-prog-import-vehicle" style="display:none">
-  <div class="modal-box" style="width:480px;max-height:80vh;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+  <div class="modal" style="width:480px;max-height:80vh;">
+    <div class="modal-header">
       <span class="modal-title">Import Vehicle to Program</span>
       <button onclick="closeModal('modal-prog-import-vehicle')" class="modal-close">✕</button>
     </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;">
     <input id="prog-import-vehicle-search" type="text" placeholder="Search vehicles…"
       oninput="progNmImportVehicleFilter()"
       style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 7px;outline:none;margin-bottom:8px;flex-shrink:0;">
@@ -9790,14 +9791,15 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
 
 <!-- ── MODAL: Import Orbit from Calculator ── -->
 <div class="modal-overlay" id="modal-nm-import-orbit" style="display:none">
-  <div class="modal-box" style="width:480px;max-height:80vh;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+  <div class="modal" style="width:480px;max-height:80vh;">
+    <div class="modal-header">
       <span class="modal-title">Import Orbit to Node Map</span>
       <button onclick="closeModal('modal-nm-import-orbit')" class="modal-close">✕</button>
     </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;">
     <input id="nm-import-search" type="text" placeholder="Search orbits…"
       oninput="progNmImportFilter()"
-      style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 7px;outline:none;margin-bottom:8px;flex-shrink:0;">
+      style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 7px;outline:none;flex-shrink:0;">
     <div id="nm-import-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 </div>
