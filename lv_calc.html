@@ -717,7 +717,9 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
       <!-- Vehicles sub-section -->
       <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.12em;padding:5px 10px 3px;flex-shrink:0;opacity:.7;">VEHICLES</div>
       <div id="prog-vehicle-list" style="flex-shrink:0;max-height:120px;overflow-y:auto;border-bottom:1px solid var(--border);"></div>
-      <div style="flex-shrink:0;padding:4px 8px;border-bottom:1px solid var(--border);">
+      <div style="flex-shrink:0;padding:4px 8px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:3px;">
+        <button onclick="progNmOpenImportVehicle()"
+          style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:3px 0;cursor:pointer;letter-spacing:.06em;">↑ IMPORT VEHICLE</button>
         <button onclick="document.getElementById('prog-vehicle-file').click()"
           style="width:100%;font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:3px 0;cursor:pointer;letter-spacing:.06em;">+ Load .json</button>
         <input type="file" id="prog-vehicle-file" accept=".json" style="display:none;" onchange="progHandleVehicleFile(event)">
@@ -8413,6 +8415,125 @@ function progNmImportOrbit(orbitName, planet) {
 
 // ── End Palette panel ─────────────────────────────────────────────────────────
 
+// ── Import Vehicle from Presets ──────────────────────────────────────────────
+
+/**
+ * Build a vehicleDefinition-compatible LV object from a BUILTIN_PRESETS or
+ * userLVs entry. Mirrors the output of collectVehicle() / buildLVObject().
+ */
+function _presetToLVObject(p) {
+  const stageData = resolvePresetStages(p).map((sd, si) => {
+    const entry = { dry: sd.dry||0, prop: sd.prop||0, thrust: sd.thrust||0, isp: sd.isp||1, res: sd.res??2 };
+    const orig = (p.stageData||[])[si] || {};
+    if (orig.s15) { entry.s15=true; entry.s15_sust_thrust=orig.s15_sust_thrust||0; entry.s15_sust_isp=orig.s15_sust_isp||0; entry.s15_jet_mass=orig.s15_jet_mass||0; entry.s15_beco_twr=orig.s15_beco_twr||1.2; }
+    return entry;
+  });
+  const boosterData = resolvePresetBooster(p);
+  return {
+    name:            p.name || 'Vehicle',
+    note:            p.note || '',
+    stages:          stageData.length,
+    boosters:        !!boosterData,
+    restartable:     false,
+    stageData,
+    boosterData:     boosterData || null,
+    stageNames:      (p.stageNames || stageData.map(() => null)).slice(0, stageData.length),
+    boosterName:     p.boosterName || null,
+    payload:         p.payload ?? 0,
+    fairingMass:     p.fairingMass ?? 0,
+    fairingJettison: p.fairingJettison ?? 0,
+    site:            p.site   || { lat: 28.5, azMin: 37, azMax: 112 },
+    mode:            p.mode   || 'orbit',
+    orbit:           p.orbit  || null,
+    escape:          p.escape || null,
+    trajectory:      p.trajectory || 'direct',
+    parkingAlt:      p.parkingAlt ?? (p.mode === 'escape' ? (p.escape?.perigee ?? 185) : (p.orbit?.perigee ?? 185)),
+    tags:            p.tags   || [],
+  };
+}
+
+/** Open the import-vehicle modal and populate the list. */
+function progNmOpenImportVehicle() {
+  if (!PROG_ACTIVE_PROGRAM) { alert('No active Program. Open the Program tab first.'); return; }
+  openModal('modal-prog-import-vehicle');
+  document.getElementById('prog-import-vehicle-search').value = '';
+  progNmImportVehicleFilter();
+}
+
+/** Filter/render the vehicle import list based on search input. */
+function progNmImportVehicleFilter() {
+  const q   = (document.getElementById('prog-import-vehicle-search')?.value || '').trim().toLowerCase();
+  const el  = document.getElementById('prog-import-vehicle-list');
+  if (!el) return;
+
+  // Combine built-in presets + user LVs
+  const all = [
+    ...BUILTIN_PRESETS.map((p, i) => ({ p, key: 'builtin_' + i })),
+    ...(userLVs || []).map((p, i) => ({ p, key: 'user_' + i, isUser: true })),
+  ];
+
+  const filtered = q
+    ? all.filter(({ p }) => p.name.toLowerCase().includes(q) || (p.note || '').toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q)))
+    : all;
+
+  if (!filtered.length) {
+    el.innerHTML = `<div style="padding:20px;font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;">No matches</div>`;
+    return;
+  }
+
+  let html = '';
+  for (const { p, key, isUser } of filtered) {
+    const safeKey  = key.replace(/'/g, "\\'");
+    const tagStr   = (p.tags || []).slice(0, 4).join(' · ');
+    const stageCount = (p.stageData || p.stageNames || []).length;
+    const stagesLabel = stageCount === 1 ? '1 stage' : stageCount + ' stages';
+    const alreadyIn = PROG_ACTIVE_PROGRAM?.vehicleDefinitions?.some(v => v.name === p.name);
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);">
+      <span style="flex:1;min-width:0;">
+        <span style="display:block;font-family:var(--mono);font-size:10px;color:var(--text);">${p.name}${isUser ? ' <span style="color:var(--accent);font-size:8px;">USER</span>' : ''}</span>
+        <span style="display:block;font-family:var(--mono);font-size:8px;color:var(--text-dim);">${stagesLabel}${tagStr ? '  ·  ' + tagStr : ''}</span>
+      </span>
+      <button onclick="progNmImportVehicle('${safeKey}',this)"
+        style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:${alreadyIn ? 'var(--text-dim)' : 'var(--accent)'};padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;">${alreadyIn ? '↺ Replace' : '+ Add'}</button>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+/**
+ * Import a named vehicle preset into the active program's vehicleDefinitions[].
+ * @param {string} key   - 'builtin_N' or 'user_N'
+ * @param {Element} btn  - the clicked button (for flash feedback)
+ */
+function progNmImportVehicle(key, btn) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const p = key.startsWith('user_')
+    ? (userLVs || [])[parseInt(key.slice(5))]
+    : BUILTIN_PRESETS[parseInt(key.slice(8))];
+  if (!p) return;
+
+  const obj = Object.assign(_presetToLVObject(p), { refId: progUUID() });
+
+  const existing = PROG_ACTIVE_PROGRAM.vehicleDefinitions.find(v => v.name === obj.name);
+  if (existing) {
+    if (!confirm('Replace existing "' + obj.name + '" in Program?')) return;
+    Object.assign(existing, obj);
+  } else {
+    PROG_ACTIVE_PROGRAM.vehicleDefinitions.push(obj);
+  }
+  progRenderVehicleList();
+  if (typeof progRenderBandView === 'function') progRenderBandView();
+
+  // Flash button as confirmation
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Added';
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    setTimeout(() => { btn.textContent = '↺ Replace'; btn.style.color = 'var(--text-dim)'; btn.style.borderColor = ''; progNmImportVehicleFilter(); }, 1000);
+  }
+}
+
 function progNmSvgClick(evt) {
   if (!_progNmEdgeFromId) return;
   // progNmNodeDown handles node clicks; this catches any residual click on a node shape
@@ -9211,6 +9332,20 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
       <button class="modal-btn" onclick="progNmCancelEdgeModal()">Cancel</button>
       <button class="modal-btn primary" onclick="progNmConfirmEdge()">Add Edge</button>
     </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Import Vehicle from Presets ── -->
+<div class="modal-overlay" id="modal-prog-import-vehicle" style="display:none">
+  <div class="modal-box" style="width:480px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+      <span class="modal-title">Import Vehicle to Program</span>
+      <button onclick="closeModal('modal-prog-import-vehicle')" class="modal-close">✕</button>
+    </div>
+    <input id="prog-import-vehicle-search" type="text" placeholder="Search vehicles…"
+      oninput="progNmImportVehicleFilter()"
+      style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 7px;outline:none;margin-bottom:8px;flex-shrink:0;">
+    <div id="prog-import-vehicle-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 </div>
 
