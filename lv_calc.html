@@ -1096,18 +1096,26 @@ const BUILTIN_PRESETS=[
    note:'Project SCORE (1958). First communications relay satellite. Atlas B with MA-2 propulsion: 2× LR-89 boosters + LR-105 sustainer, all burning from a single LOX/RP-1 tank. Boosters jettisoned at BECO ~130 s. 68 kg to 185×1484 km @ 32.3°.'},
 
   {name:'Atlas-Agena D',
-   stageNames:['Atlas SLV-3','Agena D'],
-   payload:1700,fairingMass:100,fairingJettison:2,boosterName:null,boosterCount:0,
-   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:500,perigee:500,inc:28.5},
-   tags:['Historical'],
-   note:'Mariner, Ranger, Lunar Orbiter missions.'},
+   stageData:[
+     {dry:3400, prop:117000, thrust:1920, isp:316, res:2,
+      s15:true, s15_sust_thrust:270, s15_sust_isp:309, s15_jet_mass:1800, s15_beco_twr:0.5},
+     {dry:670, prop:6497, thrust:71, isp:291, res:2}
+   ],
+   payload:1700, fairingMass:100, fairingJettison:2, boosterName:null, boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112}, mode:'orbit', orbit:{apogee:500,perigee:500,inc:28.5},
+   tags:['Historical','Stage-and-a-Half'],
+   note:'Atlas SLV-3 (MA-3: 2× LR-89 boosters + LR-105 sustainer, single LOX/RP-1 tank) with Agena D upper stage. BECO at ~130 s, sustainer continues to SECO. Mariner, Ranger, Lunar Orbiter missions.'},
 
   {name:'Atlas-Centaur',
-   stageNames:['Atlas SLV-3','Centaur A'],
-   payload:3600,fairingMass:200,fairingJettison:2,boosterName:null,boosterCount:0,
-   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:400,perigee:400,inc:28.5},
-   tags:['Historical','Deep Space'],
-   note:'First LOX/LH2 upper stage in service. Surveyor, Pioneer.'},
+   stageData:[
+     {dry:3400, prop:117000, thrust:1920, isp:316, res:2,
+      s15:true, s15_sust_thrust:270, s15_sust_isp:309, s15_jet_mass:1800, s15_beco_twr:0.5},
+     {dry:1800, prop:9000, thrust:133, isp:428, res:2}
+   ],
+   payload:3600, fairingMass:200, fairingJettison:2, boosterName:null, boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112}, mode:'orbit', orbit:{apogee:400,perigee:400,inc:28.5},
+   tags:['Historical','Deep Space','Stage-and-a-Half'],
+   note:'Atlas SLV-3 (MA-3 stage-and-a-half) with Centaur A upper stage. First operational LOX/LH2 upper stage. Surveyor, Pioneer, OAO.'},
 
   {name:'Saturn I',
    stageNames:['Saturn I S-I','Saturn S-IV'],
@@ -1273,11 +1281,15 @@ const BUILTIN_PRESETS=[
 
   // ── Proposed / Exotic ──
   {name:'Atlas / NOMAD',
-   stageNames:['Atlas SLV-3','NOMAD (G-1)'],
-   payload:1200,fairingMass:80,fairingJettison:2,boosterName:null,boosterCount:0,
-   site:{lat:28.5,azMin:37,azMax:112},mode:'orbit',orbit:{apogee:500,perigee:500,inc:28.5},
-   tags:['Unbuilt','Exotic','Historical'],
-   note:'Proposed Atlas + NOMAD LF2/Hydrazine upper stage. Agena replacement that never flew. Stage masses estimated.'},
+   stageData:[
+     {dry:3400, prop:117000, thrust:1920, isp:316, res:2,
+      s15:true, s15_sust_thrust:270, s15_sust_isp:309, s15_jet_mass:1800, s15_beco_twr:0.5},
+     {dry:600, prop:5500, thrust:53.5, isp:357, res:2}
+   ],
+   payload:1200, fairingMass:80, fairingJettison:2, boosterName:null, boosterCount:0,
+   site:{lat:28.5,azMin:37,azMax:112}, mode:'orbit', orbit:{apogee:500,perigee:500,inc:28.5},
+   tags:['Unbuilt','Exotic','Historical','Stage-and-a-Half'],
+   note:'Proposed Atlas SLV-3 (MA-3 stage-and-a-half) + NOMAD G-1 LF2/Hydrazine upper stage. Proposed Agena replacement that never flew due to fluorine toxicity concerns. Stage masses estimated.'},
 
   {name:'Titan III / CHARIOT',
    stageNames:['Titan IIIC/D S1','Titan IIIC/D S2','CHARIOT'],
