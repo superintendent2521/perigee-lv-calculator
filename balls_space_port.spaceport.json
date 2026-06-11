@@ -1,0 +1,13 @@
+{
+  "_uid": 1781061153599,
+  "name": "Balls Space port",
+  "short": "BSP",
+  "country": "USA",
+  "lat": 28.5,
+  "lon": 0,
+  "azMin": 37,
+  "azMax": 112,
+  "note": "User-defined spaceport.",
+  "desc": "",
+  "pads": []
+}

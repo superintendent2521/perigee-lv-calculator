@@ -1,0 +1,8 @@
+# Claude Code local state / agent worktrees
+.claude/
+
+# Unrelated binaries
+CrystalDiskInfo9_9_1.exe
+
+# Unzipped docx (source-of-truth is the .docx itself)
+extracted_docx/

@@ -1,986 +1,4 @@
-﻿﻿﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rocket Playground</title>
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
-:root{--bg:#3b393a;--panel:#2e2c2d;--border:#524f50;--border-bright:#6e6b6c;--accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;--text:#e7e8ea;--text-dim:#a7a6a4;--text-bright:#ffffff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--nm-bg:#282628;--nm-earth:#5db877;--nm-lunar:#8890bc;--nm-interp:#b85848;--nm-edge:#5a5758;--nm-edge-act:#88c657;--nm-node-fill:#2e2c2d;--nm-label:#a7a6a4;--nm-pill-bg:#2e2c2d;--nm-pill-bd:#524f50;--nm-pill-text:#a7a6a4;--nm-pal-bg:#252325;--nm-pal-hdr:#1e1c1e;--nm-pal-item:#2e2c2d;--nm-pal-item-act:#1e2419;--nm-ghost:#524f50;}
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;}
-#rp-root{background:var(--bg);color:var(--text-bright);font-family:var(--sans);font-size:15px;min-height:100%;padding:0;box-sizing:border-box;display:flex;flex-direction:column;}
-header{flex-shrink:0;}
-
-/* ── HEADER ── */
-header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:16px;background:rgba(0,0,0,.3);flex-wrap:wrap;}
-header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;}
-
-/* ── PAGE NAV ── */
-.page-nav{display:flex;gap:2px;margin-right:8px;}
-.nav-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:7px 16px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;}
-.nav-btn:hover{border-color:var(--accent);color:var(--accent);}
-.nav-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold;}
-
-/* ── THEME UI ── */
-.theme-wrap{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.theme-wrap label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;}
-#theme-select{background:rgba(0,0,0,.35);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:5px 8px;cursor:pointer;}
-.th-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
-.th-btn:hover{border-color:var(--accent);color:var(--accent);}
-.th-btn.g{border-color:var(--accent3);color:var(--accent3);}
-
-/* ── PAGES ── */
-.page{display:none;padding:14px 16px;}
-.page.active{display:block;}
-.two-col{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;}
-.two-col>div{min-width:0;}
-
-/* ── SECTION LABEL ── */
-.sl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-.sl::after{content:'';flex:1;height:1px;background:var(--border);}
-
-/* ── PANEL ── */
-.panel{background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:12px;overflow:hidden;}
-
-/* ── INPUTS ── */
-.cfg-row{display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;row-gap:10px;}
-.cfg-item{display:inline-flex;flex-direction:column;gap:5px;align-items:flex-start;flex-shrink:0;}
-.cfg-item label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;}
-input[type=number].field,input[type=text].field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;width:100px;-moz-appearance:textfield;}
-input[type=number].field::-webkit-outer-spin-button,input[type=number].field::-webkit-inner-spin-button{-webkit-appearance:none;}
-input[type=number].field:focus,input[type=text].field:focus{outline:none;border-color:var(--accent);}
-select.field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;cursor:pointer;}
-select.field:focus{outline:none;border-color:var(--accent);}
-
-/* ── SEG CONTROL ── */
-.seg{display:inline-flex;border:none;background:none;align-self:flex-start;gap:5px;}
-.seg button{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:6px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
-.seg button.active{background:var(--accent);color:#000;}
-.seg button:hover:not(.active){background:var(--border-bright);color:var(--text-bright);}
-
-/* ── MODE TOGGLE ── */
-.mode-tog{display:flex;border:1px solid var(--border-bright);overflow:hidden;margin-bottom:12px;}
-.mode-tog button{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 12px;cursor:pointer;transition:all .15s;border-right:1px solid var(--border-bright);letter-spacing:.1em;}
-.mode-tog button:last-child{border-right:none;}
-.mode-tog button.active{background:var(--accent);color:#000;font-weight:bold;}
-.mode-tog button:hover:not(.active){background:var(--border-bright);color:var(--text-bright);}
-
-/* ── STAGE TABLE ── */
-.tscroll{overflow-x:auto;max-width:100%;padding-bottom:4px;margin-right:2px;}
-.stage-table{border-collapse:collapse;font-family:var(--mono);font-size:12px;}
-.stage-table th{text-align:left;padding:5px 8px;color:var(--text-dim);font-size:10px;letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
-.stage-table th.sh{text-align:center;color:var(--accent);font-size:11px;}
-.stage-table th.si{text-align:center;color:var(--accent);font-size:11px;opacity:.2;}
-.stage-table td{padding:4px 5px;border-bottom:1px solid var(--border);}
-.stage-table tr:last-child td{border-bottom:none;}
-.stage-table td.rl{color:var(--text-dim);font-size:10px;letter-spacing:.1em;padding-right:10px;white-space:nowrap;}
-.stage-table input[type=number]{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:4px 7px;width:88px;-moz-appearance:textfield;}
-.stage-table input[type=number]::-webkit-outer-spin-button,.stage-table input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
-.stage-table input[type=number]:focus{outline:none;border-color:var(--accent);background:rgba(0,200,255,.04);}
-.s-active{opacity:1;}.s-inactive{opacity:.18;pointer-events:none;}
-
-/* ── STAGE COUNT ── */
-.stage-count-wrap{display:flex;flex-direction:column;gap:6px;width:fit-content;}
-.sci input{background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--accent);font-family:var(--mono);font-size:18px;padding:4px 8px;width:56px;text-align:center;-moz-appearance:textfield;}
-.sci input::-webkit-outer-spin-button,.sci input::-webkit-inner-spin-button{-webkit-appearance:none;}
-.sci input:focus{outline:none;border-color:var(--accent);}
-.sci{display:flex;align-items:center;}
-
-/* ── ACTION BUTTONS ── */
-.act-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.act-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;box-sizing:border-box;line-height:1;}
-.act-btn:hover{border-color:var(--accent);color:var(--accent);}
-.act-btn.green{border-color:var(--accent3);color:var(--accent3);}
-.act-btn.green:hover{background:rgba(127,255,107,.07);}
-.act-btn.orange{border-color:var(--accent2);color:var(--accent2);}
-
-/* ── VEHICLES PANEL ── */
-.search-bar{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:7px 10px;margin-bottom:8px;letter-spacing:.05em;}
-.search-bar:focus{outline:none;border-color:var(--accent);}
-.lv-list{height:340px;overflow-y:auto;border:1px solid var(--border);}
-.lv-list::-webkit-scrollbar{width:5px;}
-.lv-list::-webkit-scrollbar-thumb{background:var(--border-bright);}
-.lv-item{display:flex;align-items:stretch;border-bottom:1px solid var(--border);}
-.lv-item:last-child{border-bottom:none;}
-.lv-item-btn{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:8px 10px;cursor:pointer;text-align:left;line-height:1.5;transition:all .15s;}
-.lv-item-btn:hover{color:var(--text-bright);background:rgba(255,255,255,.04);}
-.lv-item-btn.active{color:var(--accent);background:rgba(0,200,255,.08);}
-.lv-item-btn.user-lv{color:var(--accent3);}
-.lv-item-btn.user-lv.active{background:rgba(127,255,107,.1);}
-.lv-item-btn.user-defined{color:var(--text-dim);border-left:2px dashed var(--border-bright);}
-.lv-del{background:transparent;border:none;border-left:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:0 10px;cursor:pointer;transition:all .15s;}
-.lv-del:hover{color:#ff4444;background:rgba(255,0,0,.07);}
-
-/* ── ORBIT CATEGORIES ── */
-.orbit-scroll{height:calc(100vh - 200px);min-height:400px;overflow-y:auto;}
-.orbit-scroll::-webkit-scrollbar{width:5px;}
-.orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
-.planet-section{margin-bottom:14px;}
-.planet-header{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid var(--border);margin-bottom:4px;cursor:pointer;user-select:none;}
-.planet-icon{font-size:14px;font-family:var(--mono);letter-spacing:0;}
-.planet-name{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
-.planet-chevron{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
-.planet-chevron.collapsed{transform:rotate(-90deg);}
-.planet-orbits{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.orbit-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:5px 7px;cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .15s;line-height:1.5;}
-.orbit-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.04);}
-.orbit-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
-.orbit-btn.user-orbit{border-style:dashed;color:var(--accent3);border-color:var(--accent3);}
-.orbit-btn.user-orbit.active{background:rgba(127,255,107,.1);}
-
-/* ── RESULTS ── */
-.calc-btn{width:100%;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;padding:14px;cursor:pointer;margin-bottom:8px;transition:all .2s;font-weight:bold;}
-.calc-btn:hover{filter:brightness(1.15);}
-.results-panel{background:var(--panel);border:1px solid var(--border);padding:16px;min-height:200px;}
-.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);gap:12px;}
-.result-row:last-child{border-bottom:none;}
-.result-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;flex:1;}
-.result-val{font-family:var(--mono);font-size:14px;color:var(--accent3);text-align:right;}
-.result-val.hl{font-size:22px;color:var(--accent);}
-.result-val.warn{color:var(--accent2);}
-.result-val.neg{color:#ff4444;}
-.dv-bar{height:3px;background:var(--border);margin:8px 0 12px;overflow:hidden;}
-.dv-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .6s;}
-.placeholder-msg{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:40px 0;letter-spacing:.1em;}
-.error-msg{font-family:var(--mono);font-size:11px;color:#ff6666;padding:8px 10px;border:1px solid rgba(255,80,80,.3);background:rgba(255,0,0,.05);margin-top:8px;}
-.breakdown-row{display:flex;justify-content:space-between;padding:4px 0;font-family:var(--mono);font-size:11px;color:var(--text-dim);border-bottom:1px solid rgba(30,37,48,.5);}
-.breakdown-row span:last-child{color:var(--text-bright);}
-.note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;line-height:1.7;letter-spacing:.04em;}
-.escape-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--accent2);padding:2px 6px;margin-left:8px;}
-
-/* ── MODALS ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;}
-.modal{background:var(--panel);border:1px solid var(--border-bright);width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
-.modal-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.modal-title{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;}
-.modal-close{background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:16px;cursor:pointer;padding:0 4px;}
-.modal-body{padding:16px;overflow-y:auto;flex:1;}
-.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
-.modal textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical;min-height:300px;line-height:1.6;}
-.modal textarea:focus{outline:none;border-color:var(--accent);}
-.modal-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 16px;cursor:pointer;letter-spacing:.1em;transition:all .15s;}
-.modal-btn:hover{border-color:var(--accent);color:var(--accent);}
-.modal-btn.primary{border-color:var(--accent3);color:var(--accent3);}
-.modal input[type=text]{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:13px;padding:8px 12px;margin-bottom:10px;}
-.modal input[type=text]:focus{outline:none;border-color:var(--accent3);}
-.modal label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:5px;}
-.save-note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
-
-
-/* ── STAGE LIBRARY ── */
-.lib-panel{background:var(--panel);border:1px solid var(--border);padding:12px;margin-top:10px;}
-.lib-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:0;}
-.lib-toggle-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
-.lib-toggle-arrow.open{transform:rotate(90deg);}
-.lib-body{margin-top:10px;}
-.lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
-.lib-search:focus{outline:none;border-color:var(--accent);}
-.lib-cat{margin-bottom:8px;}
-.lib-cat-hdr{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:5px 0 5px 0;border-bottom:1px solid var(--border);margin-bottom:5px;}
-.lib-cat-hdr:hover .lib-cat-label{color:var(--text-bright);}
-.lib-cat-chevron{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto;transition:transform .2s;}
-.lib-cat-chevron.open{transform:rotate(90deg);}
-.lib-user-stage-card{position:relative;}
-.lib-del-btn{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;line-height:1;padding:1px 3px;}
-.lib-del-btn:hover{color:#ff4444;}
-/* ── FILTERS ── */
-.filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
-.filter-toggle-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
-.filter-toggle-btn:hover,.filter-toggle-btn.active{border-color:var(--accent);color:var(--accent);}
-.filter-chip{background:rgba(0,200,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:3px 7px;display:flex;align-items:center;gap:4px;}
-.filter-chip-x{cursor:pointer;color:var(--accent);opacity:.7;}
-.filter-chip-x:hover{opacity:1;}
-.filter-panel{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:10px;margin-bottom:8px;}
-.filter-cat{margin-bottom:8px;}
-.filter-cat:last-child{margin-bottom:0;}
-.filter-cat-hdr{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:6px;padding:3px 0;user-select:none;}
-.filter-cat-hdr:hover{color:var(--text-bright);}
-.filter-cat-chevron{font-size:8px;transition:transform .15s;}
-.filter-cat-chevron.open{transform:rotate(90deg);}
-.filter-opts{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-left:10px;}
-.filter-opt{font-family:var(--mono);font-size:9px;color:var(--text-dim);border:1px solid var(--border);padding:3px 8px;cursor:pointer;transition:all .15s;letter-spacing:.03em;user-select:none;}
-.filter-opt:hover{border-color:var(--text-dim);color:var(--text-bright);}
-.filter-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.08);}
-/* Tag pills on cards */
-.card-tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;}
-.card-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:1px 4px;line-height:1.4;}
-
-.lib-cat-label{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-
-.lib-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;}
-
-/* stage-card replaced by slim version above */
-/* Drop targets */
-.stage-col-hover th{background:rgba(0,200,255,.12)!important;border-bottom-color:var(--accent)!important;}
-
-
-/* ── LAUNCH SITE SELECTOR ── */
-.site-region{margin-bottom:10px;}
-.site-region-label{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
-.site-grid{display:flex;flex-wrap:wrap;gap:4px;}
-.site-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:4px 8px;cursor:pointer;transition:all .15s;letter-spacing:.04em;white-space:nowrap;}
-.site-btn:hover{border-color:var(--accent);color:var(--accent);}
-.site-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
-.site-note{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;letter-spacing:.04em;}
-.inc-tracked{font-family:var(--mono);font-size:8px;color:var(--accent3);letter-spacing:.05em;margin-top:3px;}
-
-/* ── RESULTS PAGE LAYOUT ── */
-.results-layout{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start;}
-.cases-panel{background:var(--panel);border:1px solid var(--border);padding:12px;}
-.cases-header{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
-.case-item{display:flex;align-items:stretch;gap:2px;margin-bottom:4px;}
-.case-btn{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:6px 8px;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4;}
-.case-btn:hover{border-color:var(--accent);color:var(--accent);}
-.case-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);}
-.case-btn .case-label{font-size:10px;color:inherit;}
-.case-btn .case-sub{font-size:8px;color:var(--text-dim);margin-top:2px;}
-.case-del{flex:none;width:22px;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-size:12px;cursor:pointer;padding:0;transition:all .15s;}
-.case-del:hover{border-color:#ff4444;color:#ff4444;}
-.cases-empty{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.05em;padding:8px 0;text-align:center;opacity:.6;}
-.case-actions{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
-@media(max-width:900px){.results-layout{grid-template-columns:1fr;}}
-
-/* ── STAGE COMPOSITION VIEW ── */
-.comp-panel{display:flex;flex-direction:column;gap:0;}
-.comp-actions{display:flex;gap:6px;margin-bottom:10px;}
-.comp-stage-wrap{margin-bottom:0;}
-.comp-stage-label{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:1px;}
-.comp-card{background:var(--panel);border:1px solid var(--border);padding:10px 12px;min-height:72px;transition:border-color .15s;cursor:default;}
-.comp-card.drop-hover{border-color:var(--accent);background:rgba(0,200,255,.06);}
-.comp-card.custom-stage{border-color:var(--border);opacity:.7;}
-.comp-card-name{font-family:var(--mono);font-size:12px;color:var(--text-bright);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.comp-card-name.unnamed{color:var(--text-dim);font-style:italic;}
-.comp-card-specs{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono);font-size:9px;color:var(--text-dim);line-height:1.6;}
-.comp-card-specs b{color:var(--text-bright);}
-.comp-card-hint{display:none;}
-.comp-edit-btn{width:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-left:none;cursor:pointer;color:var(--text-dim);flex-shrink:0;transition:color .15s;background:transparent;padding:0;}
-.comp-edit-btn:hover{color:var(--accent2);border-color:var(--accent2);}
-
-.comp-card-ghost{background:transparent;border:1px dashed var(--border);padding:10px 12px;min-height:72px;
-  opacity:.35;cursor:default;transition:border-color .15s,opacity .15s;}
-.comp-card-ghost.drop-hover{border-color:var(--accent);opacity:.7;}
-.comp-card-ghost-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);
-  letter-spacing:.08em;font-style:italic;}
-th.sh-ghost{color:var(--border-bright)!important;border:1px dashed var(--border)!important;
-  background:transparent!important;cursor:copy;}
-th.sh-ghost.drop-hover{border-color:var(--accent)!important;color:var(--accent)!important;}
-td.ghost-cell input{color:var(--border)!important;background:transparent!important;
-  border-color:var(--border)!important;pointer-events:none;}
-
-.comp-booster-wrap{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;}
-
-/* ── STYLED SCROLLBARS ── */
-/* Horizontal (lib-scroll card rows) */
-.lib-scroll::-webkit-scrollbar{height:5px;}
-.lib-scroll::-webkit-scrollbar-track{background:var(--border);margin:0 2px;}
-.lib-scroll::-webkit-scrollbar-thumb{background:var(--accent);opacity:.7;}
-.lib-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
-.lib-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
-
-/* Vertical (lib-body, comp-body, case list, lv-list) */
-.lib-body::-webkit-scrollbar,
-#comp-body::-webkit-scrollbar,
-.lv-list::-webkit-scrollbar,
-#case-list::-webkit-scrollbar,
-.orbit-scroll::-webkit-scrollbar{width:4px;}
-.lib-body::-webkit-scrollbar-track,
-#comp-body::-webkit-scrollbar-track,
-.lv-list::-webkit-scrollbar-track,
-#case-list::-webkit-scrollbar-track,
-.orbit-scroll::-webkit-scrollbar-track{background:var(--border);}
-.lib-body::-webkit-scrollbar-thumb,
-#comp-body::-webkit-scrollbar-thumb,
-.lv-list::-webkit-scrollbar-thumb,
-#case-list::-webkit-scrollbar-thumb,
-.orbit-scroll::-webkit-scrollbar-thumb{background:var(--accent);opacity:.7;}
-.lib-body::-webkit-scrollbar-thumb:hover,
-#comp-body::-webkit-scrollbar-thumb:hover,
-.lv-list::-webkit-scrollbar-thumb:hover,
-#case-list::-webkit-scrollbar-thumb:hover,
-.orbit-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
-.lib-body,.lv-list,#case-list,.orbit-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
-
-/* ── TOOLTIP ── */
-.info-tip{display:inline-flex;align-items:center;justify-content:center;
-  width:14px;height:14px;border-radius:50%;border:1px solid var(--text-dim);
-  font-family:var(--sans);font-size:9px;font-style:italic;font-weight:600;
-  line-height:1;color:var(--text-dim);cursor:default;
-  position:relative;margin-left:5px;flex-shrink:0;vertical-align:middle;}
-.info-tip:hover{border-color:var(--accent);color:var(--accent);}
-.info-tip .tip-text{display:none;position:fixed;
-  background:var(--panel);border:1px solid var(--accent);
-  color:var(--text-bright);font-family:var(--mono);font-size:9px;padding:7px 10px;
-  white-space:nowrap;letter-spacing:.04em;pointer-events:none;
-  box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:99999;}
-.info-tip:hover .tip-text{display:block;}
-
-/* ── SLIM STAGE CARDS ── */
-.stage-card{flex:0 0 auto;width:130px;background:rgba(0,0,0,.3);border:1px solid var(--border);
-  padding:6px 8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;}
-.stage-card:hover{border-color:var(--accent);background:rgba(0,200,255,.05);}
-.stage-card:active{cursor:grabbing;}
-.stage-card.dragging{opacity:.4;border-style:dashed;}
-.stage-card.booster-card{border-color:color-mix(in srgb,var(--accent2) 50%,transparent);}
-.stage-card.booster-card:hover{border-color:var(--accent2);}
-.stage-card-name{font-family:var(--mono);font-size:10px;color:var(--text-bright);
-  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.stage-card-mini{font-family:var(--mono);font-size:8px;color:var(--text-dim);line-height:1.5;}
-.stage-card-mini b{color:var(--text-bright);}
-/* Stage detail modal body */
-.stage-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px;}
-.stage-detail-row{font-family:var(--mono);font-size:10px;}
-.stage-detail-row label{display:block;font-size:8px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px;}
-.stage-detail-row span{color:var(--text-bright);}
-.stage-detail-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
-.stage-detail-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:2px 6px;}
-/* Booster column highlight */
-.sh-booster-hover{background:color-mix(in srgb,var(--accent) 20%,transparent)!important;}
-.sh-booster{background:color-mix(in srgb,var(--accent) 10%,transparent)!important;border-left:2px solid var(--accent)!important;color:var(--accent)!important;}
-td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transparent)!important;background:color-mix(in srgb,var(--accent) 5%,transparent);}
-
-/* ── VISUAL THEME EDITOR ── */
-.te-section{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--text-dim);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
-.te-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.te-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);flex:1;white-space:nowrap;}
-.te-swatch{width:26px;height:26px;border:1px solid var(--border-bright);cursor:pointer;
-  padding:0;background:none;flex-shrink:0;position:relative;overflow:hidden;}
-.te-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100%+8px);
-  height:calc(100%+8px);border:none;cursor:pointer;opacity:0;}
-.te-swatch-fill{width:100%;height:100%;pointer-events:none;}
-.te-hex{font-family:var(--mono);font-size:10px;background:transparent;
-  border:1px solid var(--border);color:var(--text-bright);padding:4px 6px;width:78px;flex-shrink:0;}
-.te-preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
-.te-preset-btn{font-family:var(--mono);font-size:9px;padding:5px 10px;background:transparent;
-  border:1px solid var(--border-bright);color:var(--text-dim);cursor:pointer;transition:all .15s;}
-.te-preset-btn:hover,.te-preset-btn.active{border-color:var(--accent);color:var(--accent);}
-.te-font-input{font-family:var(--mono);font-size:10px;background:transparent;
-  border:1px solid var(--border);color:var(--text-bright);padding:4px 8px;flex:1;}
-#vehicles-advanced{padding:16px 20px;background:var(--panel);border:1px solid var(--border);margin-bottom:14px;}
-#vehicles-stage-params{padding:0 4px;}
-@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
-/* ─── Spacecraft Editor ────────────────────────────────────────────────────── */
-#page-program.active{display:flex;flex-direction:column;padding:0;}
-.sc-ed-toolbar{display:flex;align-items:center;padding:8px 14px;gap:8px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;}
-.sc-ed-wrap{display:flex;flex:1;min-height:0;overflow:hidden;}
-.sc-ed-list-col{width:230px;min-width:230px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-.sc-ed-search{width:100%;box-sizing:border-box;padding:8px 10px;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text);letter-spacing:.06em;outline:none;}
-.sc-ed-search::placeholder{color:var(--text-dim);}
-.sc-ed-list-inner{flex:1;overflow-y:auto;}
-.sc-ed-main-col{flex:1;overflow-y:auto;padding:16px 20px;max-width:860px;}
-.sc-stage-card{border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;background:rgba(0,0,0,.18);}
-.sc-stage-name{background:transparent;border:none;border-bottom:1px solid var(--border-bright);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:2px 4px;flex:1;min-width:0;outline:none;}
-.sc-stage-name:focus{border-bottom-color:var(--accent);}
-.sc-dv-tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
-.sc-dv-tbl th{text-align:left;color:var(--text-dim);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid var(--border);}
-.sc-dv-tbl td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-bright);}
-
-.fleet-lv-tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-bottom:4px;}
-.fleet-lv-tbl th{text-align:left;color:var(--text-dim);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid var(--border);}
-.fleet-lv-tbl td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-bright);}
-.fleet-lv-tbl td.rl{color:var(--text-dim);font-size:10px;}
-.fleet-payload-row{display:flex;align-items:center;gap:10px;padding:10px 0;}
-.prog-tab-actions{margin-left:auto;display:flex;gap:6px;align-items:center;}
-.fleet-import-item{padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
-.fleet-import-item:hover{background:rgba(255,255,255,.06);}
-.fleet-import-name{font-family:var(--mono);font-size:12px;color:var(--text-bright);}
-.fleet-import-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fleet-import-tag{font-family:var(--mono);font-size:8px;letter-spacing:.1em;padding:1px 6px;border:1px solid var(--border-bright);color:var(--text-dim);white-space:nowrap;}
-
-.mission-log-card{border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;background:rgba(0,0,0,.18);}
-.mission-log-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.mission-log-type{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);}
-.mission-log-status-ok{font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid var(--accent3);color:var(--accent3);}
-.mission-state-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px 16px;margin-bottom:12px;}
-.mission-state-kv{display:flex;flex-direction:column;gap:2px;}
-.mission-state-key{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;}
-.mission-state-val{font-family:var(--mono);font-size:13px;color:var(--text-bright);}
-</style>
-</head>
-<body>
-<div id="rp-root">
-
-<header>
-  <h1>Rocket Playground</h1>
-  <nav class="page-nav">
-    <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
-    <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
-    <button class="nav-btn" id="nav-results" onclick="showPage('results')">Results</button>
-    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
-  </nav>
-  <div class="theme-wrap">
-    <label>Theme</label>
-    <select id="theme-select" onchange="applyTheme(this.value)">
-      <option value="perigee" selected>Perigee</option>
-      <option value="default">Default (Dark)</option>
-      <option value="spacex">SpaceX</option>
-      <option value="blueorigin">Blue Origin</option>
-    </select>
-    <button class="th-btn" onclick="openThemeEditor()">EDIT</button>
-    <button class="th-btn g" onclick="saveTheme()">SAVE Theme</button>
-    <label class="th-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadThemeFile(this)"></label>
-  </div>
-</header>
-
-<!-- ═══════════════════════════════════════════════ PAGE: VEHICLES -->
-<div id="page-vehicles" class="page active">
-
-  <!-- Mode toggle -->
-  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;gap:10px;">
-    <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;">View</span>
-    <div class="seg" id="view-mode-toggle">
-      <button class="active" onclick="setVehicleMode('beginner')">Beginner</button>
-      <button onclick="setVehicleMode('advanced')">Advanced</button>
-    </div>
-  </div>
-
-  <!-- BEGINNER VIEW: Composition + Library -->
-  <div id="vehicles-beginner" style="display:grid;grid-template-columns:2fr 3fr;gap:14px;align-items:start;margin-bottom:14px;">
-
-    <!-- LEFT: Stage Composition + controls -->
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <div class="sl" style="margin-bottom:0;flex:1;">Stage Composition</div>
-        <button class="act-btn green" onclick="openSaveLVModal()">SAVE LV</button>
-        <button class="act-btn" onclick="openJSONModal()">{ } JSON</button>
-        <label class="act-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
-      </div>
-
-      <!-- Config controls: stage count, boosters, restartable, fairing jettison -->
-      <div class="cfg-row" style="margin-bottom:8px;flex-wrap:wrap;">
-        <div class="cfg-item">
-          <label style="display:flex;align-items:center;">Inline Stages<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text">Stages ignited one after another in sequence.<br>Each fires only after the previous stage separates.</span></span></label>
-          <div class="seg" id="stage-selector"></div>
-          <input type="hidden" id="stage-count-input" value="1">
-        </div>
-        <div class="cfg-item">
-          <label>Strap-on Boosters?</label>
-          <div class="seg" id="booster-toggle">
-            <button onclick="setBoosters(true)">Yes</button>
-            <button class="active" onclick="setBoosters(false)">No</button>
-          </div>
-        </div>
-        <div class="cfg-item" id="booster-count-wrap" style="display:none">
-          <label># Boosters</label>
-          <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
-        </div>
-        <div class="cfg-item">
-          <label>Restartable Upper?</label>
-          <div class="seg" id="restart-toggle">
-            <button onclick="setRestart(true)">Yes</button>
-            <button class="active" onclick="setRestart(false)">No</button>
-          </div>
-        </div>
-        <div class="cfg-item">
-          <label>Fairing Jettison</label>
-          <select class="field" id="fairing-jettison"><option value="0">Never</option></select>
-        </div>
-        <div class="cfg-item">
-          <label>Fairing Mass (kg)</label>
-          <input type="number" class="field" id="fairing-mass" value="200" min="0">
-        </div>
-      </div>
-
-      <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;"></div>
-      <div id="preset-grid" style="display:none"></div>
-    </div>
-
-    <!-- RIGHT: Stage Library, same height cap -->
-    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
-      <div class="lib-toggle" onclick="toggleLibrary()">
-        <span class="sl" style="margin-bottom:0;flex:1;">Stage Library
-          <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
-            <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
-              <b>Click</b> any stage card for full specifications.<br>
-              <b>Drag</b> a stage to the Stage Composition area or a column header in the Stage Parameters table to add it to your rocket.<br>
-              <b>Dragging a Preset Vehicle</b> replaces all stages at once.
-            </span>
-          </span>
-        </span>
-        <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
-      </div>
-      <div class="lib-body" id="lib-body">
-        <div style="display:flex;gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
-          <input class="lib-search" type="text" id="lib-search" placeholder="Search stages..." oninput="buildStageLibrary()" style="flex:1;min-width:120px;margin-bottom:0;">
-          <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="white-space:nowrap;">⊟ Filters</button>
-          <button class="act-btn green" onclick="openAddStageModal()" style="white-space:nowrap;">Make Stage</button>
-          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load Stage<input type="file" accept=".json" style="display:none" onchange="loadUserStageFile(this)"></label>
-        </div>
-        <div class="filter-bar" style="margin-bottom:4px;min-height:0;">
-          <div id="active-filter-chips"></div>
-          <button class="filter-toggle-btn" id="clear-filters-btn" onclick="clearAllFilters()" style="display:none;border-color:var(--accent2);color:var(--accent2);">Clear All</button>
-          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;margin-left:auto;">
-            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;buildStageLibrary();">
-            My Stages Only
-          </label>
-        </div>
-        <div id="filter-panel" style="display:none;"></div>
-        <div id="lib-content"></div>
-      </div>
-    </div>
-
-  </div><!-- /vehicles-beginner -->
-
-  <!-- ADVANCED VIEW: compact controls + table -->
-  <div id="vehicles-advanced" style="display:none;">
-    <div style="display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-      <button class="act-btn green" onclick="openSaveLVModal()">Save LV</button>
-      <button class="act-btn" onclick="openJSONModal()">JSON</button>
-      <label class="act-btn" style="cursor:pointer;">Load LV<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
-      <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
-      <label class="act-btn" style="cursor:pointer;">Load Stage → Slot<input type="file" accept=".json" style="display:none" onchange="advLoadStage(this)"></label>
-      <button class="act-btn" onclick="openAdvSaveSlotModal()">Save Stage from Slot</button>
-    </div>
-    <div class="cfg-row" style="margin-bottom:10px;">
-      <div class="cfg-item">
-        <label style="display:flex;align-items:center;">Inline Stages</label>
-        <div class="seg" id="stage-selector-adv"></div>
-      </div>
-      <div class="cfg-item">
-        <label>Strap-on Boosters?</label>
-        <div class="seg" id="booster-toggle-adv">
-          <button onclick="setBoosters(true)">Yes</button>
-          <button class="active" onclick="setBoosters(false)">No</button>
-        </div>
-      </div>
-      <div class="cfg-item" id="booster-count-wrap-adv" style="display:none;">
-        <label># Boosters</label>
-        <input type="number" class="field" id="num-boosters-adv" value="4" min="1" max="32"
-          oninput="document.getElementById('num-boosters').value=this.value;_suppressUD=true;buildTable();buildStageComposition();">
-      </div>
-      <div class="cfg-item">
-        <label>Restartable Upper?</label>
-        <div class="seg" id="restart-toggle-adv">
-          <button onclick="setRestart(true)">Yes</button>
-          <button class="active" onclick="setRestart(false)">No</button>
-        </div>
-      </div>
-      <div class="cfg-item">
-        <label>Fairing Jettison</label>
-        <select class="field" id="fairing-jettison-adv" onchange="document.getElementById('fairing-jettison').value=this.value;">
-          <option value="0">Never</option>
-        </select>
-      </div>
-      <div class="cfg-item">
-        <label>Fairing Mass (kg)</label>
-        <input type="number" class="field" id="fairing-mass-adv" value="200" min="0"
-          oninput="document.getElementById('fairing-mass').value=this.value;">
-      </div>
-    </div>
-  </div><!-- /vehicles-advanced -->
-
-  <!-- STAGE PARAMETERS (shown in advanced, hidden in beginner) -->
-  <div id="vehicles-stage-params" style="display:none;">
-  <!-- BOTTOM: Stage Parameters -->
-  <div class="panel">
-    <input type="hidden" id="payload-mass" value="0">
-
-    <div id="booster-inputs" style="display:none;margin-bottom:14px;">
-      <div class="sl" style="cursor:default;">Strap-on Boosters (per booster) <span style="font-size:8px;color:var(--text-dim);letter-spacing:.06em;font-weight:normal;">// drag from library</span></div>
-      <table class="stage-table" id="booster-table"
-        ondragover="event.preventDefault();event.dataTransfer.dropEffect='copy';this.style.background='rgba(0,200,255,.07)'"
-        ondragleave="this.style.background=''"
-        ondrop="this.style.background='';if(_draggingStage)applyBoosterData(_draggingStage)">
-        <thead><tr><th>Parameter</th><th class="sh">Booster</th></tr></thead>
-        <tbody>
-          <tr><td class="rl">Dry Mass (kg)</td><td><input type="number" id="b_dry" value="500" min="0"></td></tr>
-          <tr><td class="rl">Propellant (kg)</td><td><input type="number" id="b_prop" value="5000" min="0"></td></tr>
-          <tr><td class="rl">Thrust (kN)</td><td><input type="number" id="b_thrust" value="400" min="0"></td></tr>
-          <tr><td class="rl">Isp (s)</td><td><input type="number" id="b_isp" value="265" min="1"></td></tr>
-          <tr><td class="rl">Residuals (%)</td><td><input type="number" id="b_res" value="2" min="0" max="20"></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="sl">Stage Parameters</div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:6px;">
-      Drag from library → drop on column header &nbsp;|&nbsp; drop on strap-on table
-    </div>
-    <div class="tscroll">
-      <table class="stage-table" id="stage-table">
-        <thead><tr id="stage-header-row"><th>Parameter</th></tr></thead>
-        <tbody id="stage-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-  </div><!-- /vehicles-stage-params -->
-
-</div>
-
-<!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
-<div id="page-orbits" class="page">
-  <div class="two-col">
-
-    <!-- LEFT: Destination config -->
-    <div>
-      <div class="sl">Launch Site</div>
-      <div class="panel" style="padding-bottom:10px;">
-        <div id="site-selector-grid"></div>
-        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
-          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-        </div>
-        <div class="site-note" id="site-note"></div>
-        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
-      </div>
-
-      <div class="sl">Destination</div>
-      <div class="panel">
-        <div class="mode-tog">
-          <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
-          <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
-        </div>
-        <div id="dest-orbit">
-          <div class="cfg-row">
-            <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined()"></div>
-            <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined()"></div>
-            <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
-            <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100"></div>
-          </div>
-          <div class="cfg-item">
-            <label>Trajectory</label>
-            <div class="seg" id="traj-toggle">
-              <button onclick="setTraj('direct')">Direct</button>
-              <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
-              <button onclick="setTraj('optimal')">Optimal</button>
-            </div>
-          </div>
-        </div>
-        <div id="dest-escape" style="display:none;">
-          <div class="cfg-row">
-            <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined()"></div>
-            <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
-            <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100"></div>
-          </div>
-          <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
-        </div>
-      </div>
-
-      <div class="sl">User Orbits</div>
-      <div class="panel">
-        <div class="act-row" style="margin-top:0;">
-          <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-          <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".json" style="display:none" onchange="loadOrbitFile(this)"></label>
-        </div>
-        <div class="note" style="margin-top:8px;">Saved orbits appear in the panel under "User Defined". Delete them with the × button.</div>
-      </div>
-    </div>
-
-    <!-- RIGHT: Orbit categories -->
-    <div>
-      <div class="sl">Orbits</div>
-      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:8px;">
-      <div class="orbit-scroll" id="orbit-categories"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════ PAGE: RESULTS -->
-<div id="page-results" class="page">
-  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-    <button class="calc-btn" onclick="calculate()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-    <button onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
-      style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
-  </div>
-  <div class="results-layout">
-
-    <!-- LEFT: Cases panel -->
-    <div class="cases-panel">
-      <div class="cases-header">
-        <span>Performance Cases</span>
-      </div>
-      <div class="act-row" style="margin-bottom:8px;">
-        <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-      </div>
-      <div id="case-list">
-        <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-      </div>
-      <div class="case-actions">
-        <label class="act-btn" style="cursor:pointer;text-align:center;width:100%;box-sizing:border-box;">Load Vehicle File<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
-        <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled>Download All Cases</button>
-      </div>
-    </div>
-
-    <!-- RIGHT: Results display -->
-    <div>
-      <div class="sl">Results</div>
-      <div class="results-panel" id="results-panel">
-        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target on the Orbits page, then calculate.</div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════ PAGE: PROGRAM -->
-<div id="page-program" class="page">
-  <div class="sc-ed-toolbar">
-    <div class="seg" id="prog-tabs">
-      <button class="active" onclick="progShowTab('spacecraft')">Spacecraft</button>
-      <button onclick="progShowTab('fleet')">Fleet</button>
-      <button onclick="progShowTab('mission')">Missions</button>
-    </div>
-    <div class="prog-tab-actions" id="prog-tb-sc">
-      <label class="act-btn" style="cursor:pointer;">Load JSON
-        <input type="file" accept=".json" style="display:none" onchange="scEdLoadJSON(this)">
-      </label>
-    </div>
-    <div class="prog-tab-actions" id="prog-tb-fleet" style="display:none;"></div>
-    <div class="prog-tab-actions" id="prog-tb-mission" style="display:none;"></div>
-  </div>
-
-  <!-- Spacecraft panel -->
-  <div id="prog-panel-sc" class="sc-ed-wrap">
-    <div class="sc-ed-list-col">
-      <input type="text" id="sc-ed-search" class="sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
-      <div id="sc-ed-list" class="sc-ed-list-inner lv-list"></div>
-      <div style="padding:8px;border-top:1px solid var(--border);">
-        <button class="act-btn" style="width:100%" onclick="scEdNew()">+ New Spacecraft</button>
-      </div>
-    </div>
-    <div id="sc-ed-detail" class="sc-ed-main-col">
-      <div class="placeholder-msg">Select or create a spacecraft</div>
-    </div>
-  </div>
-
-  <!-- Fleet panel -->
-  <div id="prog-panel-fleet" class="sc-ed-wrap" style="display:none;">
-    <div class="sc-ed-list-col">
-      <input type="text" id="fleet-search" class="sc-ed-search" placeholder="Search fleet..." oninput="fleetRenderList()">
-      <div id="fleet-list" class="sc-ed-list-inner lv-list"></div>
-      <div style="padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
-        <button class="act-btn" style="width:100%" onclick="fleetNew()">+ New Entry</button>
-        <button class="act-btn" style="width:100%" onclick="fleetOpenImportModal()">Import Vehicle</button>
-        <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Vehicle
-          <input type="file" accept=".json" style="display:none" onchange="fleetLoadJSON(this)">
-        </label>
-      </div>
-    </div>
-    <div id="fleet-detail" class="sc-ed-main-col">
-      <div class="placeholder-msg">Add or select a launch vehicle</div>
-    </div>
-  </div>
-
-  <!-- Missions panel -->
-  <div id="prog-panel-mission" class="sc-ed-wrap" style="display:none;">
-    <div class="sc-ed-list-col">
-      <input type="text" id="mission-search" class="sc-ed-search" placeholder="Search missions..." oninput="missionRenderList()">
-      <div id="mission-list" class="sc-ed-list-inner lv-list"></div>
-      <div style="padding:8px;border-top:1px solid var(--border);">
-        <button class="act-btn" style="width:100%" onclick="missionNew()">+ New Mission</button>
-      </div>
-    </div>
-    <div id="mission-detail" class="sc-ed-main-col">
-      <div class="placeholder-msg">Select or create a mission</div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ── MODAL: Fleet Vehicle Import ── -->
-<div class="modal-overlay" id="modal-fleet-import" style="display:none">
-  <div class="modal" style="max-width:580px;display:flex;flex-direction:column;height:68vh;">
-    <div class="modal-header">
-      <span class="modal-title">Import Launch Vehicle</span>
-      <button class="modal-close" onclick="closeModal('modal-fleet-import')">&#x2715;</button>
-    </div>
-    <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
-      <input type="text" id="fleet-import-search" class="search-bar" style="margin-bottom:0;"
-        placeholder="Search vehicles..." oninput="fleetImportRenderList()">
-    </div>
-    <div id="fleet-import-list" style="flex:1;overflow-y:auto;"></div>
-  </div>
-</div>
-
-<!-- ── MODAL: Save LV ── -->
-<div class="modal-overlay" id="modal-save-lv" style="display:none">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Save Launch Vehicle</span><button class="modal-close" onclick="closeModal('modal-save-lv')">✕</button></div>
-    <div class="modal-body">
-      <label>Vehicle Name</label>
-      <input type="text" id="lv-save-name" placeholder="e.g. My Rocket Mk1" maxlength="60">
-      <label>Notes (optional)</label>
-      <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
-      <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
-      <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── MODAL: Save Orbit ── -->
-<div class="modal-overlay" id="modal-save-orbit" style="display:none">
-  <div class="modal" style="max-width:460px;">
-    <div class="modal-header"><span class="modal-title">Save Orbit</span><button class="modal-close" onclick="closeModal('modal-save-orbit')">✕</button></div>
-    <div class="modal-body">
-      <label>Orbit Name</label>
-      <input type="text" id="orbit-save-name" placeholder="e.g. Staging Orbit" maxlength="60">
-      <label style="margin-top:10px;">Category</label>
-      <select class="field" id="orbit-save-category" style="width:100%;margin-bottom:8px;" onchange="onOrbitCategoryChange(this.value)">
-      </select>
-      <div id="orbit-new-cat-wrap" style="display:none;">
-        <label>New Category Name</label>
-        <input type="text" id="orbit-new-cat-name" placeholder="e.g. My Missions" maxlength="40">
-      </div>
-      <div class="save-note" style="margin-top:8px;">Orbit appears inside the selected category alongside presets. Also downloads a .json file.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-save-orbit')">Cancel</button>
-      <button class="modal-btn primary" onclick="doSaveOrbit()">Save & Download</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── MODAL: JSON editor ── -->
-<div class="modal-overlay" id="modal-json" style="display:none">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">View / Edit Vehicle JSON</span><button class="modal-close" onclick="closeModal('modal-json')">✕</button></div>
-    <div class="modal-body">
-      <textarea id="json-editor" spellcheck="false"></textarea>
-      <div id="json-error" class="error-msg" style="display:none;margin-top:8px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-json')">Cancel</button>
-      <button class="modal-btn primary" onclick="applyJSON()">Apply to Calculator</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── MODAL: Theme editor ── -->
-<div class="modal-overlay" id="modal-theme" style="display:none">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-header">
-      <span class="modal-title">Theme Editor</span>
-      <button class="modal-close" onclick="closeModal('modal-theme')">✕</button>
-    </div>
-    <div class="modal-body" style="max-height:72vh;overflow-y:auto;">
-
-      <!-- Presets -->
-      <div class="te-section">Presets</div>
-      <div class="te-preset-row" id="te-preset-row"></div>
-
-      <!-- Colors -->
-      <div class="te-section">Colors</div>
-      <div id="te-color-rows"></div>
-
-      <!-- Fonts -->
-      <div class="te-section">Fonts</div>
-      <div class="te-row">
-        <span class="te-label">Display (sans)</span>
-        <input class="te-font-input" id="te-font-sans" placeholder="Outfit, sans-serif"
-          oninput="teApplyLive()">
-      </div>
-      <div class="te-row">
-        <span class="te-label">Monospace</span>
-        <input class="te-font-input" id="te-font-mono" placeholder="JetBrains Mono, monospace"
-          oninput="teApplyLive()">
-      </div>
-
-      <!-- Name -->
-      <div class="te-section">Save Custom Theme</div>
-      <div class="te-row">
-        <span class="te-label">Theme Name</span>
-        <input class="te-font-input" id="te-theme-name" placeholder="My Theme" style="width:160px;flex:none;">
-        <button class="modal-btn primary" onclick="teSaveCustom()" style="margin:0;">Save</button>
-      </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-theme')">Close</button>
-      <button class="modal-btn" onclick="teExportJSON()">Export JSON</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ── MODAL: Add/Save Stage ── -->
-<div class="modal-overlay" id="modal-add-stage" style="display:none">
-  <div class="modal" style="max-width:500px;">
-    <div class="modal-header">
-      <span class="modal-title">Add Stage to Library</span>
-      <button class="modal-close" onclick="closeModal('modal-add-stage')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div style="grid-column:1/-1;">
-          <label>Start from existing stage (optional)</label>
-          <select class="field" id="stg-base" style="width:100%;margin-bottom:0;" onchange="onBaseStageChange(this.value)">
-            <option value="">— Blank —</option>
-          </select>
-        </div>
-        <div>
-          <label>Stage Name</label>
-          <input type="text" id="stg-name" placeholder="e.g. My Upper Stage" maxlength="60" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label>Category</label>
-          <select class="field" id="stg-category" style="width:100%;margin-bottom:0;" onchange="onStageCatChange(this.value)">
-            <option value="Booster Stages">Booster Stages</option>
-            <option value="Upper Stages">Upper Stages</option>
-            <option value="Kick Stages">Kick Stages</option>
-            <option value="Side Boosters">Side Boosters</option>
-            <option value="__new__">[ New Category... ]</option>
-          </select>
-        </div>
-        <div id="stg-new-cat-wrap" style="display:none;grid-column:1/-1;">
-          <label>New Category Name</label>
-          <input type="text" id="stg-new-cat" placeholder="e.g. Custom Stages" maxlength="40" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label>Dry Mass (kg)</label>
-          <input type="number" id="stg-dry" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
-        </div>
-        <div>
-          <label>Propellant (kg)</label>
-          <input type="number" id="stg-prop" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
-        </div>
-        <div>
-          <label>Thrust (kN)</label>
-          <input type="number" id="stg-thrust" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
-        </div>
-        <div>
-          <label>Isp (s)</label>
-          <input type="number" id="stg-isp" placeholder="300" min="1" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
-        </div>
-        <div>
-          <label>Residuals (%)</label>
-          <input type="number" id="stg-res" value="2" min="0" max="20" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
-        </div>
-        <div>
-          <label>Engine(s)</label>
-          <input type="text" id="stg-engines" placeholder="e.g. 2× RL-10" maxlength="40" style="margin-bottom:0;">
-        </div>
-        <div style="grid-column:1/-1;">
-          <label>Notes</label>
-          <input type="text" id="stg-note" placeholder="Propellants, mission context, etc." maxlength="120" style="margin-bottom:0;">
-        </div>
-        <div style="grid-column:1/-1;">
-          <label>Tags (comma-separated)</label>
-          <input type="text" id="stg-tags" placeholder="e.g. Liquid Oxygen / Kerosene, Restartable, 1970s" style="margin-bottom:0;">
-        </div>
-        <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="stg-is-booster" style="accent-color:var(--accent2);">
-          <label style="display:inline;letter-spacing:normal;text-transform:none;font-size:11px;color:var(--text-bright);">Side Booster (populates strap-on booster section when dropped)</label>
-        </div>
-      </div>
-      <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>
-    </div>
-    <div class="modal-footer" id="add-stage-footer">
-      <button class="modal-btn" onclick="closeModal('modal-add-stage')">Cancel</button>
-      <button class="modal-btn" id="add-stage-lib-btn" onclick="doAddStage(false)">Add to Library</button>
-      <button class="modal-btn primary" id="add-stage-save-btn" onclick="doAddStage(true)">Add & Save .json</button>
-      <button class="modal-btn primary" id="edit-stage-save-btn" style="display:none;" onclick="doEditStage()">Save Changes</button>
-    </div>
-  </div>
-</div>
-
-<script>
+﻿
 // ─── CONSTANTS ────────────────────────────────
 const G0=9.80665,RE=6371.0,MU=398600.4418,OMEGA_E=7.2921150e-5;
 const MAX_STAGES=15;
@@ -2036,8 +1054,6 @@ function buildLVObject(name,note){
 }
 function downloadJSON(obj,filename){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
 function openSaveLVModal(){document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);}
-
-
 function doSaveLV(){
   const name=document.getElementById('lv-save-name').value.trim()||'LV';
   const note=document.getElementById('lv-save-note').value.trim();
@@ -2104,7 +1120,6 @@ function applyJSON(){const txt=document.getElementById('json-editor').value;try{
 // ─── MODAL HELPERS ──────────────────────────────
 function openModal(id){document.getElementById(id).style.display='flex';}
 function closeModal(id){document.getElementById(id).style.display='none';}
-
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.style.display='none';});
 
 // ─── THEMES ─────────────────────────────────────
@@ -2113,38 +1128,22 @@ const BUILTIN_THEMES={
     '--bg':'#0a0c10','--panel':'#0f1318','--border':'#1e2530','--border-bright':'#2e3d50',
     '--accent':'#00c8ff','--accent2':'#ff6b35','--accent3':'#7fff6b',
     '--text':'#c8d8e8','--text-dim':'#5a7080','--text-bright':'#e8f4ff',
-    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif",
-    '--nm-bg':'#080a0e','--nm-earth':'#44b06a','--nm-lunar':'#7888c8','--nm-interp':'#cc5040',
-    '--nm-edge':'#2a3545','--nm-edge-act':'#00c8ff','--nm-node-fill':'#0f1318',
-    '--nm-label':'#5a7080','--nm-pill-bg':'#0f1318','--nm-pill-bd':'#1e2530','--nm-pill-text':'#5a7080',
-    '--nm-pal-bg':'#070910','--nm-pal-hdr':'#060709','--nm-pal-item':'#0f1318','--nm-pal-item-act':'#081210','--nm-ghost':'#1e2530'},
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
   perigee:{name:'Perigee',
     '--bg':'#3b393a','--panel':'#2e2c2d','--border':'#524f50','--border-bright':'#6e6b6c',
     '--accent':'#88c657','--accent2':'#c6a057','--accent3':'#b0e080',
     '--text':'#e7e8ea','--text-dim':'#a7a6a4','--text-bright':'#ffffff',
-    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif",
-    '--nm-bg':'#282628','--nm-earth':'#5db877','--nm-lunar':'#8890bc','--nm-interp':'#b85848',
-    '--nm-edge':'#5a5758','--nm-edge-act':'#88c657','--nm-node-fill':'#2e2c2d',
-    '--nm-label':'#a7a6a4','--nm-pill-bg':'#2e2c2d','--nm-pill-bd':'#524f50','--nm-pill-text':'#a7a6a4',
-    '--nm-pal-bg':'#252325','--nm-pal-hdr':'#1e1c1e','--nm-pal-item':'#2e2c2d','--nm-pal-item-act':'#1e2419','--nm-ghost':'#524f50'},
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
   spacex:{name:'SpaceX',
     '--bg':'#849199','--panel':'#6e7a82','--border':'#9aaab4','--border-bright':'#b8c8d4',
     '--accent':'#015289','--accent2':'#ffffff','--accent3':'#ffffff',
     '--text':'#ffffff','--text-dim':'#d0dde5','--text-bright':'#ffffff',
-    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif",
-    '--nm-bg':'#7a8890','--nm-earth':'#2a7040','--nm-lunar':'#3850a0','--nm-interp':'#903028',
-    '--nm-edge':'#9aaab4','--nm-edge-act':'#015289','--nm-node-fill':'#6e7a82',
-    '--nm-label':'#d0dde5','--nm-pill-bg':'#6e7a82','--nm-pill-bd':'#9aaab4','--nm-pill-text':'#d0dde5',
-    '--nm-pal-bg':'#7a8890','--nm-pal-hdr':'#6e7a82','--nm-pal-item':'#849199','--nm-pal-item-act':'#6e8878','--nm-ghost':'#9aaab4'},
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
   blueorigin:{name:'Blue Origin',
     '--bg':'#0000fe','--panel':'#ffffff','--border':'#99aaff','--border-bright':'#0000fe',
     '--accent':'#0000fe','--accent2':'#3333cc','--accent3':'#0000cc',
     '--text':'#00008b','--text-dim':'#4444cc','--text-bright':'#000080',
-    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif",
-    '--nm-bg':'#0000e0','--nm-earth':'#44cc66','--nm-lunar':'#aabbff','--nm-interp':'#ff6644',
-    '--nm-edge':'#6677ff','--nm-edge-act':'#ffffff','--nm-node-fill':'#ffffff',
-    '--nm-label':'#0000aa','--nm-pill-bg':'#ffffff','--nm-pill-bd':'#0000fe','--nm-pill-text':'#0000aa',
-    '--nm-pal-bg':'#0000d0','--nm-pal-hdr':'#0000b8','--nm-pal-item':'#ffffff','--nm-pal-item-act':'#ccffcc','--nm-ghost':'#9999ff'},
+    '--mono':"'JetBrains Mono',monospace",'--sans':"'Outfit',sans-serif"},
 };;
 let customThemes={};
 let activeThemeKey='perigee';
@@ -3890,7 +2889,7 @@ function progGetNode(id) {
 }
 
 // ── Phase 1 self-tests ────────────────────────────────────────────────────────────
-const PROG_TEST_RESULTS = (() => { try {
+const PROG_TEST_RESULTS = (() => {
   const T = [
     { label:'TLI (LEO 185km)',       fn:()=> progDvTLI(185),                            target:3136, tol:50 },
     { label:'LOI (LLO 100km)',       fn:()=> progDvLOI(100, 185),                       target:822,  tol:20 },
@@ -3914,9 +2913,47 @@ const PROG_TEST_RESULTS = (() => { try {
       return { label:t.label, val:'ERR', target:t.target, pass:false, err:e.message };
     }
   });
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
+function _progRenderSection(results, label) {
+  const pass = results.filter(r => r.pass).length;
+  const total = results.length;
+  const lines = results.map(r => {
+    const icon = r.pass ? '\u2713' : '\u2717';
+    const col  = r.pass ? 'var(--accent)' : '#e06c75';
+    const valS = typeof r.val === 'number' ? r.val.toLocaleString() : String(r.val);
+    const lbl  = r.label.padEnd(24, ' ');
+    const val7 = valS.padStart(7, ' ');
+    return '<span style="color:' + col + '">' + icon + ' ' + lbl + val7 + '  </span>' +
+           '<span style="color:var(--text-dim)">/ ' + r.target.toLocaleString() + ' target</span>';
+  });
+  const sc = pass === total ? 'var(--accent)' : '#e06c75';
+  const hdr = '<span style="color:var(--text-dim);letter-spacing:.1em;">' + label + '</span>';
+  return hdr + '\n' + lines.join('\n') +
+    '\n<span style="color:' + sc + '">' + label + ': ' + pass + '/' + total + ' passing</span>';
+}
 
+function progRenderTestResults() {
+  const el = document.getElementById('prog-phase1-results');
+  if (!el) return;
+  const p1 = _progRenderSection(PROG_TEST_RESULTS,    '// Phase 1 — ΔV Engine');
+  const p2 = _progRenderSection(PROG_P2_TEST_RESULTS, '// Phase 2 — Propellant & Boiloff');
+  const p3 = _progRenderSection(PROG_P3_TEST_RESULTS, '// Phase 3 — FlightVehicle & Events');
+  const p4 = _progRenderSection(PROG_P4_TEST_RESULTS, '// Phase 4 — Interaction & Transfer');
+  const p5 = _progRenderSection(PROG_P5_TEST_RESULTS, '// Phase 5 — Pad & Spaceport');
+  const p6 = _progRenderSection(PROG_P6_TEST_RESULTS, '// Phase 6 — Pork Chop / Lambert');
+  const p7 = _progRenderSection(PROG_P7_TEST_RESULTS, '// Phase 7 — Band View');
+  const p8 = _progRenderSection(PROG_P8_TEST_RESULTS, '// Phase 8 — Node Map');
+  const p9 = _progRenderSection(PROG_P9_TEST_RESULTS, '// Phase 9 — Spacecraft Editor');
+  const p10 = _progRenderSection(PROG_P10_TEST_RESULTS, '// Phase 10 — Save/Load & Closure');
+  el.innerHTML = p1 + '\n\n' + p2 + '\n\n' + p3 + '\n\n' + p4 + '\n\n' + p5 + '\n\n' + p6 + '\n\n' + p7 + '\n\n' + p8 + '\n\n' + p9 + '\n\n' + p10;
+  const allTests  = [...PROG_TEST_RESULTS, ...PROG_P2_TEST_RESULTS, ...PROG_P3_TEST_RESULTS, ...PROG_P4_TEST_RESULTS, ...PROG_P5_TEST_RESULTS, ...PROG_P6_TEST_RESULTS, ...PROG_P7_TEST_RESULTS, ...PROG_P8_TEST_RESULTS, ...PROG_P9_TEST_RESULTS, ...PROG_P10_TEST_RESULTS];
+  const pass = allTests.filter(r => r.pass).length;
+  console.log('[Program] Total: ' + pass + '/' + allTests.length + ' tests passing');
+  allTests.forEach(r => {
+    if (!r.pass) console.warn('[Program] FAIL ' + r.label + ': got ' + r.val + ', target ' + r.target);
+  });
+}
 
 // ─── PROGRAM MODULE — Phase 2: Propellant & Boiloff ────────────────────────────
 //
@@ -4033,7 +3070,7 @@ function progStageFillFraction(liveStage) {
 }
 
 // ── Phase 2 self-tests ────────────────────────────────────────────────────────
-const PROG_P2_TEST_RESULTS = (() => { try {
+const PROG_P2_TEST_RESULTS = (() => {
   // T1: Tank starts full
   const tk1 = progMakeTank('LOX_LH2', 50000, 1.0);
 
@@ -4081,7 +3118,7 @@ const PROG_P2_TEST_RESULTS = (() => { try {
     const pass = Math.abs(t.val - t.target) <= t.tol;
     return { label: t.label, val: t.val, target: t.target, pass };
   });
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
 // ─── PROGRAM MODULE — Phase 3: FlightVehicle & Event Engine ──────────────────
 //
@@ -4169,9 +3206,6 @@ function progMakeProgram(name) {
     spacecraftDefinitions: [],       // SpacecraftDefinition[] (spec §3.4; Phase 9)
     events:                [],       // ordered event list (Phase 7 owns rendering)
     nodeMapCustomNodes:    [],       // user-added nodes (Phase 8)
-    nodeMapCustomEdges:    [],       // user-added edges between custom nodes
-    nodeMapNodePos:        {},       // nodeId → {cx,cy} position overrides (drag-to-move)
-    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
     performanceCases:      [],       // archived perf cases (Phase 10)
     warnings:              [],
   };
@@ -4371,7 +3405,7 @@ function progDispatchEvent(program, event) {
 }
 
 // ── Phase 3 self-tests ────────────────────────────────────────────────────────
-const PROG_P3_TEST_RESULTS = (() => { try {
+const PROG_P3_TEST_RESULTS = (() => {
   // T1/T2: Rocket equation round-trip
   const prop500 = progRocketEqPropNeeded(100000, 500, 421);
   const dv_rt   = progRocketEqDv(100000, prop500, 421);
@@ -4461,7 +3495,7 @@ const PROG_P3_TEST_RESULTS = (() => { try {
     const pass = Math.abs(t.val - t.target) <= t.tol;
     return { label: t.label, val: t.val, target: t.target, pass };
   });
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
 // ─── PROGRAM MODULE — Phase 4: Interaction & Transfer Events ─────────────────
 //
@@ -4731,7 +3765,7 @@ function progExecReconfigure(program, event) {
 }
 
 // ── Phase 4 self-tests ────────────────────────────────────────────────────────
-const PROG_P4_TEST_RESULTS = (() => { try {
+const PROG_P4_TEST_RESULTS = (() => {
   // Helper: build a fresh program with one vehicle
   function mkProg(stagesA, orbitA) {
     const p  = progMakeProgram('p4-test');
@@ -4844,7 +3878,7 @@ const PROG_P4_TEST_RESULTS = (() => { try {
     const pass = Math.abs(t.val - t.target) <= t.tol;
     return { label: t.label, val: t.val, target: t.target, pass };
   });
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
 // ─── PROGRAM MODULE — Phase 5: Pad & Spaceport ────────────────────────────────
 
@@ -4943,7 +3977,10 @@ function progAzimuthForInclination(site_lat_deg, inc_deg) {
 
 let PROG_ACTIVE_PROGRAM = null;
 
-function progSetActiveProgram(p) { PROG_ACTIVE_PROGRAM = p; }
+function progSetActiveProgram(p) {
+  PROG_ACTIVE_PROGRAM = p;
+  progRenderSpaceport();
+}
 
 /** Format seconds as "Xh Ym" countdown string. */
 function _progFmtCountdown(seconds) {
@@ -4953,31 +3990,36 @@ function _progFmtCountdown(seconds) {
 }
 
 /** Render the spaceport pad list into #prog-pad-list. */
-/** Load an LV Calculator .json file into the active program's vehicleDefinitions[]. */
+function progRenderSpaceport() {
+  const el = document.getElementById('prog-pad-list');
+  if (!el) return;
+  const prog = PROG_ACTIVE_PROGRAM;
 
-/**
- * Convert a VehicleDefinition (LV .json) to LiveStage[] for use in a LAUNCH event.
- * Assigns propellant type based on Isp: >400 → LOX_LH2, 310-400 → LOX_CH4, else LOX_RP1.
- */
-function progVehicleDefToLiveStages(vdef) {
-  const stages = vdef.stageData || [];
-  const names  = vdef.stageNames || [];
-  return stages.map((sd, i) => {
-    const isp  = sd.isp || 1;
-    const prop = sd.prop || 0;
-    const ptype = isp > 400 ? 'LOX_LH2' : isp > 310 ? 'LOX_CH4' : 'LOX_RP1';
-    const tanks = prop > 0 ? [progMakeTank(ptype, prop)] : [];
-    const name  = names[i] || ('Stage ' + (i + 1));
-    return progMakeLiveStage(name, tanks, 0, sd.dry || 0, isp);
-  });
+  if (!prog || !prog.pads || prog.pads.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:10px 8px;line-height:1.6;">// No pads in\n// active program</div>';
+    return;
+  }
+
+  const t = prog.missionClock;
+  el.innerHTML = prog.pads.map(pad => {
+    const avail    = progPadAvailable(pad, t);
+    const rem_s    = progPadRecycleRemaining(pad, t);
+    const dot      = avail ? '\u25cf' : '\u25cb';
+    const dotCol   = avail ? 'var(--accent)' : '#e5c07b';
+    const stateTxt = avail ? 'Ready' : '\u23f1 ' + _progFmtCountdown(rem_s);
+    const stateCol = avail ? 'var(--accent)' : '#e5c07b';
+    return '<div style="padding:6px 8px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:6px;">' +
+      '<span style="color:' + dotCol + ';font-size:9px;line-height:22px">' + dot + '</span>' +
+      '<div style="min-width:0;flex:1;">' +
+        '<div style="font-family:var(--mono);font-size:11px;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + pad.name + '</div>' +
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">' + pad.siteKey +
+          ' \u00b7 <span style="color:' + stateCol + '">' + stateTxt + '</span></div>' +
+      '</div></div>';
+  }).join('');
 }
 
-/** Render the loaded vehicle list into #prog-vehicle-list. */
-
-
-
 // ── Phase 5 self-tests ────────────────────────────────────────────────────────
-const PROG_P5_TEST_RESULTS = (() => { try {
+const PROG_P5_TEST_RESULTS = (() => {
   // T1: Pad creation
   const pad0 = progMakePad('LC-39A', '39A', 'KSC', 72);
 
@@ -5009,7 +4051,7 @@ const PROG_P5_TEST_RESULTS = (() => { try {
     { label:'Azimuth inc=45 ~54deg',      val: Math.round(az45.prograde),                          target: 54,    tol: 2   },
   ];
   return T.map(t => ({ label:t.label, val:t.val, target:t.target, pass: Math.abs(t.val-t.target)<=t.tol }));
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
 // ─── PROGRAM MODULE — Phase 6: Pork Chop Plotter ─────────────────────────────
 //
@@ -5183,23 +4225,172 @@ function progPorkchopGrid(dep_body, arr_body, opts) {
 
 // ── Canvas rendering ──────────────────────────────────────────────────────────
 
+let PROG_PORKCHOP_STATE = null;   // { result, arrBody, sel: {dep,tof,c3}|null }
+
 /** Map C3 to a CSS colour string (blue=low, red=high, black=Infinity). */
+function _progC3Colour(c3, lo, hi) {
+  if (!isFinite(c3)) return '#0a0a0a';
+  const t   = Math.max(0, Math.min(1, (Math.log(Math.max(c3, lo)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo))));
+  const hue = Math.round(240 * (1 - t));            // 240=blue, 0=red
+  const lgt = Math.round(28 + 22 * (1 - Math.abs(t - 0.5)*2));
+  return `hsl(${hue},90%,${lgt}%)`;
+}
 
+function progRenderPorkchopCanvas(arrBody) {
+  const canvas = document.getElementById('prog-porkchop-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
 
+  // Show loading
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'var(--panel, #111)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#555';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Computing\u2026', W/2, H/2);
 
+  // Compute in the next tick so the loading state renders first
+  setTimeout(() => {
+    const opts = arrBody === 'Venus'
+      ? { dep_start:0, dep_end:650, tof_start:80,  tof_end:400, nx:130, ny:80 }
+      : { dep_start:0, dep_end:800, tof_start:120, tof_end:560, nx:130, ny:80 };
+    const result = progPorkchopGrid('Earth', arrBody, opts);
+    const nx = result.dep_days.length, ny = result.tof_days.length;
+    const c3_lo = result.c3_min;
+    const c3_hi = Math.min(c3_lo * 20, 150);
+    const pw = W / nx, ph = H / ny;
+
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        ctx.fillStyle = _progC3Colour(result.grid[j][i], c3_lo, c3_hi);
+        ctx.fillRect(Math.floor(i*pw), Math.floor(j*ph), Math.ceil(pw)+1, Math.ceil(ph)+1);
+      }
+    }
+
+    // Mark minimum
+    const mi = result.dep_days.findIndex(d => Math.abs(d - result.c3_min_dep) <= result.dep_step);
+    const mj = result.tof_days.findIndex(t => Math.abs(t - result.c3_min_tof) <= result.tof_step);
+    if (mi >= 0 && mj >= 0) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(mi*pw - 4, mj*ph - 4, 8, 8);
+    }
+
+    // Axis annotations
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, H - 15, W, 15);
+    ctx.fillStyle = '#777';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    const d0 = Math.round(result.dep_days[0]), d1 = Math.round(result.dep_days[nx-1]);
+    const t0 = Math.round(result.tof_days[0]), t1 = Math.round(result.tof_days[ny-1]);
+    ctx.fillText(`dep: T+${d0}\u2013${d1}d \u2502 tof: ${t0}\u2013${t1}d \u2502 min C3\u2248${result.c3_min.toFixed(1)} km\u00b2/s\u00b2`, 6, H - 4);
+
+    // Save the rendered canvas as base image — restored on each click to remove old markers
+    const baseImageData = ctx.getImageData(0, 0, W, H);
+    PROG_PORKCHOP_STATE = { result, arrBody, sel: null, W, H, pw, ph, nx, ny, baseImageData };
+    progUpdatePorkchopInfo();
+  }, 10);
+}
+
+function progHandlePorkchopClick(evt) {
+  if (!PROG_PORKCHOP_STATE) return;
+  const canvas = document.getElementById('prog-porkchop-canvas');
+  const rect   = canvas.getBoundingClientRect();
+  const { result, W, H, nx, ny } = PROG_PORKCHOP_STATE;
+  const i = Math.floor((evt.clientX - rect.left)  / W * nx);
+  const j = Math.floor((evt.clientY - rect.top)   / H * ny);
+  if (i < 0 || i >= nx || j < 0 || j >= ny) return;
+
+  PROG_PORKCHOP_STATE.sel = {
+    dep: result.dep_days[i],
+    tof: result.tof_days[j],
+    c3:  result.grid[j][i],
+  };
+  progUpdatePorkchopInfo();
+
+  // Restore clean canvas, then draw single selection marker
+  const ctx = canvas.getContext('2d');
+  const { pw, ph, baseImageData } = PROG_PORKCHOP_STATE;
+  if (baseImageData) ctx.putImageData(baseImageData, 0, 0);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+  ctx.strokeRect(i*pw - 3, j*ph - 3, 6, 6);
+}
+
+function progUpdatePorkchopInfo() {
+  const el = document.getElementById('prog-porkchop-info');
+  if (!el) return;
+  if (!PROG_PORKCHOP_STATE) { el.textContent = ''; return; }
+  const { sel, arrBody } = PROG_PORKCHOP_STATE;
+  if (!sel) {
+    el.textContent = '// click to select a launch window';
+    return;
+  }
+  const c3Str = isFinite(sel.c3) ? sel.c3.toFixed(1) : '\u221e';
+  el.innerHTML =
+    '<span style="color:var(--accent)">T+' + Math.round(sel.dep) + 'd \u2502 TOF ' +
+    Math.round(sel.tof) + 'd \u2502 C3 ' + c3Str + ' km\u00b2/s\u00b2</span>' +
+    '<button onclick="progApplyPorkchopWindow()" style="margin-left:10px;font-family:var(--mono);font-size:9px;' +
+    'background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:1px 6px;cursor:pointer;">' +
+    'Set COAST</button>';
+
+  // Store in active program
+  if (PROG_ACTIVE_PROGRAM) {
+    PROG_ACTIVE_PROGRAM.launchWindow = {
+      dep_body: 'Earth', arr_body: arrBody,
+      dep_day: sel.dep, tof_day: sel.tof, c3: sel.c3,
+    };
+  }
+}
 
 /**
  * Create / update a COAST event in the active program with the selected
  * inter-planetary transit duration. The COAST event represents the
  * heliocentric cruise from TMI to arrival.
  */
+function progApplyPorkchopWindow() {
+  if (!PROG_ACTIVE_PROGRAM || !PROG_PORKCHOP_STATE?.sel) return;
+  const { dep, tof } = PROG_PORKCHOP_STATE.sel;
+  const dur_s = Math.round(tof) * 86400;
+
+  // Find existing transit COAST event (type COAST, label contains 'Transit')
+  let ev = PROG_ACTIVE_PROGRAM.events.find(e => e.type === 'COAST' && e.label.includes('Transit'));
+  if (ev) {
+    ev.duration_s = dur_s;
+    ev.tStart     = Math.round(dep * 86400);
+    ev.label      = 'Transit COAST (' + Math.round(tof) + 'd)';
+  } else {
+    ev = progMakeEvent('COAST', {
+      label:      'Transit COAST (' + Math.round(tof) + 'd)',
+      duration_s: dur_s,
+      tStart:     Math.round(dep * 86400),
+      vehicleId:  'ALL',
+    });
+    PROG_ACTIVE_PROGRAM.events.push(ev);
+  }
+
+  const info = document.getElementById('prog-porkchop-info');
+  if (info) info.innerHTML += ' <span style="color:var(--accent);">\u2713 COAST set</span>';
+}
 
 /** Switch the pork chop between Earth\u2192Mars and Earth\u2192Venus. */
+function progSelectPorkchop(arrBody) {
+  ['Mars','Venus'].forEach(b => {
+    const btn = document.getElementById('prog-pc-' + b.slice(0,2).toLowerCase());
+    if (btn) btn.classList.toggle('active', b === arrBody);
+  });
+  progRenderPorkchopCanvas(arrBody);
+}
 
 /** Initialise the pork chop plotter (called from INIT). */
+function progInitPorkchop() {
+  // Default: Earth\u2192Mars
+  progRenderPorkchopCanvas('Mars');
+}
 
 // ── Phase 6 self-tests (pure math — no DOM) ────────────────────────────────────
-const PROG_P6_TEST_RESULTS = (() => { try {
+const PROG_P6_TEST_RESULTS = (() => {
   // T1/T2: Stumpff limits
   const c0 = progStumpffC(0);
   const s0 = progStumpffS(0);
@@ -5242,11 +4433,24 @@ const PROG_P6_TEST_RESULTS = (() => { try {
     { label:'Stumpff C(-1) hyperbolic',  val: Math.round(cNeg*1000)/1000,      target: Math.round((Math.cosh(1)-1)*1000)/1000, tol: 0.001 },
   ];
   return T.map(t => ({ label:t.label, val:t.val, target:t.target, pass: Math.abs(t.val-t.target)<=t.tol }));
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 
 // ─── PROGRAM MODULE — Phase 7: Band View ─────────────────────────────────────
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+const PROG_BV = {
+  AXIS_H:    26,   // px — time axis strip at top of canvas
+  MINIMAP_H: 28,   // px — overview scrubber strip at bottom
+  ZONE_H:    18,   // px — collapsed zone header
+  ZONE_HDR:  20,   // px — zone header when expanded
+  TRACK_H:   32,   // px — height per vehicle lane
+  TRACK_PAD: 6,    // px — padding above/below track line within lane
+  ICON_R:    5,    // px — base radius for non-burn event nodes
+  LEFT_W:    72,   // px — left margin for rotated zone labels
+};
+
+const PROG_BV_T_REF = 3600;
+const PROG_BV_TICK_CANDS=[0,60,300,600,1800,3600,3*3600,6*3600,12*3600,86400,2*86400,3*86400,7*86400,14*86400,30*86400,60*86400,90*86400,180*86400,365*86400,2*365*86400,5*365*86400,10*365*86400];
 
 // Body → zone mapping
 const PROG_ZONES = [
@@ -5280,11 +4484,68 @@ const PROG_NODE_BAND_Y={
   'mars-surface':{band:'interplanetary',frac:0.85},'venus-transit':{band:'interplanetary',frac:0.62},
   'venus-orbit':{band:'interplanetary',frac:0.32},
 };
+function _progBvStateToNode(os){
+  if(!os)return 'earth-surface';
+  if(os.surface){if(os.body==='Moon')return 'moon-surface';if(os.body==='Mars')return 'mars-surface';return 'earth-surface';}
+  const alt=(os.apogee+os.perigee)/2;
+  if(os.body==='Earth'){if(alt<1500)return 'leo';if(alt<15000)return 'gto';return 'geo';}
+  if(os.body==='Moon')return alt<500?'llo':'dro';
+  if(os.body==='Mars')return alt<1000?'mars-surface':'mars-orbit';
+  if(os.body==='Venus')return 'venus-orbit';
+  return 'leo';
+}
+function _progBvNodePxY(nodeId,layout){
+  if(!nodeId||!layout)return null;
+  const spec=PROG_NODE_BAND_Y[nodeId];if(!spec)return null;
+  const zone=layout.zones.find(z=>z.key===spec.band);if(!zone)return null;
+  return zone.y+zone.h*spec.frac;
+}
+function _progBvComputeSegments(fv,evs,layout,W){
+  const segs=[],sorted=[...evs].sort((a,b)=>a.tStart-b.tStart);
+  if(!sorted.length)return segs;
+  let curNode=_progBvStateToNode(fv.orbitState);
+  let curY=_progBvNodePxY(curNode,layout)??((layout.zones[layout.zones.length-1]?.y??0)+20);
+  for(let i=0;i<sorted.length;i++){
+    const ev=sorted[i],prev=sorted[i-1];
+    if(prev){const pe=prev.tEnd??prev.tStart;if(ev.tStart>pe+30)segs.push({t1:pe,t2:ev.tStart,y1:curY,y2:curY,dash:false});}
+    if(ev.type==='LAUNCH'){const fn=ev.fromNode||'earth-surface',tn=ev.toNode||'leo';const y1=_progBvNodePxY(fn,layout)??curY,y2=_progBvNodePxY(tn,layout)??curY;segs.push({t1:ev.tStart,t2:ev.tEnd??ev.tStart+600,y1,y2,dash:true});curY=y2;curNode=tn;}
+    else if(ev.type==='BURN'){const fn=ev.fromNode||curNode,tn=ev.toNode||curNode;const y1=_progBvNodePxY(fn,layout)??curY,y2=_progBvNodePxY(tn,layout)??curY;segs.push({t1:ev.tStart,t2:ev.tEnd??ev.tStart+600,y1,y2,dash:true});curY=y2;curNode=tn;}
+    else if(ev.type==='COAST'){segs.push({t1:ev.tStart,t2:ev.tEnd??ev.tStart,y1:curY,y2:curY,dash:false});}
+    else if(ev.type==='ASCENT_SURFACE'){const fn=ev.fromNode||'moon-surface',tn=ev.toNode||'llo';const y1=_progBvNodePxY(fn,layout)??curY,y2=_progBvNodePxY(tn,layout)??curY;segs.push({t1:ev.tStart,t2:ev.tEnd??ev.tStart+600,y1,y2,dash:true});curY=y2;curNode=tn;}
+  }
+  return segs;
+}
 // Result → node colour
+function _progBvResultCol(result) {
+  if (result === 'SUCCESS')  return '#98c379';
+  if (result === 'MARGINAL') return '#e5c07b';
+  if (result === 'FAILED')   return '#e06c75';
+  return '#565c78';  // PENDING / uncomputed
+}
 
 // ΔV → node radius
+function _progBvDvR(dv) {
+  if (!dv || dv <= 0) return PROG_BV.ICON_R;
+  if (dv < 100)  return 4;
+  if (dv < 500)  return 5;
+  if (dv < 2000) return 7;
+  if (dv < 5000) return 9;
+  return 11;
+}
 
 // ── Band View state ───────────────────────────────────────────────────────────
+let PROG_BAND_STATE = {
+  tStart:    0,
+  tEnd:      8 * 86400,
+  selId:     null,   // selected eventId
+  drag:      false,
+  dragX0:    0,
+  dragTS0:   0,      // tStart when drag began
+  dragTE0:   0,      // tEnd when drag began
+  hitNodes:  [],     // [{evId,cx,cy,r}] — built per render, used for click
+  trackHits: [],     // [{vehicleId,y0,y1}] — built per render, used for right-click
+  layout:    null,   // last computed layout
+};
 
 // ── Time helpers ──────────────────────────────────────────────────────────────
 
@@ -5300,7 +4561,518 @@ function progFmtT(s) {
   return 'T+' + s + 's';
 }
 
+function _progBvTx(t,W){const{tStart,tEnd}=PROG_BAND_STATE,cW=W-PROG_BV.LEFT_W;const l0=Math.log1p(Math.max(0,tStart)/PROG_BV_T_REF),l1=Math.log1p(Math.max(0,tEnd)/PROG_BV_T_REF),lt=Math.log1p(Math.max(0,t)/PROG_BV_T_REF);if(l1<=l0)return PROG_BV.LEFT_W;return PROG_BV.LEFT_W+(lt-l0)/(l1-l0)*cW;}
+function _progBvXt(x,W){const{tStart,tEnd}=PROG_BAND_STATE,cW=W-PROG_BV.LEFT_W;const l0=Math.log1p(Math.max(0,tStart)/PROG_BV_T_REF),l1=Math.log1p(Math.max(0,tEnd)/PROG_BV_T_REF);return Math.max(0,(Math.exp(l0+((x-PROG_BV.LEFT_W)/cW)*(l1-l0))-1)*PROG_BV_T_REF);}
 
+function _progBvAxisTicks(W){const{tStart,tEnd}=PROG_BAND_STATE;const ticks=[];let lastX=-60;for(const t of PROG_BV_TICK_CANDS){if(t<tStart||t>tEnd)continue;const x=_progBvTx(t,W);if(x-lastX>=50){ticks.push(t);lastX=x;}}return ticks;}
+function _progBvFmtTick(t){if(t===0)return 'T+0';const d=Math.floor(t/86400),h=Math.floor((t%86400)/3600),m=Math.floor((t%3600)/60);if(d>=1)return 'T+'+d+'d';if(h>=1)return 'T+'+h+'h';if(m>=1)return 'T+'+m+'m';return 'T+'+Math.round(t)+'s';}
+
+// ── Demo mission ──────────────────────────────────────────────────────────────
+
+function progCreateDemoMission() {
+  const prog = progMakeProgram('Apollo 11 Demo');
+  prog.pads = [
+    progMakePad('LC-39A',     '39A', 'KSC',  72),
+    progMakePad('LC-39B',     '39B', 'KSC',  72),
+    progMakePad('Baikonur 1', 'BK1', 'BK',   48),
+    progMakePad('Vandenberg', 'SLC', 'VAFB', 48),
+  ];
+
+  // Vehicle 1: Apollo stack (CSM + LM)
+  const apollo = progMakeFlightVehicle(
+    'Apollo 11',
+    [
+      progMakeLiveStage('LM',  [progMakeTank('NTO_A50',   8165)], 2, 15095, 311),
+      progMakeLiveStage('CSM', [progMakeTank('NTO_A50',  18410)], 3, 28800, 314),
+    ],
+    progMakeOrbitalState('Earth', 185, 28.5, 0),
+    '#61afef'
+  );
+  apollo.status = 'ORBIT';
+  prog.vehicles[apollo.vehicleId] = apollo;
+
+  // Vehicle 2: S-IVB (separated, expended)
+  const sivb = progMakeFlightVehicle(
+    'S-IVB',
+    [progMakeLiveStage('S-IVB', [progMakeTank('LOX_LH2', 4200)], 0, 13300, 421)],
+    progMakeOrbitalState('Earth', 185, 28.5, 0),
+    '#4b5263'
+  );
+  sivb.status = 'EXPENDED';
+  prog.vehicles[sivb.vehicleId] = sivb;
+
+  // Convenience shorthand
+  const T = (d, h, m) => d*86400 + h*3600 + m*60;
+  const av = apollo.vehicleId, sv = sivb.vehicleId;
+
+  prog.events=[
+    progMakeEvent('LAUNCH',  {vehicleId:av,label:'LAUNCH',tStart:0,tEnd:600,result:'SUCCESS',fromNode:'earth-surface',toNode:'leo'}),
+    progMakeEvent('COAST',   {vehicleId:av,label:'Parking Orbit',tStart:600,tEnd:T(0,2,40),duration_s:T(0,2,30),result:'SUCCESS'}),
+    progMakeEvent('BURN',    {vehicleId:av,label:'TLI',tStart:T(0,2,40),tEnd:T(0,2,46),dvTarget:3136,result:'SUCCESS',fromNode:'leo',toNode:'tlc'}),
+    progMakeEvent('SEPARATE',{vehicleId:av,label:'Separate S-IVB',tStart:T(0,2,47),tEnd:T(0,2,47),result:'SUCCESS'}),
+    progMakeEvent('COAST',   {vehicleId:av,label:'Trans-Lunar Coast',tStart:T(0,2,47),tEnd:T(3,0,0),duration_s:T(2,21,13),result:'SUCCESS'}),
+    progMakeEvent('BURN',    {vehicleId:av,label:'LOI',tStart:T(3,0,0),tEnd:T(3,0,6),dvTarget:900,result:'SUCCESS',fromNode:'tlc',toNode:'llo'}),
+    progMakeEvent('COAST',   {vehicleId:av,label:'Lunar Orbit Ops',tStart:T(3,0,6),tEnd:T(8,0,0),duration_s:T(4,23,54),result:'PENDING'}),
+    progMakeEvent('BURN',    {vehicleId:av,label:'TEI',tStart:T(8,0,0),tEnd:T(8,0,6),dvTarget:950,result:'PENDING',fromNode:'llo',toNode:'tlc'}),
+    progMakeEvent('LAUNCH',  {vehicleId:sv,label:'S-IVB Launch',tStart:0,tEnd:600,result:'SUCCESS',fromNode:'earth-surface',toNode:'leo'}),
+    progMakeEvent('COAST',   {vehicleId:sv,label:'S-IVB Coast',tStart:600,tEnd:T(0,2,47),duration_s:T(0,2,7),result:'SUCCESS'}),
+    progMakeEvent('EXPEND',  {vehicleId:sv,label:'S-IVB Expend',tStart:T(0,2,50),tEnd:T(0,2,50),result:'SUCCESS'}),
+  ];
+
+  return prog;
+}
+
+function progLoadDemoMission() {
+  PROG_ACTIVE_PROGRAM = progCreateDemoMission();
+  PROG_BAND_STATE.tStart = 0;
+  PROG_BAND_STATE.tEnd   = 9 * 86400;
+  PROG_BAND_STATE.selId  = null;
+  progRenderSpaceport();
+  progUpdateEventEditor(null);
+  progRenderBandView();
+}
+
+function progClearMission() {
+  const p = progMakeProgram('New Program');
+  p.pads = PROG_ACTIVE_PROGRAM ? [...PROG_ACTIVE_PROGRAM.pads] : [];
+  PROG_ACTIVE_PROGRAM = p;
+  PROG_BAND_STATE.tStart = 0;
+  PROG_BAND_STATE.tEnd   = 30 * 86400;
+  PROG_BAND_STATE.selId  = null;
+  progRenderSpaceport();
+  progUpdateEventEditor(null);
+  progRenderBandView();
+}
+
+// ── Right panel tabs ──────────────────────────────────────────────────────────
+function progRightTab(tab) {
+  const panes = { ev:'prog-rt-ev-pane', pc:'prog-rt-pc-pane', ts:'prog-rt-ts-pane' };
+  const btns  = { ev:'prog-rt-ev-btn',  pc:'prog-rt-pc-btn',  ts:'prog-rt-ts-btn'  };
+  Object.entries(panes).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (k === tab) ? (k === 'pc' ? 'flex' : 'block') : 'none';
+  });
+  Object.entries(btns).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const active = (k === tab);
+    el.style.background      = active ? 'var(--panel)' : 'transparent';
+    el.style.color            = active ? 'var(--accent)' : 'var(--text-dim)';
+    el.style.borderBottom     = active ? '2px solid var(--accent)' : '2px solid transparent';
+  });
+  // Initialise pork chop on first open
+  if (tab === 'pc' && PROG_PORKCHOP_STATE === null) progInitPorkchop();
+}
+
+// ── Event editor ──────────────────────────────────────────────────────────────
+function progUpdateEventEditor(evId) {
+  const panel = document.getElementById('prog-event-detail');
+  if (!panel) return;
+  PROG_BAND_STATE.selId = evId || null;
+
+  if (!evId || !PROG_ACTIVE_PROGRAM) {
+    panel.innerHTML = '<span style="color:var(--text-dim);font-size:10px;">// Select an event in the timeline</span>';
+    return;
+  }
+  const ev = PROG_ACTIVE_PROGRAM.events.find(e => e.eventId === evId);
+  if (!ev) { panel.innerHTML = '<span style="color:var(--text-dim)">// Not found</span>'; return; }
+
+  const es = PROG_EV_STYLE[ev.type] || { sym:'●', col:'#888' };
+  const hasDV  = ['BURN','ASCENT_SURFACE'].includes(ev.type);
+  const fld = (id, lbl, val, type='text', step='') =>
+    `<div style="margin-bottom:8px;">
+      <div style="font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">${lbl}</div>
+      <input id="${id}" type="${type}" step="${step}" value="${val}"
+        oninput="progEvUpdate()"
+        style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:4px 6px;box-sizing:border-box;">
+    </div>`;
+  const sel = (id, lbl, opts, cur) =>
+    `<div style="margin-bottom:8px;">
+      <div style="font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">${lbl}</div>
+      <select id="${id}" onchange="progEvUpdate()"
+        style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:4px 6px;box-sizing:border-box;">
+        ${opts.map(o=>`<option${o===cur?' selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>`;
+
+  panel.innerHTML =
+    `<div style="color:${es.col};font-size:12px;font-weight:bold;letter-spacing:.08em;margin-bottom:10px;">${es.sym} ${ev.type}</div>` +
+    fld('prog-ev-label',  'LABEL',         ev.label || '') +
+    fld('prog-ev-tstart', 'T-START (days)', (ev.tStart/86400).toFixed(4), 'number', '0.001') +
+    fld('prog-ev-tend',   'T-END (days)',   ((ev.tEnd||ev.tStart)/86400).toFixed(4), 'number', '0.001') +
+    (hasDV ? fld('prog-ev-dv', '\u0394V TARGET (m/s)', ev.dvTarget ?? 0, 'number', '1') : '') +
+    sel('prog-ev-result', 'RESULT', ['PENDING','SUCCESS','MARGINAL','FAILED'], ev.result||'PENDING') +
+    `<button onclick="progEvDelete()" style="margin-top:4px;font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--accent2,#e06c75);padding:4px 10px;cursor:pointer;letter-spacing:.06em;width:100%;">Delete Event</button>`;
+}
+
+function progEvUpdate() {
+  if (!PROG_BAND_STATE.selId || !PROG_ACTIVE_PROGRAM) return;
+  const ev = PROG_ACTIVE_PROGRAM.events.find(e => e.eventId === PROG_BAND_STATE.selId);
+  if (!ev) return;
+  const g = id => document.getElementById(id);
+  if (g('prog-ev-label'))  ev.label   = g('prog-ev-label').value;
+  if (g('prog-ev-tstart')) ev.tStart  = parseFloat(g('prog-ev-tstart').value) * 86400 || 0;
+  if (g('prog-ev-tend'))   { ev.tEnd  = parseFloat(g('prog-ev-tend').value)   * 86400 || ev.tStart; if (ev.type==='COAST') ev.duration_s = ev.tEnd - ev.tStart; }
+  if (g('prog-ev-dv'))     ev.dvTarget = parseFloat(g('prog-ev-dv').value)    || 0;
+  if (g('prog-ev-result')) ev.result  = g('prog-ev-result').value;
+  progRenderBandView();
+}
+
+function progEvDelete() {
+  if (!PROG_BAND_STATE.selId || !PROG_ACTIVE_PROGRAM) return;
+  PROG_ACTIVE_PROGRAM.events = PROG_ACTIVE_PROGRAM.events.filter(
+    e => e.eventId !== PROG_BAND_STATE.selId
+  );
+  PROG_BAND_STATE.selId = null;
+  progUpdateEventEditor(null);
+  progRenderBandView();
+}
+
+// ── Layout computation ────────────────────────────────────────────────────────
+function _progBvLayout(prog,W,H){
+  const{AXIS_H,MINIMAP_H}=PROG_BV,contentH=H-AXIS_H-MINIMAP_H;
+  const ZF={earth:0.50,cislunar:0.32,interplanetary:0.18},CH=22;
+  const evN=new Set((prog.events||[]).flatMap(e=>[e.fromNode,e.toNode]).filter(Boolean));
+  const zA={};
+  PROG_ZONES.forEach(z=>{
+    const cross=Object.keys(PROG_NODE_BAND_Y).filter(id=>PROG_NODE_BAND_Y[id].band===z.key).some(id=>evN.has(id));
+    const hasV=Object.values(prog.vehicles).some(fv=>{const b=fv.orbitState?.body;if(z.key==='cislunar')return b==='Moon';if(z.key==='interplanetary')return['Mars','Venus','Jupiter'].includes(b);return z.key==='earth';});
+    zA[z.key]=cross||hasV;
+  });
+  zA['earth']=true;
+  const aF=PROG_ZONES.reduce((s,z)=>s+(zA[z.key]?ZF[z.key]:0),0);
+  const cH=PROG_ZONES.reduce((s,z)=>s+(zA[z.key]?0:CH),0),aH=contentH-cH;
+  const zH={};PROG_ZONES.forEach(z=>{zH[z.key]=zA[z.key]?Math.max(56,aH*ZF[z.key]/(aF||1)):CH;});
+  let yB=AXIS_H+contentH;const zones=[];
+  [...PROG_ZONES].reverse().forEach(zD=>{
+    const h=zH[zD.key],y=yB-h;yB=y;
+    const fvs=Object.values(prog.vehicles).filter(fv=>{const b=fv.orbitState?.body;if(zD.key==='cislunar')return b==='Moon';if(zD.key==='interplanetary')return['Mars','Venus','Jupiter'].includes(b);return zD.key==='earth';});
+    zones.push({...zD,y,h,vehicles:fvs.map(fv=>({fv,trackY:y+h*0.52})),active:zA[zD.key]});
+  });
+  zones.reverse();
+  const allT=(prog.events||[]).flatMap(e=>[e.tStart,e.tEnd??e.tStart]);
+  const missionEnd=allT.length?Math.max(...allT,PROG_BAND_STATE.tEnd):PROG_BAND_STATE.tEnd;
+  return{W,H,AXIS_H,MINIMAP_H,contentH,contentY:AXIS_H,minimapY:H-MINIMAP_H,zones,missionEnd};
+}
+
+// ── Band View renderer ────────────────────────────────────────────────────────
+
+function progRenderBandView() {
+  const canvas = document.getElementById('prog-band-canvas');
+  if (!canvas) return;
+
+  // Sync pixel dimensions to CSS container size
+  const wrap = canvas.parentElement;
+  const W = wrap.clientWidth  || 700;
+  const H = wrap.clientHeight || 420;
+  if (canvas.width !== W || canvas.height !== H) {
+    canvas.width = W; canvas.height = H;
+  }
+
+  const ctx   = canvas.getContext('2d');
+  const prog  = PROG_ACTIVE_PROGRAM;
+
+  // Background
+  ctx.fillStyle = '#1a1b26';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!prog || Object.keys(prog.vehicles).length === 0) {
+    ctx.fillStyle = '#3a3b4a';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('// No vehicles \u2014 click Demo, or right-click to insert a LAUNCH', W/2, H/2);
+    ctx.textAlign = 'left';
+    _progBvDrawAxis(ctx, W, H, { AXIS_H:PROG_BV.AXIS_H, minimapY:H-PROG_BV.MINIMAP_H });
+    return;
+  }
+
+  const layout = _progBvLayout(prog, W, H);
+  PROG_BAND_STATE.layout = layout;
+
+  _progBvDrawZones(ctx, W, layout);
+  _progBvDrawAxis(ctx, W, H, layout);
+  _progBvDrawTracks(ctx, prog, W, layout);
+  _progBvDrawMinimap(ctx, prog, W, H, layout);
+
+  // Update range label
+  const rEl = document.getElementById('prog-band-range');
+  if (rEl) rEl.textContent = progFmtT(PROG_BAND_STATE.tStart) + ' \u2013 ' + progFmtT(PROG_BAND_STATE.tEnd);
+
+  // Keep Node Map and closure bar in sync
+  if (typeof progRenderNodeMap === 'function') progRenderNodeMap();
+  if (typeof progRenderClosureBar === 'function') progRenderClosureBar();
+}
+
+function _progBvDrawAxis(ctx,W,H,layout){const{AXIS_H,LEFT_W}=PROG_BV;ctx.fillStyle='#11121a';ctx.fillRect(0,0,W,AXIS_H);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(0,0,LEFT_W,AXIS_H);ctx.fillStyle='#2a2b36';ctx.fillRect(0,AXIS_H-1,W,1);ctx.fillStyle='#3a3b50';ctx.font='8px monospace';ctx.textBaseline='middle';ctx.fillText('T+',4,AXIS_H/2);const ticks=_progBvAxisTicks(W);ctx.font='9px monospace';for(const t of ticks){const x=_progBvTx(t,W);if(x<LEFT_W||x>W)continue;ctx.strokeStyle='#1e1f2a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,AXIS_H);ctx.lineTo(x,layout.minimapY??H);ctx.stroke();ctx.strokeStyle='#3a3b50';ctx.beginPath();ctx.moveTo(x,AXIS_H-5);ctx.lineTo(x,AXIS_H);ctx.stroke();ctx.fillStyle='#6a6b80';ctx.fillText(_progBvFmtTick(t),x+3,AXIS_H/2);}ctx.textBaseline='alphabetic';}
+
+function _progBvDrawZones(ctx,W,layout){const LW=PROG_BV.LEFT_W;for(const zone of layout.zones){ctx.fillStyle=zone.bg;ctx.fillRect(0,zone.y,W,zone.h);ctx.fillStyle='rgba(0,0,0,.20)';ctx.fillRect(0,zone.y,LW,zone.h);ctx.strokeStyle=zone.lc;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,zone.y);ctx.lineTo(W,zone.y);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.04)';ctx.beginPath();ctx.moveTo(LW,zone.y);ctx.lineTo(LW,zone.y+zone.h);ctx.stroke();if(zone.h<8)continue;ctx.save();ctx.translate(LW/2,zone.y+zone.h/2);ctx.rotate(-Math.PI/2);const lc=zone.lc.replace(/,[^)]+\)$/,',0.7)');ctx.fillStyle=zone.active?lc:'#2e2f40';ctx.font=(zone.active?'8':'7')+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(zone.label,0,0);ctx.restore();ctx.textAlign='left';ctx.textBaseline='alphabetic';}}
+
+function _progBvDrawTracks(ctx,prog,W,layout){const hitNodes=[],trackHits=[],LW=PROG_BV.LEFT_W;for(const fv of Object.values(prog.vehicles)){const col=fv.color||'#888',evs=(prog.events||[]).filter(e=>e.vehicleId===fv.vehicleId),segs=_progBvComputeSegments(fv,evs,layout,W);const initY=_progBvNodePxY(_progBvStateToNode(fv.orbitState),layout)??((layout.zones[layout.zones.length-1]?.y??0)+20);ctx.fillStyle=col+'cc';ctx.font='8px monospace';ctx.textBaseline='bottom';ctx.fillText(fv.name.substring(0,10),2,initY-2);ctx.textBaseline='alphabetic';const ys=segs.flatMap(s=>[s.y1,s.y2]);const minY=ys.length?Math.min(...ys):initY,maxY=ys.length?Math.max(...ys):initY;trackHits.push({vehicleId:fv.vehicleId,y0:minY-14,y1:maxY+14});for(const seg of segs){const x1=_progBvTx(seg.t1,W),x2=_progBvTx(Math.max(seg.t1+1,seg.t2),W);if(x2<LW-2||x1>W+2)continue;const cx1=Math.max(LW-1,Math.min(W+1,x1)),cx2=Math.max(LW-1,Math.min(W+1,x2));const sp=x2-x1,f1=sp>0.5?(cx1-x1)/sp:0,f2=sp>0.5?(cx2-x1)/sp:1;const cy1=seg.y1+(seg.y2-seg.y1)*f1,cy2=seg.y1+(seg.y2-seg.y1)*f2;ctx.globalAlpha=seg.dash?.72:.88;ctx.lineWidth=seg.dash?1.5:2;ctx.strokeStyle=col;if(seg.dash)ctx.setLineDash([4,2]);else ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(cx1,cy1);ctx.lineTo(cx2,cy2);ctx.stroke();}ctx.setLineDash([]);ctx.globalAlpha=1;for(const ev of evs){const x=_progBvTx(ev.tStart,W);if(x<LW-14||x>W+14)continue;const nid=ev.fromNode||(ev.type==='LAUNCH'?'earth-surface':null);const evY=(nid?_progBvNodePxY(nid,layout):null)??initY;const es=PROG_EV_STYLE[ev.type]||{sym:'●',col:'#888'};const ncol=_progBvResultCol(ev.result),isSel=PROG_BAND_STATE.selId===ev.eventId;const r=['BURN','ASCENT_SURFACE'].includes(ev.type)?_progBvDvR(ev.dvTarget):PROG_BV.ICON_R;ctx.beginPath();ctx.arc(x,evY,r,0,2*Math.PI);ctx.fillStyle=ncol;ctx.fill();if(isSel){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}ctx.font=`${r+2}px monospace`;ctx.fillStyle='#000000bb';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(es.sym,x,evY);ctx.textAlign='left';ctx.textBaseline='alphabetic';if(ev.warnings?.length){ctx.fillStyle='#e5c07b';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('⚠',x,evY-r-3);ctx.textAlign='left';}hitNodes.push({evId:ev.eventId,cx:x,cy:evY,r:Math.max(r,8)});}}PROG_BAND_STATE.hitNodes=hitNodes;PROG_BAND_STATE.trackHits=trackHits;}
+
+function _progBvDrawMinimap(ctx, prog, W, H, layout) {
+  const { MINIMAP_H } = PROG_BV;
+  const mapY = layout.minimapY;
+
+  // Background
+  ctx.fillStyle = '#0f1018';
+  ctx.fillRect(0, mapY, W, MINIMAP_H);
+  ctx.strokeStyle = '#2a2b36';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, mapY); ctx.lineTo(W, mapY); ctx.stroke();
+
+  const mEnd = layout.missionEnd || PROG_BAND_STATE.tEnd;
+  if (mEnd <= 0) return;
+
+  // Vehicle tracks in minimap
+  const vehicles = Object.values(prog.vehicles);
+  const nv = vehicles.length;
+  if (!nv) return;
+  const rowH = (MINIMAP_H - 6) / nv;
+
+  vehicles.forEach((fv, idx) => {
+    const my = mapY + 3 + idx * rowH + rowH / 2;
+    ctx.strokeStyle = fv.color + '66';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, my); ctx.lineTo(W, my); ctx.stroke();
+
+    (prog.events || []).filter(e => e.vehicleId === fv.vehicleId).forEach(ev => {
+      const mx = Math.round((ev.tStart / mEnd) * W);
+      if (mx >= 0 && mx <= W) {
+        ctx.fillStyle = _progBvResultCol(ev.result);
+        ctx.beginPath();
+        ctx.arc(mx, my, 2, 0, 2*Math.PI);
+        ctx.fill();
+      }
+    });
+  });
+
+  // Viewport indicator
+  const vpX1 = Math.max(0,   Math.round((PROG_BAND_STATE.tStart / mEnd) * W));
+  const vpX2 = Math.min(W,   Math.round((PROG_BAND_STATE.tEnd   / mEnd) * W));
+  ctx.fillStyle   = 'rgba(255,255,255,.07)';
+  ctx.fillRect(vpX1, mapY + 1, vpX2 - vpX1, MINIMAP_H - 2);
+  ctx.strokeStyle = 'rgba(255,255,255,.25)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(vpX1, mapY + 1, vpX2 - vpX1, MINIMAP_H - 2);
+}
+
+// ── Interaction: zoom (log / multiplicative) ──────────────────────────────────
+/**
+ * Zoom the time axis.
+ * factor > 1 = zoom OUT (range grows).  factor < 1 = zoom IN (range shrinks).
+ * cx, W: canvas x coordinate of zoom anchor (null = center).
+ */
+function progBandZoom(factor,cx,W){const canvas=document.getElementById('prog-band-canvas');if(!canvas)return;const cW=W??canvas.width??700,px=cx??cW/2;const{tStart,tEnd}=PROG_BAND_STATE;const l0=Math.log1p(Math.max(0,tStart)/PROG_BV_T_REF),l1=Math.log1p(Math.max(0,tEnd)/PROG_BV_T_REF),lR=l1-l0;const frac=Math.max(0,Math.min(1,(px-PROG_BV.LEFT_W)/(cW-PROG_BV.LEFT_W)));const lC=l0+frac*lR;const lMin=Math.log1p(60/PROG_BV_T_REF),lMax=Math.log1p(365*20*86400/PROG_BV_T_REF);const lNR=Math.max(lMin,Math.min(lR*factor,lMax));PROG_BAND_STATE.tStart=Math.max(0,(Math.exp(lC-frac*lNR)-1)*PROG_BV_T_REF);PROG_BAND_STATE.tEnd=Math.max(PROG_BAND_STATE.tStart+60,(Math.exp(lC+(1-frac)*lNR)-1)*PROG_BV_T_REF);progRenderBandView();}
+
+function progBandHandleWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 1.18 : (1 / 1.18);   // each notch = ×1.18
+  progBandZoom(factor, e.offsetX, e.target.width);
+}
+
+// ── Interaction: pan (drag) ───────────────────────────────────────────────────
+function progBandStartDrag(e) {
+  if (e.button !== 0) return;
+  PROG_BAND_STATE.drag   = true;
+  PROG_BAND_STATE.dragX0 = e.offsetX;
+  PROG_BAND_STATE.dragTS0 = PROG_BAND_STATE.tStart;
+  PROG_BAND_STATE.dragTE0 = PROG_BAND_STATE.tEnd;
+}
+function progBandDrag(e) {
+  if (!PROG_BAND_STATE.drag) return;
+  const canvas = e.target;
+  const W = canvas.width || 700;
+  const dx = e.offsetX - PROG_BAND_STATE.dragX0;
+  const range = PROG_BAND_STATE.dragTE0 - PROG_BAND_STATE.dragTS0;
+  const dt = -(dx / W) * range;
+  PROG_BAND_STATE.tStart = PROG_BAND_STATE.dragTS0 + dt;
+  PROG_BAND_STATE.tEnd   = PROG_BAND_STATE.dragTE0 + dt;
+  progRenderBandView();
+}
+function progBandEndDrag(e) { PROG_BAND_STATE.drag = false; }
+
+// ── Interaction: click (select event) ────────────────────────────────────────
+function progBandHandleClick(e) {
+  progBvHideMenu();
+  const { hitNodes } = PROG_BAND_STATE;
+  const x = e.offsetX, y = e.offsetY;
+  for (const n of (hitNodes || [])) {
+    if ((x - n.cx)**2 + (y - n.cy)**2 <= (n.r + 2)**2) {
+      progUpdateEventEditor(n.evId);
+      // Switch to Event tab if not already there
+      const evPane = document.getElementById('prog-rt-ev-pane');
+      if (evPane && evPane.style.display === 'none') progRightTab('ev');
+      progRenderBandView();
+      return;
+    }
+  }
+  // Click on empty area: deselect
+  PROG_BAND_STATE.selId = null;
+  progUpdateEventEditor(null);
+  progRenderBandView();
+}
+
+// ── Interaction: right-click (context menu) ───────────────────────────────────
+function progBandHandleRightClick(e) {
+  e.preventDefault();
+  progBvHideMenu();
+  if (!PROG_ACTIVE_PROGRAM) return;
+
+  const x = e.offsetX, y = e.offsetY;
+  const canvas = e.target;
+  const W = canvas.width || 700;
+  const tClick = _progBvXt(x, W);
+
+  // Find which vehicle track was clicked
+  let vehicleId = null;
+  for (const th of (PROG_BAND_STATE.trackHits || [])) {
+    if (y >= th.y0 && y <= th.y1) { vehicleId = th.vehicleId; break; }
+  }
+
+  const fv = vehicleId && PROG_ACTIVE_PROGRAM.vehicles[vehicleId];
+  const validTypes = _progBvValidInsertTypes(fv);
+
+  if (!validTypes.length) return;
+
+  const items = validTypes.map(type => ({
+    label: 'Insert ' + type,
+    action: () => progBvMenuInsert(type, tClick, vehicleId),
+  }));
+
+  progBvShowMenu(e.offsetX, e.offsetY, items);
+}
+
+/** Determine which event types can be inserted for a vehicle's current state. */
+function _progBvValidInsertTypes(fv) {
+  if (!fv) return ['LAUNCH'];
+  if (fv.status === 'EXPENDED') return [];
+  if (fv.status === 'LANDED')   return ['ASCENT_SURFACE', 'EXPEND'];
+  return ['COAST', 'BURN', 'SEPARATE', 'DOCK', 'EXPEND'];
+}
+
+function progBvShowMenu(x, y, items) {
+  const menu = document.getElementById('prog-ctx-menu');
+  if (!menu) return;
+  menu.innerHTML = items.map((item, i) =>
+    `<div onclick="progBvMenuClick(${i})" style="padding:5px 14px;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--text-dim);white-space:nowrap;"
+      onmouseover="this.style.background='rgba(97,175,239,.12)';this.style.color='var(--text-bright)';"
+      onmouseout="this.style.background='';this.style.color='var(--text-dim)';">${item.label}</div>`
+  ).join('');
+  menu._items = items;
+  menu.style.display = 'block';
+  // Clamp to canvas
+  const wrap = document.getElementById('prog-band-wrap');
+  const W = wrap ? wrap.clientWidth  : 700;
+  const H = wrap ? wrap.clientHeight : 400;
+  menu.style.left = Math.min(x, W - 160) + 'px';
+  menu.style.top  = Math.min(y, H - items.length * 26 - 8) + 'px';
+}
+
+function progBvMenuClick(i) {
+  const menu = document.getElementById('prog-ctx-menu');
+  if (menu && menu._items && menu._items[i]) {
+    menu._items[i].action();
+  }
+  progBvHideMenu();
+}
+
+function progBvHideMenu() {
+  const menu = document.getElementById('prog-ctx-menu');
+  if (menu) { menu.style.display = 'none'; menu._items = null; }
+}
+
+/** Insert a new event of given type at tClick for a vehicle. */
+function progBvMenuInsert(type, tClick, vehicleId) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const defaults = {
+    COAST:          { duration_s: 86400, tEnd: tClick + 86400 },
+    BURN:           { dvTarget: 300, tEnd: tClick + 360 },
+    SEPARATE:       { tEnd: tClick },
+    DOCK:           { tEnd: tClick },
+    EXPEND:         { tEnd: tClick },
+    ASCENT_SURFACE: { dvTarget: 1870, tEnd: tClick + 600 },
+    LAUNCH:         { tEnd: tClick + 600 },
+  };
+  const d = defaults[type] || { tEnd: tClick };
+  const ev = progMakeEvent(type, {
+    label:     type.charAt(0) + type.slice(1).toLowerCase(),
+    vehicleId: vehicleId || null,
+    tStart:    tClick,
+    result:    'PENDING',
+    ...d,
+  });
+  PROG_ACTIVE_PROGRAM.events.push(ev);
+  PROG_ACTIVE_PROGRAM.events.sort((a, b) => a.tStart - b.tStart);
+  progUpdateEventEditor(ev.eventId);
+  const evPane = document.getElementById('prog-rt-ev-pane');
+  if (evPane && evPane.style.display === 'none') progRightTab('ev');
+  progRenderBandView();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function progInitBandView() {
+  // Load demo if program has no events
+  if (!PROG_ACTIVE_PROGRAM || !PROG_ACTIVE_PROGRAM.events.length) {
+    PROG_ACTIVE_PROGRAM = progCreateDemoMission();
+    progRenderSpaceport();
+  }
+
+  // Initial render
+  progRenderBandView();
+
+  // Re-render on container resize
+  const wrap = document.getElementById('prog-band-wrap');
+  if (wrap && window.ResizeObserver) {
+    new ResizeObserver(() => progRenderBandView()).observe(wrap);
+  }
+
+  // Close context menu on any outside click
+  document.addEventListener('click', e => {
+    const menu = document.getElementById('prog-ctx-menu');
+    if (menu && !menu.contains(e.target) && e.target.id !== 'prog-band-canvas') {
+      progBvHideMenu();
+    }
+  }, true);
+}
+
+// ── Phase 7 tests (pure JS) ───────────────────────────────────────────────────
+const PROG_P7_TEST_RESULTS = (() => {
+  // T1/T2/T3: time formatting
+  const f0 = progFmtT(0);
+  const f1h = progFmtT(3600);
+  const f3d = progFmtT(3*86400 + 5*3600);
+
+  // T4/T5: demo mission structure
+  const demo = progCreateDemoMission();
+
+  // T6/T7: coordinate mapping roundtrip
+  const savedState = { ...PROG_BAND_STATE };
+  PROG_BAND_STATE.tStart = 0; PROG_BAND_STATE.tEnd = 86400;
+  const T_test = 43200, W_test = 1000;
+  const x_mapped = _progBvTx(T_test, W_test);
+  const t_back   = _progBvXt(x_mapped, W_test);
+  Object.assign(PROG_BAND_STATE, savedState);
+
+  // T8: tick config — 8-day range should give 1-day steps
+  const tCfg = _progBvTickCfg(8 * 86400);
+
+  const T = [
+    { label:'progFmtT(0) contains T+',           val: f0.startsWith('T+')         ? 1:0, target:1, tol:0 },
+    { label:'progFmtT(3600) = T+1h 0m',          val: f1h,                 target:'T+1h 0m', tol:null },
+    { label:'progFmtT(3d+5h) = T+3d 5h',         val: f3d,                 target:'T+3d 5h', tol:null },
+    { label:'Demo mission: 9 events',             val: demo.events.length,  target:11,   tol:0 },
+    { label:'Demo mission: 2 vehicles',           val: Object.keys(demo.vehicles).length, target:2, tol:0 },
+    { label:'Coord map: x in valid range',         val: (x_mapped > PROG_BV.LEFT_W && x_mapped < W_test) ? 1:0, target:1, tol:0 },
+    { label:'Coord roundtrip error < 1s',         val: Math.abs(t_back - T_test) < 1 ? 1:0, target:1, tol:0 },
+    { label:'Tick config 8d \u2192 step=1d',      val: tCfg.step,           target:86400, tol:0 },
+  ];
+  return T.map(t => {
+    const pass = t.tol === null
+      ? (t.val === t.target)
+      : (typeof t.val === 'number' ? Math.abs(t.val - t.target) <= t.tol : t.val === t.target);
+    return { label:t.label, val:t.val, target:t.target, pass };
+  });
+})();
 
 // ─── PROGRAM MODULE — Phase 8: Node Map ──────────────────────────────────────
 //
@@ -5312,87 +5084,164 @@ function progFmtT(s) {
 // Active mission path highlighted in vehicle color.
 
 // ── Tooltip element ───────────────────────────────────────────────────────────
+let _progNmTip = null;
+function progNmGetTip() {
+  if (!_progNmTip) {
+    _progNmTip = document.createElement('div');
+    _progNmTip.style.cssText =
+      'position:fixed;background:#111318;border:1px solid #3a3b50;color:#cdd0d8;' +
+      'font-family:monospace;font-size:10px;padding:6px 10px;z-index:200;display:none;' +
+      'pointer-events:none;max-width:190px;line-height:1.55;white-space:nowrap;';
+    document.body.appendChild(_progNmTip);
+  }
+  return _progNmTip;
+}
+function progNmHideTip() {
+  const t = progNmGetTip(); if (t) t.style.display = 'none';
+}
 
-// ── Node Map data ─────────────────────────────────────────────────────────────
-// viewBox 0 0 1100 520.
-// Zone columns: Earth x=80–380, Lunar x=400–660, Interplanetary x=680–1080.
-// Y axis loosely maps to energy/altitude: surface ~460, LEO ~360, GEO ~240, escape ~130.
-// Each node carries a full orbital definition so ΔV can be computed directly
-// using vis-viva / patched-conic without routing through the graph.
-// orbit.type: 'surface' | 'circular' | 'elliptic' | 'escape' | 'transit'
-// transit nodes represent a trajectory between bodies (TLI, TMI, etc.)
-// Node positions are in world-space coords. The canvas uses a zoomable/pannable
-// <g id="nm-world"> so these coords are independent of the SVG viewBox size.
-// Systems are laid out like a compressed solar system (Earth left → planets right).
-// Within each system nodes fan RADIALLY around the planet body:
-//   surface → just outside/below the planet disc
-//   orbitals → spread above at increasing distances, angled apart so they don't crowd
-//   escape/transit → near the SOI boundary or in open space between systems
-// All positions verified: no node overlaps each other or the planet body disc.
+// ── Node map data (positions for viewBox 0 0 360 290) ─────────────────────────
+// Node positions match the conops_mockups.html Model 3 layout (viewBox 0 0 1100 520).
+// Zone columns: Earth x=80-380, Lunar x=400-660, Interplanetary x=680-1080.
 const PROG_NM_NODES = [
-  // ── Earth system — body center (195, 255), bodyR=26, SOI r=210 ───────────────
-  // Surface node lives AT the planet body center — the disc IS the node visually.
-  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:195, cy:255, r:26,
-    orbit:{ type:'surface',  body:'Earth' } },
-  // LEO directly above the planet (57 px from center → 19 px clear of disc top).
-  { id:'leo',           label:'LEO',     sub:'185 – 400 km',   zone:'earth',  cx:195, cy:190, r:20,
-    orbit:{ type:'circular', body:'Earth', perigee:185,   apogee:185,   inclination:28.5 } },
-  // GTO upper-left; GEO upper-right — same altitude band, fanned ±30° from vertical.
-  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:140, cy:168, r:18,
-    orbit:{ type:'elliptic', body:'Earth', perigee:185,   apogee:35786, inclination:28.5 } },
-  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:252, cy:163, r:18,
-    orbit:{ type:'circular', body:'Earth', perigee:35786, apogee:35786, inclination:0    } },
-  // Escape near the SOI boundary, centred above.
-  { id:'escape',        label:'ESCAPE',  sub:'C3 ≥ 0',         zone:'earth',  cx:195, cy:122, r:17, dashed:true,
-    orbit:{ type:'escape',   body:'Earth', c3:0.1 } },
-
-  // ── Lunar system — body center (450, 192), bodyR=12, SOI r=70 ────────────────
-  // TLC floats in the transfer corridor, well outside both SOIs.
-  { id:'tlc',           label:'TLC',     sub:'trans-lunar',    zone:'lunar',  cx:352, cy:244, r:17, dashed:true,
-    orbit:{ type:'transit',  body:'Earth', c3:-1.9, destination:'Moon' } },
-  // LLO upper-left of Moon, DRO upper-right — angled apart so they're clear.
-  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:418, cy:152, r:18,
-    orbit:{ type:'circular', body:'Moon',  perigee:100,   apogee:100,   inclination:90 } },
-  { id:'dro',           label:'DRO',     sub:'distant retro',  zone:'lunar',  cx:483, cy:138, r:18,
-    orbit:{ type:'circular', body:'Moon',  perigee:68300, apogee:68300, inclination:0 } },
-  // Surface node at Moon body center — disc is the node.
-  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:450, cy:192, r:12,
-    orbit:{ type:'surface',  body:'Moon' } },
-
-  // ── Mars system — body center (860, 205), bodyR=18, SOI r=80 ─────────────────
-  { id:'mars-transit',  label:'TRANSIT', sub:'Earth → Mars',   zone:'interp', cx:655, cy:244, r:17, dashed:true,
-    orbit:{ type:'transit',  body:'Sun', c3:8.7,  departure_body:'Earth', destination:'Mars'  } },
-  // Orbit above, surface below.
-  { id:'mars-orbit',    label:'MARS',    sub:'orbit 400 km',   zone:'interp', cx:860, cy:150, r:22,
-    orbit:{ type:'circular', body:'Mars',  perigee:400,   apogee:400,   inclination:0 } },
-  // Surface node at Mars body center — disc is the node.
-  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:860, cy:205, r:18,
-    orbit:{ type:'surface',  body:'Mars' } },
-
-  // ── Venus system — body center (848, 380), bodyR=15, SOI r=67 ────────────────
-  { id:'venus-transit', label:'TRANSIT', sub:'Earth → Venus',  zone:'interp', cx:655, cy:366, r:17, dashed:true,
-    orbit:{ type:'transit',  body:'Sun', c3:6.3,  departure_body:'Earth', destination:'Venus' } },
-  // Orbit above Venus disc.
-  { id:'venus-orbit',   label:'VENUS',   sub:'orbit 300 km',   zone:'interp', cx:848, cy:318, r:20,
-    orbit:{ type:'circular', body:'Venus', perigee:300,   apogee:300,   inclination:0 } },
+  // Earth zone
+  { id:'earth-surface', label:'EARTH',   sub:'surface',        zone:'earth',  cx:160, cy:440, r:22, col:'#57c687' },
+  { id:'leo',           label:'LEO',     sub:'185-400 km',     zone:'earth',  cx:230, cy:340, r:18, col:'#57c687' },
+  { id:'gto',           label:'GTO',     sub:'35,786 km apo',  zone:'earth',  cx:160, cy:250, r:16, col:'#57c687' },
+  { id:'geo',           label:'GEO',     sub:'35,786 km circ', zone:'earth',  cx:310, cy:250, r:16, col:'#57c687' },
+  { id:'escape',        label:'ESCAPE',  sub:'C3 >= 0',        zone:'earth',  cx:350, cy:160, r:16, col:'#57c687', dashed:true },
+  // Lunar zone
+  { id:'tlc',           label:'TLC',     sub:'trans-lunar',    zone:'lunar',  cx:480, cy:260, r:16, col:'#aaaacc', dashed:true },
+  { id:'dro',           label:'DRO',     sub:'cis-lunar',      zone:'lunar',  cx:530, cy:150, r:18, col:'#57b4c6' },
+  { id:'llo',           label:'LLO',     sub:'100 km lunar',   zone:'lunar',  cx:530, cy:340, r:18, col:'#aaaacc' },
+  { id:'moon-surface',  label:'MOON',    sub:'surface',        zone:'lunar',  cx:600, cy:430, r:18, col:'#aaaacc' },
+  // Interplanetary
+  { id:'mars-transit',  label:'TRANSIT', sub:'Earth to Mars',  zone:'interp', cx:780, cy:200, r:16, col:'#c6a057', dashed:true },
+  { id:'venus-transit', label:'TRANSIT', sub:'Earth to Venus', zone:'interp', cx:780, cy:370, r:16, col:'#c69057', dashed:true },
+  { id:'mars-orbit',    label:'MARS',    sub:'orbit',          zone:'interp', cx:960, cy:150, r:20, col:'#c66057' },
+  { id:'mars-surface',  label:'MARS',    sub:'surface',        zone:'interp', cx:1060,cy:250, r:18, col:'#c66057' },
+  { id:'venus-orbit',   label:'VENUS',   sub:'orbit',          zone:'interp', cx:960, cy:400, r:18, col:'#c69057' },
 ];
 
-// No pre-spawned edges — users draw their own via right-click → Add Edge From Here.
-const PROG_NM_EDGES = [];
-
+// dv label pill positions (lx,ly) are midpoints on each edge line.
+const PROG_NM_EDGES = [
+  { id:'surface-leo',  from:'earth-surface', to:'leo',           dv:9400,  lx:205, ly:394 },
+  { id:'leo-gto',      from:'leo',           to:'gto',           dv:2440,  lx:175, ly:300 },
+  { id:'gto-geo',      from:'gto',           to:'geo',           dv:1500,  lx:235, ly:243 },
+  { id:'leo-tlc',      from:'leo',           to:'tlc',           dv:3150,  lx:360, ly:293 },
+  { id:'tlc-dro',      from:'tlc',           to:'dro',           dv:820,   lx:496, ly:198 },
+  { id:'tlc-llo',      from:'tlc',           to:'llo',           dv:900,   lx:512, ly:307 },
+  { id:'llo-moon',     from:'llo',           to:'moon-surface',  dv:1870,  lx:554, ly:392 },
+  { id:'leo-mars',     from:'leo',           to:'mars-transit',  dv:3650,  lx:492, ly:257, dashed:true },
+  { id:'mars-moi',     from:'mars-transit',  to:'mars-orbit',    dv:900,   lx:870, ly:165 },
+  { id:'mars-land',    from:'mars-orbit',    to:'mars-surface',  dv:3800,  lx:1022,ly:196 },
+  { id:'leo-venus',    from:'leo',           to:'venus-transit', dv:3500,  lx:492, ly:362, dashed:true },
+  { id:'venus-voi',    from:'venus-transit', to:'venus-orbit',   dv:820,   lx:870, ly:383 },
+];
 // ── Node Map renderer ─────────────────────────────────────────────────────────
+function progRenderNodeMap() {
+  const svg = document.getElementById('prog-nm-canvas');
+  if (!svg) return;
 
-// ── Node Map helpers (updated to accept allEdges param) ───────────────────────
+  const W = 1100, H = 520;
+
+  // Zone column backgrounds — match conops_mockups.html Model 3 layout
+  const ZONES = [
+    { x:80,  w:300, bg:'rgba(87,198,136,.03)',  lbl:'EARTH ZONE',     lc:'#57c687' },
+    { x:400, w:260, bg:'rgba(180,180,200,.025)',lbl:'LUNAR ZONE',      lc:'#aaaacc' },
+    { x:680, w:400, bg:'rgba(198,96,87,.02)',   lbl:'INTERPLANETARY',  lc:'#c66057' },
+  ];
+
+  // Determine which edges are in the current mission's active path
+  const activeEdges = _progNmActiveEdgeIds();
+
+  let s = '';
+
+  // Defs: arrowhead markers
+  s += '<defs>';
+  s += '<marker id="nm-a" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L6,2.5 z" fill="#3a3b55"/></marker>';
+  s += '<marker id="nm-ag" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L6,2.5 z" fill="#88c657"/></marker>';
+  s += '</defs>';
+
+  // Zone backgrounds + bottom labels
+  for (const z of ZONES) {
+    s += `<rect x="${z.x}" y="20" width="${z.w}" height="${H - 30}" fill="${z.bg}" rx="4"/>`;
+    s += `<text x="${z.x + z.w/2}" y="${H - 4}" text-anchor="middle" fill="${z.lc}" font-size="9" font-family="monospace" letter-spacing="2" opacity=".6">${z.lbl}</text>`;
+  }
+
+  // Zone dividers
+  s += `<line x1="400" y1="0" x2="400" y2="${H}" stroke="#2a2b38" stroke-width=".5"/>`;
+  s += `<line x1="680" y1="0" x2="680" y2="${H}" stroke="#2a2b38" stroke-width=".5"/>`;
+
+  // Edges (dim first, then active on top)
+  for (const pass of ['dim', 'active']) {
+    for (const edge of PROG_NM_EDGES) {
+      const fn = PROG_NM_NODES.find(n => n.id === edge.from);
+      const tn = PROG_NM_NODES.find(n => n.id === edge.to);
+      if (!fn || !tn) continue;
+      const isAct = activeEdges.includes(edge.id);
+      if ((pass === 'active') !== isAct) continue;
+
+      const col     = isAct ? '#88c657' : '#3a3b55';
+      const lw      = isAct ? 2.2 : 1.3;
+      const da      = edge.dashed ? '5,3' : '';
+      const opacity = isAct ? '.85' : '.7';
+      const marker  = isAct ? 'nm-ag' : 'nm-a';
+
+      s += `<line x1="${fn.cx}" y1="${fn.cy}" x2="${tn.cx}" y2="${tn.cy}"` +
+           ` stroke="${col}" stroke-width="${lw}" stroke-opacity="${opacity}"` +
+           (da ? ` stroke-dasharray="${da}"` : '') +
+           ` marker-end="url(#${marker})"` +
+           ` class="nm-edge" data-eid="${edge.id}"` +
+           ` onmousemove="progNmEdgeHover(event,'${edge.id}')" onmouseleave="progNmHideTip()"` +
+           ` onclick="progNmEdgeClick('${edge.id}')"` +
+           ` style="cursor:pointer;pointer-events:stroke;"/>`;
+
+      // ΔV label pill — sized for 1100x520 canvas
+      const dvStr = (edge.dv >= 1000)
+        ? (edge.dv/1000).toFixed(1) + 'k m/s'
+        : edge.dv + ' m/s';
+      s += `<rect x="${edge.lx - 26}" y="${edge.ly - 8}" width="52" height="14" rx="3" fill="#13141c" opacity=".92"/>`;
+      s += `<text x="${edge.lx}" y="${edge.ly + 2}" text-anchor="middle" fill="${isAct ? '#88c657' : '#4a4b60'}" font-size="8" font-family="monospace">${dvStr}</text>`;
+    }
+  }
+
+  // Nodes — label + sublabel sized for the full canvas
+  for (const node of PROG_NM_NODES) {
+    const da  = node.dashed ? 'stroke-dasharray="4,3"' : '';
+    const sw  = node.r >= 20 ? 2.5 : 2;
+    const fs  = node.r >= 20 ? 10 : 9;   // font size scales with node radius
+    const fss = 7;                        // sub-label font size
+    s += `<circle cx="${node.cx}" cy="${node.cy}" r="${node.r}" fill="#16181c" stroke="${node.col}" stroke-width="${sw}" ${da}/>`;
+    s += `<text x="${node.cx}" y="${node.cy - 1}" text-anchor="middle" dominant-baseline="middle" fill="${node.col}" font-size="${fs}" font-family="monospace" font-weight="500">${node.label}</text>`;
+    s += `<text x="${node.cx}" y="${node.cy + node.r + 10}" text-anchor="middle" fill="#5a6070" font-size="${fss}" font-family="monospace">${node.sub}</text>`;
+  }
+
+  // Vehicle position indicators — dashed ring + name tag below node
+  if (PROG_ACTIVE_PROGRAM) {
+    Object.values(PROG_ACTIVE_PROGRAM.vehicles).forEach(fv => {
+      if (fv.status === 'EXPENDED') return;
+      const nid = _progNmVehicleNode(fv);
+      const n   = PROG_NM_NODES.find(nd => nd.id === nid);
+      if (!n) return;
+      s += `<circle cx="${n.cx}" cy="${n.cy}" r="${n.r + 6}" fill="none" stroke="${fv.color}" stroke-width="2" stroke-dasharray="4,3" opacity=".8"/>`;
+      s += `<text x="${n.cx}" y="${n.cy + n.r + 22}" text-anchor="middle" fill="${fv.color}" font-size="8" font-family="monospace">${fv.name.slice(0,14)}</text>`;
+    });
+  }
+
+  svg.innerHTML = s;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 /** Return edge IDs that appear in the current program's BURN events. */
-function _progNmActiveEdgeIds(allEdges) {
+function _progNmActiveEdgeIds() {
   if (!PROG_ACTIVE_PROGRAM) return [];
-  const edges = allEdges || [...PROG_NM_EDGES, ...(PROG_ACTIVE_PROGRAM.nodeMapCustomEdges || [])];
   const ids = [];
   for (const ev of (PROG_ACTIVE_PROGRAM.events || [])) {
     if (ev.type !== 'BURN') continue;
     if (ev.fromNode && ev.toNode) {
-      const e = edges.find(ed => ed.from === ev.fromNode && ed.to === ev.toNode);
+      const e = PROG_NM_EDGES.find(ed => ed.from === ev.fromNode && ed.to === ev.toNode);
       if (e && !ids.includes(e.id)) ids.push(e.id);
     }
   }
@@ -5423,274 +5272,88 @@ function _progNmVehicleNode(fv) {
 
 // ── Interactions ───────────────────────────────────────────────────────────────
 
-
-/**
- * Edge click: create a BURN event. Works with built-in and custom edges.
- */
-
-// ── Custom node & edge management ─────────────────────────────────────────────
-
-/** Open the "Add Custom Node" modal. */
-
-/** Auto-compute canvas position for a custom node based on zone + altitude. */
-
-/** Save a new custom node from the modal form. */
-
-/** Right-click on a custom node square → delete menu. */
-
-// ── ΔV computation for node-map edges ────────────────────────────────────────
-
-// ── ΔV physics engine ─────────────────────────────────────────────────────────
-// Computes ΔV directly from orbital parameters (vis-viva / patched-conic).
-// Never routes through the graph — any two orbits can be connected directly.
-
-/**
- * Speed of spacecraft in orbit `o` at radial distance r_km from body centre (km/s).
- * Works for circular and elliptic orbits.
- */
-function _nmOrbitVAtR(body, orbit, r_km) {
-  const b = PROG_BODIES[body];
-  if (!b) return 0;
-  if (!orbit || orbit.type === 'surface') return 0;
-  if (orbit.type === 'circular') return Math.sqrt(b.mu / r_km);
-  const rp = b.R + (orbit.perigee ?? orbit.apogee ?? 0);
-  const ra = b.R + (orbit.apogee  ?? orbit.perigee ?? 0);
-  const a  = (rp + ra) / 2;
-  return Math.sqrt(Math.max(0, b.mu * (2 / r_km - 1 / a)));
+function progNmEdgeHover(evt, edgeId) {
+  const edge = PROG_NM_EDGES.find(e => e.id === edgeId);
+  if (!edge) return;
+  const fn = PROG_NM_NODES.find(n => n.id === edge.from);
+  const tn = PROG_NM_NODES.find(n => n.id === edge.to);
+  const tip = progNmGetTip();
+  tip.innerHTML =
+    `<span style="color:#88c657">${fn?.label || edge.from}</span>` +
+    ` \u2192 <span style="color:#88c657">${tn?.label || edge.to}</span><br>` +
+    `\u0394V: <span style="color:#e5c07b">${edge.dv.toLocaleString()} m/s</span><br>` +
+    `<span style="color:#4a4b60;font-size:9px">click to insert BURN event</span>`;
+  tip.style.display  = 'block';
+  tip.style.left     = (evt.clientX + 14) + 'px';
+  tip.style.top      = (evt.clientY - 10) + 'px';
 }
 
 /**
- * ΔV (m/s) to depart from `orbit` around `body` onto a hyperbolic/escape trajectory
- * with hyperbolic excess speed v_inf_kms (km/s).  Burn happens at periapsis.
+ * Edge click: create a BURN event in the active program with this edge's ΔV.
+ * Attaches to the currently selected vehicle, or the first non-expended one.
  */
-function _nmDvDepart(body, orbit, v_inf_kms) {
-  const b  = PROG_BODIES[body];
-  const r  = b.R + (orbit.perigee ?? orbit.apogee ?? 0);
-  const v0 = _nmOrbitVAtR(body, orbit, r);
-  const ve = Math.sqrt(v_inf_kms * v_inf_kms + 2 * b.mu / r);
-  return Math.abs(ve - v0) * 1000;
-}
+function progNmEdgeClick(edgeId) {
+  progNmHideTip();
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const edge = PROG_NM_EDGES.find(e => e.id === edgeId);
+  if (!edge) return;
 
-/**
- * Compute the ΔV (m/s) for a transfer between two node objects that carry `.orbit`.
- * Returns { dv, note, method } or null if no model applies.
- *
- * Key property: never uses the graph. Any orbit → any orbit goes through physics.
- */
-function progNmComputeEdgeDv(fromId, toId) {
-  // Resolve node objects (built-in + custom)
-  const allNodes = [
-    ...PROG_NM_NODES,
-    ...(PROG_ACTIVE_PROGRAM?.nodeMapCustomNodes || []).map(cn => ({
-      id: cn.nodeId, orbit: cn.orbit || null,
-    })),
-  ];
-  const nA = allNodes.find(n => n.id === fromId);
-  const nB = allNodes.find(n => n.id === toId);
+  // Pick a vehicle
+  const fvList = Object.values(PROG_ACTIVE_PROGRAM.vehicles).filter(fv => fv.status !== 'EXPENDED');
+  if (!fvList.length) { alert('No active vehicles. Load a demo or insert a LAUNCH first.'); return; }
+  const selEv = PROG_BAND_STATE.selId
+    ? PROG_ACTIVE_PROGRAM.events.find(e => e.eventId === PROG_BAND_STATE.selId)
+    : null;
+  const fv = (selEv && PROG_ACTIVE_PROGRAM.vehicles[selEv.vehicleId]) || fvList[0];
 
-  const result = _nmDvPhysics(nA, nB);
-  if (result) return result;
-  // Try reverse (most transfers symmetric)
-  const rev = _nmDvPhysics(nB, nA);
-  if (rev) return { ...rev, note: rev.note + ' (reversed)' };
-  return null;
-}
+  // Pick tStart: day after last event on this vehicle (or mid-view)
+  const fvEvs  = (PROG_ACTIVE_PROGRAM.events || []).filter(e => e.vehicleId === fv.vehicleId);
+  const lastT  = fvEvs.length ? Math.max(...fvEvs.map(e => e.tEnd ?? e.tStart)) : 0;
+  const tStart = lastT + 86400;
+  const tEnd   = tStart + 600;   // 10-minute burn default
 
-/**
- * Physics engine: compute ΔV from nodeA to nodeB using orbital mechanics.
- * Both nodes must have an `orbit` field.
- */
-function _nmDvPhysics(nA, nB) {
-  const oa = nA?.orbit, ob = nB?.orbit;
-  if (!oa || !ob) return null;
+  const ev = progMakeEvent('BURN', {
+    label:     edge.from.toUpperCase().replace(/-/g, '\u2192') + ' burn',
+    vehicleId: fv.vehicleId,
+    tStart, tEnd,
+    dvTarget:  edge.dv,
+    fromNode:  edge.from,
+    toNode:    edge.to,
+    result:    'PENDING',
+  });
+  PROG_ACTIVE_PROGRAM.events.push(ev);
+  PROG_ACTIVE_PROGRAM.events.sort((a, b) => a.tStart - b.tStart);
 
-  // ── Same-body transfers ──────────────────────────────────────────────────
-
-  if (oa.body === ob.body) {
-    const body = oa.body;
-
-    // Surface → surface: trivial
-    if (oa.type === 'surface' && ob.type === 'surface')
-      return { dv: 0, note: 'Same surface', method: 'trivial' };
-
-    // Surface → orbit (ascent)
-    if (oa.type === 'surface') {
-      const h = ob.perigee ?? ob.apogee ?? 0;
-      if (body === 'Earth')  return { dv: 9400, note: 'Earth ascent (gravity + drag losses included)', method: 'empirical' };
-      if (body === 'Moon')   return { dv: Math.round(progDvLunarAscent(h)), note: `Lunar ascent to ${h} km`, method: 'scaled model' };
-      if (body === 'Mars')   return { dv: Math.round(progDvMarsAscent(h)),  note: `Mars ascent to ${h} km`, method: 'scaled model' };
-    }
-
-    // Orbit → surface (descent, symmetric with ascent for planning)
-    // Guard: only for actual orbits, not transit/escape trajectories
-    if (ob.type === 'surface' && (oa.type === 'circular' || oa.type === 'elliptic')) {
-      const h = oa.perigee ?? oa.apogee ?? 0;
-      if (body === 'Earth')  return { dv: 9400, note: 'Earth deorbit/reentry', method: 'empirical' };
-      if (body === 'Moon')   return { dv: Math.round(progDvLunarAscent(h)), note: `Lunar descent from ${h} km`, method: 'scaled model' };
-      if (body === 'Mars')   return { dv: Math.round(progDvMarsAscent(h)),  note: `Mars descent from ${h} km`, method: 'scaled model' };
-    }
-
-    // circular/elliptic orbit → escape velocity
-    if (ob.type === 'escape' && (oa.type === 'circular' || oa.type === 'elliptic')) {
-      const c3 = ob.c3 ?? 0;
-      const r  = PROG_BODIES[body].R + (oa.perigee ?? oa.apogee ?? 0);
-      const v0 = _nmOrbitVAtR(body, oa, r);
-      const ve = Math.sqrt(Math.max(0, 2 * PROG_BODIES[body].mu / r + c3));
-      return { dv: Math.round(Math.abs(ve - v0) * 1000), note: `Escape from ${body} at ${oa.perigee ?? oa.apogee ?? 0} km (C3=${c3} km²/s²)`, method: 'vis-viva' };
-    }
-
-    // circular/elliptic orbit → transit departure (TLI, TMI, etc.)
-    // Guard: oa must be an actual orbit (not already a transit/escape trajectory)
-    if (ob.type === 'transit' && (ob.departure_body === body || ob.body === body)
-        && (oa.type === 'circular' || oa.type === 'elliptic')) {
-      const c3  = ob.c3 ?? 0;
-      const r   = PROG_BODIES[body].R + (oa.perigee ?? oa.apogee ?? 185);
-      const v0  = _nmOrbitVAtR(body, oa, r);
-      const ve  = Math.sqrt(Math.max(0, 2 * PROG_BODIES[body].mu / r + c3));
-      const alt = Math.round(r - PROG_BODIES[body].R);
-      const dest = ob.destination || '?';
-      return { dv: Math.round(Math.abs(ve - v0) * 1000),
-        note: `Departure burn from ${alt} km, C3=${c3} km²/s² → ${dest}`, method: 'vis-viva' };
-    }
-
-    // Two circular/elliptic orbits around same body — Hohmann via SMA
-    // Guard: only applies to actual orbits, not transit/escape trajectories
-    if ((oa.type === 'circular' || oa.type === 'elliptic') &&
-        (ob.type === 'circular' || ob.type === 'elliptic')) {
-      const altA = (oa.type === 'elliptic') ? (oa.perigee + oa.apogee) / 2 : (oa.perigee ?? oa.apogee ?? 0);
-      const altB = (ob.type === 'elliptic') ? (ob.perigee + ob.apogee) / 2 : (ob.perigee ?? ob.apogee ?? 0);
-      if (Math.abs(altA - altB) < 1) return { dv: 0, note: 'Same orbit', method: 'trivial' };
-      const h = progDvHohmann(body, altA, altB);
-      const label = (oa.type === 'circular' && ob.type === 'circular') ? 'Hohmann transfer' : 'Hohmann (SMA approx)';
-      return { dv: Math.round(h.total_ms), note: `${label}: ${Math.round(h.dv1_ms)} + ${Math.round(h.dv2_ms)} m/s around ${body}`, method: label };
-    }
-
-    // Unhandled same-body combination (e.g. transit→transit, escape→transit)
-    return null;
+  // Scroll Band View to show the new event
+  const margin = (PROG_BAND_STATE.tEnd - PROG_BAND_STATE.tStart) * 0.1;
+  if (tStart > PROG_BAND_STATE.tEnd - margin) {
+    PROG_BAND_STATE.tEnd = tEnd + (PROG_BAND_STATE.tEnd - PROG_BAND_STATE.tStart) * 0.2;
   }
 
-  // ── Transit node → destination body orbit ───────────────────────────────
-  // Must be checked BEFORE general body→body cases (transit nodes carry a
-  // source body, so they would otherwise match Earth↔Moon etc. incorrectly).
-
-  // TLC (or any lunar transit) → Moon surface or orbit: LOI only (not TLI — already in transit)
-  if (oa.type === 'transit' && oa.destination === 'Moon' && ob.body === 'Moon') {
-    if (ob.type === 'surface') {
-      // LOI to a low capture orbit + descent
-      const loi     = progDvLOI(100, 185);
-      const descent = progDvLunarAscent(100); // symmetric: ascent ≈ descent ΔV
-      return { dv: Math.round(loi + descent),
-        note: `LOI to 100 km: ${Math.round(loi)} m/s  +  Lunar descent: ${Math.round(descent)} m/s`,
-        method: 'patched-conic' };
-    }
-    const h_llo = ob.perigee ?? ob.apogee ?? 100;
-    const loi = progDvLOI(h_llo, 185);
-    return { dv: Math.round(loi),
-      note: `LOI to ${h_llo} km LLO`,
-      method: 'patched-conic' };
-  }
-
-  // Interplanetary transit → target body orbit or surface (arrival capture)
-  if (oa.type === 'transit') {
-    const dest = oa.destination || oa.arrival_body;
-    if (dest === ob.body) {
-      let dvCapture = null;
-      let note = '';
-      if (ob.type === 'surface') {
-        // Capture to low reference orbit + powered descent
-        if (ob.body === 'Mars') {
-          const moi     = progDvMOI(400);
-          const descent = progDvMarsAscent(400); // ascent ≈ descent
-          dvCapture = moi + descent;
-          note = `MOI to 400 km: ${Math.round(moi)} m/s  +  Mars descent: ${Math.round(descent)} m/s`;
-        } else if (ob.body === 'Venus') {
-          dvCapture = progDvVOI(300);
-          note = `VOI to 300 km (Venus surface via aerobraking — entry ΔV not modeled)`;
-        }
-      } else {
-        const h_arr = ob.perigee ?? ob.apogee ?? 400;
-        if (ob.body === 'Mars')  { dvCapture = progDvMOI(h_arr); note = `Mars orbit insertion to ${h_arr} km`; }
-        if (ob.body === 'Venus') { dvCapture = progDvVOI(h_arr); note = `Venus orbit insertion to ${h_arr} km`; }
-      }
-      if (dvCapture !== null)
-        return { dv: Math.round(dvCapture), note, method: 'patched-conic' };
-    }
-  }
-
-  // ── Cross-body: Earth ↔ Moon ──────────────────────────────────────────────
-
-  if (oa.body === 'Earth' && ob.body === 'Moon' &&
-      (oa.type === 'circular' || oa.type === 'elliptic' || oa.type === 'surface')) {
-    // Generalized TLI from any Earth orbit altitude
-    const h_park = oa.perigee ?? oa.apogee ?? 185;
-    const tli    = progDvTLI(h_park);
-    const h_llo  = (ob.type === 'surface') ? 0 : (ob.perigee ?? ob.apogee ?? 100);
-    const loi    = progDvLOI(h_llo === 0 ? 100 : h_llo, h_park);
-    if (ob.type === 'surface') {
-      const descent = progDvLunarAscent(100);
-      return { dv: Math.round(tli + loi + descent),
-        note: `TLI from ${h_park} km: ${Math.round(tli)} m/s  +  LOI to 100 km: ${Math.round(loi)} m/s  +  Lunar descent: ${Math.round(descent)} m/s`,
-        method: 'Hohmann/patched-conic' };
-    }
-    return { dv: Math.round(tli + loi),
-      note: `TLI from ${h_park} km: ${Math.round(tli)} m/s  +  LOI to ${h_llo} km: ${Math.round(loi)} m/s`,
-      method: 'Hohmann/patched-conic' };
-  }
-
-  if (oa.body === 'Moon' && ob.body === 'Earth' &&
-      (oa.type === 'circular' || oa.type === 'elliptic')) {
-    const h_llo  = oa.perigee ?? oa.apogee ?? 100;
-    const h_park = (ob.type === 'surface') ? 0 : (ob.perigee ?? ob.apogee ?? 185);
-    return { dv: Math.round(progDvTEI(h_llo, Math.max(h_park, 185))),
-      note: `TEI from ${h_llo} km LLO → ${h_park > 0 ? h_park + ' km' : 'Earth surface'}`,
-      method: 'patched-conic' };
-  }
-
-  // ── Cross-body: Moon → interplanetary transit ─────────────────────────────
-  // Escape Moon, then burn from Moon's orbital altitude above Earth
-
-  if (oa.body === 'Moon' && ob.type === 'transit' &&
-      (oa.type === 'circular' || oa.type === 'elliptic' || oa.type === 'surface')) {
-    const mu_M    = PROG_BODIES.Moon.mu;
-    const r_M     = PROG_BODIES.Moon.R + (oa.perigee ?? oa.apogee ?? 100);
-    const v_cM    = _nmOrbitVAtR('Moon', oa, r_M);           // current Moon orbit speed
-    const v_escM  = Math.sqrt(2 * mu_M / r_M);               // Moon escape speed at periapsis
-    const dv_esc  = Math.abs(v_escM - v_cM) * 1000;          // m/s to escape Moon
-
-    // After Moon SOI escape, approximate position = Moon's orbital altitude from Earth
-    const r_Eorb  = PROG_MOON_ORBIT_R;                        // ~384,400 km
-    const mu_E    = PROG_BODIES.Earth.mu;
-    const v_Ecirc = Math.sqrt(mu_E / r_Eorb);                 // circular speed at Moon orbital alt
-    const c3      = ob.c3 ?? 8.7;
-    const v_inj   = Math.sqrt(Math.max(0, 2 * mu_E / r_Eorb + c3));
-    const dv_dep  = Math.abs(v_inj - v_Ecirc) * 1000;        // m/s interplanetary departure
-
-    const dest = ob.destination || '?';
-    return { dv: Math.round(dv_esc + dv_dep),
-      note: `Moon escape: ${Math.round(dv_esc)} m/s  +  departure at lunar altitude: ${Math.round(dv_dep)} m/s (→ ${dest})`,
-      method: 'patched-conic' };
-  }
-
-  // ── Cross-body: Earth orbit → interplanetary transit ─────────────────────
-  // Guard: oa must be an actual orbit (not already a transit/escape trajectory itself)
-
-  if (oa.body === 'Earth' && ob.type === 'transit' &&
-      (oa.type === 'circular' || oa.type === 'elliptic')) {
-    const c3     = ob.c3 ?? 8.7;
-    const h_park = oa.perigee ?? oa.apogee ?? 185;
-    const r      = PROG_BODIES.Earth.R + h_park;
-    const v0     = _nmOrbitVAtR('Earth', oa, r);
-    const vinj   = Math.sqrt(Math.max(0, 2 * PROG_BODIES.Earth.mu / r + c3));
-    const dest   = ob.destination || '?';
-    return { dv: Math.round(Math.abs(vinj - v0) * 1000),
-      note: `Injection from ${h_park} km, C3=${c3} km²/s² (→ ${dest})`,
-      method: 'vis-viva' };
-  }
-
-  return null;   // no model — caller may show "enter manually"
+  progUpdateEventEditor(ev.eventId);
+  const evPane = document.getElementById('prog-rt-ev-pane');
+  if (evPane && evPane.style.display === 'none') progRightTab('ev');
+  progRenderBandView();   // This also calls progRenderNodeMap()
 }
 
 // ── Phase 8 tests (pure JS, no DOM) ──────────────────────────────────────────
+const PROG_P8_TEST_RESULTS = (() => {
+  const T = [
+    { label:'NM: 14 nodes defined',            val: PROG_NM_NODES.length,                   target:14, tol:0 },
+    { label:'NM: 12 edges defined',            val: PROG_NM_EDGES.length,                   target:12, tol:0 },
+    { label:'NM: leo node present',            val: PROG_NM_NODES.some(n=>n.id==='leo')?1:0, target:1, tol:0 },
+    { label:'NM: surface-leo edge present',    val: PROG_NM_EDGES.some(e=>e.id==='surface-leo')?1:0, target:1, tol:0 },
+    { label:'NM: Earth LEO maps to leo',       val: _progNmVehicleNode({orbitState:progMakeOrbitalState('Earth',185,28.5,0)}), target:'leo', tol:null },
+    { label:'NM: Moon surface maps to moon',   val: _progNmVehicleNode({orbitState:progMakeSurfaceState('Moon')}),            target:'moon-surface', tol:null },
+    { label:'NM: active edges empty w/o burns',val: _progNmActiveEdgeIds().length,           target:0, tol:0 },
+  ];
+  return T.map(t => ({
+    label: t.label, val: t.val, target: t.target,
+    pass: t.tol === null
+      ? (t.val === t.target)
+      : (Math.abs(Number(t.val) - Number(t.target)) <= t.tol),
+  }));
+})();
 // ─── PROGRAM MODULE — Phase 9: Spacecraft Definition Editor ─────────────────
 //
 // SpacecraftDefinition: a named, ordered stage stack stored in the program.
@@ -5715,11 +5378,10 @@ function progMakeSpacecraftStageDef(name) {
     isp:                 320,        // s, vacuum Isp
     propKg:              0,          // propellant capacity kg
     propType:            'MMH/NTO',  // propellant type key
-    // Spec §3.4 extended fields
+    // Spec §10 extended fields
     crewCapacity:        0,          // number of crew seats
     dockingPorts:        0,          // number of docking ports
     tunnelCapable:       false,      // pressurised tunnel to adjacent stage
-    isLandingTruss:      false,      // structural-only; auto-candidate for surface separation (spec §3.4)
     descentPropFraction: 0,          // fraction of propKg reserved for powered descent (0–1)
   };
 }
@@ -5745,7 +5407,6 @@ function progSpacecraftToLiveStages(scd) {
     ls.crewCapacity        = def.crewCapacity        ?? 0;
     ls.dockingPorts        = def.dockingPorts         ?? 0;
     ls.tunnelCapable       = def.tunnelCapable        ?? false;
-    ls.isLandingTruss      = def.isLandingTruss       ?? false;
     ls.descentPropFraction = def.descentPropFraction  ?? 0;
     return ls;
   });
@@ -5755,18 +5416,175 @@ function progSpacecraftToLiveStages(scd) {
 
 let _progScSelId = null;  // currently selected spacecraft ID in editor modal
 
+function progOpenSpacecraftEditor() {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  _progScSelId = PROG_ACTIVE_PROGRAM.spacecraftDefinitions[0]?.spacecraftId ?? null;
+  progRenderSpacecraftList();
+  progRenderSpacecraftDetail(_progScSelId);
+  openModal('modal-spacecraft');
+}
 
+function progRenderSpacecraftList() {
+  const col = document.getElementById('prog-sc-list-col');
+  if (!col || !PROG_ACTIVE_PROGRAM) return;
+  const defs = PROG_ACTIVE_PROGRAM.spacecraftDefinitions;
+  const items = defs.map(sc =>
+    `<div onclick="progSelectSpacecraft('${sc.spacecraftId}')"
+      style="padding:6px 8px;cursor:pointer;border-radius:2px;font-family:var(--mono);font-size:10px;
+             color:${sc.spacecraftId===_progScSelId?'var(--text-bright)':'var(--text-dim)'};
+             background:${sc.spacecraftId===_progScSelId?'rgba(255,255,255,.07)':'transparent'};
+             border-left:2px solid ${sc.spacecraftId===_progScSelId?'var(--accent)':'transparent'};
+             margin-bottom:2px;">
+      ${sc.name}
+    </div>`
+  ).join('');
+  col.innerHTML =
+    `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px;">SPACECRAFT</div>` +
+    (items || '<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.5;padding:4px 0;">// none defined</div>') +
+    `<button onclick="progAddSpacecraft()" style="margin-top:8px;width:100%;font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--accent);padding:4px;cursor:pointer;letter-spacing:.06em;">+ New</button>`;
+}
 
+function progSelectSpacecraft(id) {
+  _progScSelId = id;
+  progRenderSpacecraftList();
+  progRenderSpacecraftDetail(id);
+}
 
+function progAddSpacecraft() {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const sc = progMakeSpacecraftDefinition('Spacecraft ' + (PROG_ACTIVE_PROGRAM.spacecraftDefinitions.length + 1));
+  PROG_ACTIVE_PROGRAM.spacecraftDefinitions.push(sc);
+  progSelectSpacecraft(sc.spacecraftId);
+}
 
+function progDeleteSpacecraft(id) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  PROG_ACTIVE_PROGRAM.spacecraftDefinitions = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.filter(s => s.spacecraftId !== id);
+  _progScSelId = PROG_ACTIVE_PROGRAM.spacecraftDefinitions[0]?.spacecraftId ?? null;
+  progRenderSpacecraftList();
+  progRenderSpacecraftDetail(_progScSelId);
+}
 
+function progRenderSpacecraftDetail(id) {
+  const col = document.getElementById('prog-sc-detail-col');
+  if (!col) return;
+  if (!id || !PROG_ACTIVE_PROGRAM) {
+    col.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:12px 0;">// Select or create a spacecraft</div>';
+    return;
+  }
+  const sc = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.find(s => s.spacecraftId === id);
+  if (!sc) { col.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// Not found</div>'; return; }
 
+  const stagePropTypes = Object.keys(PROG_PROPELLANT_TYPES);
 
+  const stageRows = sc.stages.map((st, i) => `
+    <div style="border:1px solid var(--border);border-radius:2px;padding:10px;margin-bottom:8px;background:rgba(0,0,0,.25);">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;">STAGE ${i}</span>
+        <input value="${st.name}" oninput="progUpdateStageDef('${id}','${st.stageId}','name',this.value)"
+          style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:3px 6px;">
+        <button onclick="progDeleteSpacecraftStage('${id}','${st.stageId}')"
+          style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent2,#e06c75);padding:2px 6px;cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">DRY MASS (kg)</div>
+          <input type="number" value="${st.dry_mass}" oninput="progUpdateStageDef('${id}','${st.stageId}','dry_mass',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">ISP (s)</div>
+          <input type="number" value="${st.isp}" oninput="progUpdateStageDef('${id}','${st.stageId}','isp',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">PROP (kg)</div>
+          <input type="number" value="${st.propKg}" oninput="progUpdateStageDef('${id}','${st.stageId}','propKg',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">PROPELLANT TYPE</div>
+          <select oninput="progUpdateStageDef('${id}','${st.stageId}','propType',this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+            ${stagePropTypes.map(k=>`<option${k===st.propType?' selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">CREW CAPACITY</div>
+          <input type="number" min="0" value="${st.crewCapacity}" oninput="progUpdateStageDef('${id}','${st.stageId}','crewCapacity',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">DOCKING PORTS</div>
+          <input type="number" min="0" value="${st.dockingPorts}" oninput="progUpdateStageDef('${id}','${st.stageId}','dockingPorts',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;padding-top:14px;">
+          <input type="checkbox" id="sc-tunnel-${st.stageId}" ${st.tunnelCapable?'checked':''}
+            onchange="progUpdateStageDef('${id}','${st.stageId}','tunnelCapable',this.checked)"
+            style="accent-color:var(--accent);">
+          <label for="sc-tunnel-${st.stageId}" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);cursor:pointer;">TUNNEL</label>
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:2px;">DESCENT PROP FRAC</div>
+          <input type="number" min="0" max="1" step="0.05" value="${st.descentPropFraction}" oninput="progUpdateStageDef('${id}','${st.stageId}','descentPropFraction',+this.value)"
+            style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 5px;box-sizing:border-box;">
+        </div>
+      </div>
+    </div>`).join('');
 
+  col.innerHTML =
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <input value="${sc.name}" oninput="progUpdateSpacecraftName('${id}',this.value)"
+        style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:13px;padding:5px 8px;font-weight:bold;">
+      <button onclick="progDeleteSpacecraft('${id}')"
+        style="font-family:var(--mono);font-size:9px;background:transparent;border:1px solid var(--border);color:var(--accent2,#e06c75);padding:4px 10px;cursor:pointer;letter-spacing:.05em;">Delete</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:8px;">STAGE STACK &nbsp;<span style="opacity:.5;">(bottom → top)</span></div>` +
+    (stageRows || '<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.5;margin-bottom:8px;">// No stages — add one below</div>') +
+    `<button onclick="progAddSpacecraftStage('${id}')"
+      style="width:100%;font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--accent);padding:5px;cursor:pointer;letter-spacing:.06em;">+ Add Stage</button>
+    <div style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.6;">
+      Spacecraft ID: ${id.slice(0,12)}… &nbsp;·&nbsp; ${sc.stages.length} stage${sc.stages.length!==1?'s':''}
+    </div>`;
+}
 
+function progUpdateSpacecraftName(id, val) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const sc = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.find(s => s.spacecraftId === id);
+  if (sc) { sc.name = val; progRenderSpacecraftList(); }
+}
+
+function progAddSpacecraftStage(scId) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const sc = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.find(s => s.spacecraftId === scId);
+  if (!sc) return;
+  sc.stages.push(progMakeSpacecraftStageDef('Stage ' + (sc.stages.length + 1)));
+  progRenderSpacecraftDetail(scId);
+}
+
+function progDeleteSpacecraftStage(scId, stageId) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const sc = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.find(s => s.spacecraftId === scId);
+  if (!sc) return;
+  sc.stages = sc.stages.filter(s => s.stageId !== stageId);
+  progRenderSpacecraftDetail(scId);
+}
+
+function progUpdateStageDef(scId, stageId, field, val) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const sc = PROG_ACTIVE_PROGRAM.spacecraftDefinitions.find(s => s.spacecraftId === scId);
+  if (!sc) return;
+  const st = sc.stages.find(s => s.stageId === stageId);
+  if (st) st[field] = val;
+}
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
-const PROG_P9_TEST_RESULTS = (() => { try {
+const PROG_P9_TEST_RESULTS = (() => {
   const sc = progMakeSpacecraftDefinition('CSM');
   sc.stages.push(progMakeSpacecraftStageDef('SM'));
   sc.stages.push(progMakeSpacecraftStageDef('CM'));
@@ -5799,7 +5617,7 @@ const PROG_P9_TEST_RESULTS = (() => { try {
   const T = [
     { label:'P9: SpacecraftDef has spacecraftId',             val: typeof sc.spacecraftId,            target:'string',  tol:null },
     { label:'P9: SpacecraftDef stages array',                 val: sc.stages.length,                  target:2,         tol:0 },
-    { label:'P9: StageDef has 5 extended fields',             val: ['crewCapacity','dockingPorts','tunnelCapable','isLandingTruss','descentPropFraction'].every(f=>f in sc.stages[0]) ? 1:0, target:1, tol:0 },
+    { label:'P9: StageDef has 4 extended fields',             val: ['crewCapacity','dockingPorts','tunnelCapable','descentPropFraction'].every(f=>f in sc.stages[0]) ? 1:0, target:1, tol:0 },
     { label:'P9: toLS – correct count',                       val: ls.length,                         target:2,         tol:0 },
     { label:'P9: toLS – SM has 1 tank',                       val: ls[0].tanks.length,                target:1,         tol:0 },
     { label:'P9: toLS – CM has 0 tanks',                      val: ls[1].tanks.length,                target:0,         tol:0 },
@@ -5815,15 +5633,102 @@ const PROG_P9_TEST_RESULTS = (() => { try {
       ? (t.val === t.target)
       : (Math.abs(Number(t.val) - Number(t.target)) <= t.tol),
   }));
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 // ─── PROGRAM MODULE — Phase 10: Save / Load & Closure Bar ───────────────────
 //
 // Save: serialize PROG_ACTIVE_PROGRAM to formatVersion:3 JSON and download.
 // Load: read a .json file, validate formatVersion, restore as active program.
 // Closure bar: per-vehicle status strip derived from event results.
 
+// ── Save / Load ───────────────────────────────────────────────────────────────
+
+function progSaveProgram() {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  const data = Object.assign({ formatVersion: 3 }, PROG_ACTIVE_PROGRAM);
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (PROG_ACTIVE_PROGRAM.name || 'program').replace(/[^a-z0-9_\-]/gi, '_') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function progLoadProgramFromFile() {
+  const inp = document.getElementById('prog-load-file-input');
+  if (inp) inp.click();
+}
+
+function _progHandleLoadFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    progLoadProgramJSON(ev.target.result);
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function progLoadProgramJSON(jsonStr) {
+  let data;
+  try { data = JSON.parse(jsonStr); } catch(err) { alert('Invalid JSON: ' + err.message); return; }
+  if (data.formatVersion !== 3) {
+    alert('Expected formatVersion 3, got ' + data.formatVersion + '.\nThis file may be from an older version.');
+    return;
+  }
+  delete data.formatVersion;
+  // Ensure required arrays exist (graceful forward-compat)
+  data.events               = data.events               ?? [];
+  data.vehicles             = data.vehicles             ?? {};
+  data.pads                 = data.pads                 ?? [];
+  data.spacecraftDefinitions = data.spacecraftDefinitions ?? [];
+  data.nodeMapCustomNodes   = data.nodeMapCustomNodes   ?? [];
+  data.performanceCases     = data.performanceCases     ?? [];
+  PROG_ACTIVE_PROGRAM = data;
+  PROG_BAND_STATE.selId   = null;
+  PROG_BAND_STATE.tStart  = 0;
+  const lastT = Math.max(...(data.events.map(e => e.tEnd ?? e.tStart ?? 0).concat([0])));
+  PROG_BAND_STATE.tEnd    = Math.max(8 * 86400, lastT * 1.1);
+  const nameEl = document.getElementById('prog-name-label');
+  if (nameEl) nameEl.textContent = data.name || 'Untitled';
+  progRenderSpaceport();
+  progUpdateEventEditor(null);
+  progRenderBandView();
+}
+
+// ── Closure bar ───────────────────────────────────────────────────────────────
+
+function progRenderClosureBar() {
+  const bar = document.getElementById('prog-closure-bar');
+  if (!bar || !PROG_ACTIVE_PROGRAM) return;
+  const vids = Object.keys(PROG_ACTIVE_PROGRAM.vehicles ?? {});
+  if (!vids.length) { bar.style.display = 'none'; return; }
+
+  const badges = vids.map(vid => {
+    const fv  = PROG_ACTIVE_PROGRAM.vehicles[vid];
+    const evs = (PROG_ACTIVE_PROGRAM.events ?? []).filter(e => e.vehicleId === vid);
+    const hasFail = evs.some(e => e.result === 'FAILED');
+    const hasMarg = evs.some(e => e.result === 'MARGINAL');
+    const allDone = evs.length > 0 && evs.every(e => e.result === 'SUCCESS' || e.result === 'MARGINAL' || e.result === 'FAILED');
+    const status  = hasFail ? 'FAIL' : hasMarg ? 'MARG' : allDone ? 'OK' : 'PEND';
+    const scol    = { FAIL:'#e06c75', MARG:'#e5c07b', PEND:'#abb2bf', OK:'#98c379' }[status];
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;` +
+           `padding:1px 7px;border:1px solid var(--border);margin-right:3px;white-space:nowrap;">` +
+           `<span style="width:6px;height:6px;border-radius:50%;background:${fv.color||'#888'};flex-shrink:0;display:inline-block;"></span>` +
+           `<span style="color:var(--text-dim);">${fv.name}</span>` +
+           `<span style="color:${scol};letter-spacing:.04em;">${status}</span></span>`;
+  }).join('');
+
+  bar.style.display = 'flex';
+  bar.innerHTML =
+    `<span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.15em;` +
+    `margin-right:8px;white-space:nowrap;align-self:center;">CLOSURE</span>` + badges;
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
-const PROG_P10_TEST_RESULTS = (() => { try {
+const PROG_P10_TEST_RESULTS = (() => {
   // Save/load round-trip
   const orig = progMakeProgram('Save Test');
   orig.pads  = [progMakePad('LC-39A','39A','KSC',72)];
@@ -5865,10 +5770,37 @@ const PROG_P10_TEST_RESULTS = (() => { try {
       ? (t.val === t.target)
       : (Math.abs(Number(t.val) - Number(t.target)) <= t.tol),
   }));
-} catch(e){console.error('Test IIFE error:',e);return[];} })();
+})();
 // ─── END PROGRAM MODULE Phase 10 ──────────────────────────────────────────────
 
 // ─── END PROGRAM MODULE Phase 9 ───────────────────────────────────────────────
+
+// ── View switching ────────────────────────────────────────────────────────────
+let PROG_VIEW_MODE = 'timeline'; // 'timeline' | 'nodemap'
+
+function progSwitchView(mode) {
+  PROG_VIEW_MODE = mode;
+  const bw   = document.getElementById('prog-band-wrap');
+  const nmv  = document.getElementById('prog-nm-view');
+  const rp   = document.getElementById('prog-right-panel');
+  const tlB  = document.getElementById('prog-view-tl-btn');
+  const nmB  = document.getElementById('prog-view-nm-btn');
+
+  if (mode === 'nodemap') {
+    if (bw)  bw.style.display  = 'none';
+    if (nmv) nmv.style.display = 'flex';
+    // Right panel stays visible for event editor access
+    if (tlB) { tlB.style.background = 'transparent'; tlB.style.borderColor = 'var(--border)'; tlB.style.color = 'var(--text-dim)'; }
+    if (nmB) { nmB.style.background = 'rgba(136,198,87,.1)'; nmB.style.borderColor = 'var(--accent)'; nmB.style.color = 'var(--accent)'; }
+    progRenderNodeMap();
+  } else {
+    if (bw)  bw.style.display  = 'block';
+    if (nmv) nmv.style.display = 'none';
+    if (tlB) { tlB.style.background = 'rgba(136,198,87,.1)'; tlB.style.borderColor = 'var(--accent)'; tlB.style.color = 'var(--accent)'; }
+    if (nmB) { nmB.style.background = 'transparent'; nmB.style.borderColor = 'var(--border)'; nmB.style.color = 'var(--text-dim)'; }
+    progRenderBandView();
+  }
+}
 
 // ─── END PROGRAM MODULE Phase 8 ───────────────────────────────────────────────
 
@@ -5887,1246 +5819,6 @@ const PROG_P10_TEST_RESULTS = (() => { try {
 // ─── END PROGRAM MODULE Phase 1 ─────────────────────────────────────────────────────
 
 
-
-// ─── FLEET EDITOR ────────────────────────────────────────────────────────────
-
-const _PROG_LV_PRESETS = [
-  { name: 'Saturn V', stageNames: ['S-IC', 'S-II', 'S-IVB'], boosterName: null, boosterData: null,
-    stageData: [
-      { dry: 131000,  prop: 2077000, isp: 304, thrust: 34020, res: 2 },
-      { dry: 36200,   prop: 444000,  isp: 421, thrust: 4400,  res: 2 },
-      { dry: 10000,   prop: 106000,  isp: 421, thrust: 1000,  res: 2 },
-    ]},
-  { name: 'Falcon 9 Block 5', stageNames: ['First Stage', 'Second Stage'], boosterName: null, boosterData: null,
-    stageData: [
-      { dry: 22200,  prop: 395700, isp: 339, thrust: 7607, res: 10 },
-      { dry: 4500,   prop: 92670,  isp: 348, thrust: 934,  res: 2  },
-    ]},
-  { name: 'SLS Block 1', stageNames: ['Core Stage', 'ICPS'], boosterName: 'SRBs',
-    boosterData: { dry: 100000, prop: 628000, isp: 269, thrust: 16000, count: 2 },
-    stageData: [
-      { dry: 85275,  prop: 978340, isp: 452, thrust: 7440, res: 2 },
-      { dry: 3490,   prop: 27220,  isp: 451, thrust: 110,  res: 2 },
-    ]},
-  { name: 'Vulcan Centaur', stageNames: ['First Stage', 'Centaur V'], boosterName: 'SRBs',
-    boosterData: { dry: 4500, prop: 42000, isp: 279, thrust: 1680, count: 2 },
-    stageData: [
-      { dry: 20000,  prop: 220000, isp: 360, thrust: 4400, res: 3 },
-      { dry: 2780,   prop: 35400,  isp: 454, thrust: 220,  res: 2 },
-    ]},
-];
-
-let _fleetEntries = [];   // FleetEntry[]
-let _fleetSel     = null; // selected fleetId
-
-function _fleetClonePreset(p) {
-  return {
-    fleetId: progUUID(),
-    name: p.name,
-    stageNames: [...(p.stageNames || [])],
-    stageData: p.stageData.map(s => ({ ...s })),
-    boosterName: p.boosterName || null,
-    boosterData: p.boosterData ? { ...p.boosterData } : null,
-    payloads: [],
-  };
-}
-
-function fleetOpenImportModal() {
-  document.getElementById('fleet-import-search').value = '';
-  fleetImportRenderList();
-  openModal('modal-fleet-import');
-  setTimeout(() => document.getElementById('fleet-import-search')?.focus(), 100);
-}
-
-function fleetImportRenderList() {
-  const el = document.getElementById('fleet-import-list');
-  if (!el) return;
-  const q = (document.getElementById('fleet-import-search')?.value ?? '').toLowerCase();
-
-  let html = '';
-
-  // User-saved / loaded vehicles first
-  const myVehicles = userLVs.filter(v => !q || v.name.toLowerCase().includes(q));
-  if (myVehicles.length) {
-    html += '<div style="padding:6px 14px 3px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);">My Vehicles</div>';
-    html += myVehicles.map(v => {
-      const i = userLVs.indexOf(v);
-      const n = (v.stageData || v.stageNames || []).length;
-      return `<div class="fleet-import-item" onclick="fleetImportVehicle('user',${i})">
-        <span class="fleet-import-name">${v.name}</span>
-        <span class="fleet-import-sub">${n} stage${n !== 1 ? 's' : ''}</span>
-      </div>`;
-    }).join('');
-  }
-
-  // Built-in library
-  const builtins = BUILTIN_PRESETS.filter(v => !q ||
-    v.name.toLowerCase().includes(q) ||
-    (v.note || '').toLowerCase().includes(q) ||
-    (v.tags || []).some(t => t.toLowerCase().includes(q)));
-  if (builtins.length) {
-    html += `<div style="padding:6px 14px 3px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);${myVehicles.length ? 'margin-top:4px;' : ''}">Vehicle Library</div>`;
-    html += builtins.map(v => {
-      const idx = BUILTIN_PRESETS.indexOf(v);
-      const n   = (v.stageNames || []).length;
-      const tags = (v.tags || []).map(t => `<span class="fleet-import-tag">${t}</span>`).join(' ');
-      const note = v.note ? v.note.split('.')[0] : '';
-      return `<div class="fleet-import-item" onclick="fleetImportVehicle('builtin',${idx})">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
-          <span class="fleet-import-name">${v.name}</span>${tags}
-        </div>
-        <span class="fleet-import-sub">${n} stage${n !== 1 ? 's' : ''}${note ? ' &nbsp;&middot;&nbsp; ' + note : ''}</span>
-      </div>`;
-    }).join('');
-  }
-
-  if (!html) html = '<div style="padding:20px 16px;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No vehicles match.</div>';
-  el.innerHTML = html;
-}
-
-function fleetImportVehicle(source, idx) {
-  const p = source === 'builtin' ? BUILTIN_PRESETS[idx] : userLVs[idx];
-  if (!p) return;
-  const stageData   = resolvePresetStages(p);
-  const boosterData = resolvePresetBooster(p);
-  const entry = {
-    fleetId:     progUUID(),
-    name:        p.name,
-    stageNames:  p.stageNames || stageData.map((_, i) => 'Stage ' + (i + 1)),
-    stageData:   stageData.map(s => ({ dry: s.dry||0, prop: s.prop||0, isp: s.isp||1, thrust: s.thrust||0, res: s.res||2 })),
-    boosterName: p.boosterName || null,
-    boosterData: boosterData || null,
-    payloads:    [],
-  };
-  _fleetEntries.push(entry);
-  _fleetSel = entry.fleetId;
-  fleetRender();
-  closeModal('modal-fleet-import');
-}
-
-function fleetInit() {
-  _fleetEntries = _PROG_LV_PRESETS.map(_fleetClonePreset);
-  _fleetSel = _fleetEntries[0]?.fleetId ?? null;
-  fleetRender();
-}
-
-function _fleetGet(id) {
-  return _fleetEntries.find(e => e.fleetId === (id ?? _fleetSel)) ?? null;
-}
-
-function fleetRender() { fleetRenderList(); fleetRenderDetail(); }
-
-function fleetRenderList() {
-  const el = document.getElementById('fleet-list');
-  if (!el) return;
-  const q = (document.getElementById('fleet-search')?.value ?? '').toLowerCase();
-  const rows = _fleetEntries.filter(e => e.name.toLowerCase().includes(q));
-  el.innerHTML = rows.map(e => {
-    const pCount = (e.payloads || []).length;
-    const payloadNote = pCount > 0 ? ` &nbsp;&middot;&nbsp; ${pCount} payload${pCount !== 1 ? 's' : ''}` : '';
-    return `<div class="lv-item">
-      <button class="lv-item-btn${e.fleetId === _fleetSel ? ' active' : ''}" onclick="fleetSelect('${e.fleetId}')">
-        <span style="display:block;font-size:11px;color:var(--text-bright)">${e.name}</span>
-        <span style="color:var(--text-dim);font-size:9px">${e.stageData.length} stage${e.stageData.length !== 1 ? 's' : ''}${payloadNote}</span>
-      </button>
-      <button class="lv-del" onclick="fleetDelete('${e.fleetId}')" title="Delete">&#x2715;</button>
-    </div>`;
-  }).join('') || '<div style="padding:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No launch vehicles</div>';
-}
-
-function fleetSelect(id) { _fleetSel = id; fleetRenderList(); fleetRenderDetail(); }
-
-function fleetNew() {
-  const entry = {
-    fleetId: progUUID(),
-    name: 'New Launch Vehicle',
-    stageNames: ['Stage 1'],
-    stageData: [{ dry: 5000, prop: 50000, isp: 311, thrust: 1000, res: 2 }],
-    boosterName: null,
-    boosterData: null,
-    payloads: [],
-  };
-  _fleetEntries.push(entry);
-  _fleetSel = entry.fleetId;
-  fleetRender();
-}
-
-function fleetDelete(id) {
-  _fleetEntries = _fleetEntries.filter(e => e.fleetId !== id);
-  if (_fleetSel === id) _fleetSel = _fleetEntries[0]?.fleetId ?? null;
-  fleetRender();
-}
-
-function fleetSnapshotCurrent() {
-  if (typeof saveStoreFromDOM === 'function') saveStoreFromDOM();
-  const stages = [];
-  const names  = [];
-  for (let s = 0; s < (typeof numStages !== 'undefined' ? numStages : 0); s++) {
-    const st = stageStore[s] || {};
-    stages.push({ dry: parseFloat(st.dry)||0, prop: parseFloat(st.prop)||0, isp: parseFloat(st.isp)||1, thrust: parseFloat(st.thrust)||0, res: parseFloat(st.res)||2 });
-    names.push((typeof currentStageNames !== 'undefined' && currentStageNames[s]) ? currentStageNames[s] : ('Stage ' + (s+1)));
-  }
-  if (!stages.length) { alert('No stages in LV Calc — configure a vehicle on the Vehicles page first.'); return; }
-  const lvName = (typeof loadedVehicleName !== 'undefined' && loadedVehicleName) ? loadedVehicleName : 'Snapshot ' + new Date().toLocaleDateString();
-  const entry = {
-    fleetId: progUUID(),
-    name: lvName,
-    stageNames: names,
-    stageData: stages,
-    boosterName: (typeof currentBoosterName !== 'undefined' && currentBoosterName) ? currentBoosterName : null,
-    boosterData: (typeof useBooster !== 'undefined' && useBooster) ? (() => {
-      const b = document.getElementById('b_dry');
-      return b ? { dry: parseFloat(document.getElementById('b_dry').value)||0, prop: parseFloat(document.getElementById('b_prop').value)||0, isp: parseFloat(document.getElementById('b_isp').value)||1, thrust: parseFloat(document.getElementById('b_thrust').value)||0, count: parseInt(document.getElementById('num-boosters').value)||0 } : null;
-    })() : null,
-    payloads: [],
-  };
-  _fleetEntries.push(entry);
-  _fleetSel = entry.fleetId;
-  fleetRender();
-}
-
-function fleetLoadJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const obj = JSON.parse(e.target.result);
-      if (!obj.stageData && !obj.stages) { alert('Invalid LV JSON'); return; }
-      // Support both program fleet format and LV calc save format
-      const stages = obj.stageData || [];
-      const names  = obj.stageNames || stages.map((_,i) => 'Stage '+(i+1));
-      const entry = {
-        fleetId: progUUID(),
-        name: obj.name || obj.vehicleName || file.name.replace(/\.json$/i,''),
-        stageNames: names,
-        stageData: stages.map(s => ({ dry: s.dry||0, prop: s.prop||0, isp: s.isp||1, thrust: s.thrust||0, res: s.res||2 })),
-        boosterName: obj.boosterName || null,
-        boosterData: obj.boosterData || null,
-        payloads: Array.isArray(obj.payloads) ? obj.payloads : [],
-      };
-      _fleetEntries.push(entry);
-      _fleetSel = entry.fleetId;
-      fleetRender();
-    } catch(err) { alert('Failed to parse JSON: ' + err.message); }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
-
-function fleetSaveJSON(id) {
-  const e = _fleetGet(id);
-  if (!e) return;
-  const blob = new Blob([JSON.stringify(e, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = e.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.fleet.json';
-  a.click();
-}
-
-function fleetAddPayload(fleetId, scId) {
-  const e = _fleetGet(fleetId);
-  if (!e || !scId) return;
-  if (!e.payloads) e.payloads = [];
-  if (!e.payloads.includes(scId)) e.payloads.push(scId);
-  fleetRenderList();
-  _fleetRefreshBudget(fleetId);
-  // Re-render detail so the "add" dropdown resets and list updates
-  const sel = document.getElementById('fleet-payload-add-' + fleetId);
-  if (sel) sel.value = '';
-  const listEl = document.getElementById('fleet-payload-list-' + fleetId);
-  if (listEl) listEl.innerHTML = _fleetPayloadListHTML(e);
-}
-
-function fleetRemovePayload(fleetId, scId) {
-  const e = _fleetGet(fleetId);
-  if (!e) return;
-  e.payloads = (e.payloads || []).filter(id => id !== scId);
-  fleetRenderList();
-  _fleetRefreshBudget(fleetId);
-  const listEl = document.getElementById('fleet-payload-list-' + fleetId);
-  if (listEl) listEl.innerHTML = _fleetPayloadListHTML(e);
-  const sel = document.getElementById('fleet-payload-add-' + fleetId);
-  if (sel) { sel.innerHTML = _fleetAddPayloadOptions(e); sel.value = ''; }
-}
-
-function fleetNameSet(id, val) {
-  const e = _fleetGet(id);
-  if (e) e.name = val;
-  fleetRenderList();
-}
-
-function _fleetScMassById(scId) {
-  const sc = _scEdSC.find(s => s.spacecraftId === scId);
-  return sc ? sc.stages.reduce((s, st) => s + (st.dry_mass||0) + (st.propKg||0), 0) : 0;
-}
-
-function _fleetTotalPayloadMass(entry) {
-  return (entry.payloads || []).reduce((t, id) => t + _fleetScMassById(id), 0);
-}
-
-function _fleetPayloadListHTML(entry) {
-  const ids = entry.payloads || [];
-  if (!ids.length) return '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:6px 0;">No payloads assigned</div>';
-  return ids.map(scId => {
-    const sc = _scEdSC.find(s => s.spacecraftId === scId);
-    const mass = _fleetScMassById(scId);
-    return `<div class="lv-item" style="margin-bottom:4px;">
-      <button class="lv-item-btn" style="cursor:default;flex:1;">
-        <span style="display:block;font-size:11px;color:var(--text-bright)">${sc ? sc.name : '(missing)'}</span>
-        <span style="color:var(--text-dim);font-size:9px">${mass.toLocaleString()} kg &nbsp;&middot;&nbsp; ${sc ? sc.stages.length + ' stage' + (sc.stages.length !== 1 ? 's' : '') : 'N/A'}</span>
-      </button>
-      <button class="lv-del" onclick="fleetRemovePayload('${entry.fleetId}','${scId}')" title="Remove">&#x2715;</button>
-    </div>`;
-  }).join('');
-}
-
-function _fleetAddPayloadOptions(entry) {
-  const ids = entry.payloads || [];
-  const available = _scEdSC.filter(s => !ids.includes(s.spacecraftId));
-  return '<option value="">+ Add spacecraft...</option>' +
-    available.map(s => `<option value="${s.spacecraftId}">${s.name}</option>`).join('');
-}
-
-function _fleetLvDvBreakdown(entry, payloadMass) {
-  let cum = 0;
-  return entry.stageData.map((st, i) => {
-    // wet mass = this stage + all stages above + payload
-    const massAbove = entry.stageData.slice(i+1).reduce((s, x) => s + (x.dry||0) + (x.prop||0), 0);
-    const m_wet = (st.dry||0) + (st.prop||0) + massAbove + payloadMass;
-    const dv = (st.prop > 0 && st.isp > 0) ? progRocketEqDv(m_wet, st.prop, st.isp) : 0;
-    cum += dv;
-    return { name: entry.stageNames[i] || ('Stage '+(i+1)), dry: st.dry||0, prop: st.prop||0, isp: st.isp||0, dv, cum };
-  });
-}
-
-function _fleetBudgetHTML(entry) {
-  const payMass = _fleetTotalPayloadMass(entry);
-  const lvRows  = _fleetLvDvBreakdown(entry, payMass);
-  const lvTotal = lvRows.reduce((s, r) => s + r.dv, 0);
-
-  // One section per spacecraft payload (on-orbit ΔV computed independently)
-  let scSections = '';
-  let scGrandDv = 0;
-  for (const scId of (entry.payloads || [])) {
-    const sc = _scEdSC.find(s => s.spacecraftId === scId);
-    if (!sc) continue;
-    let scCum = 0;
-    const scRows = sc.stages.map((st, i) => {
-      const m_wet = sc.stages.slice(i).reduce((s, x) => s + (x.dry_mass||0) + (x.propKg||0), 0);
-      const dv = (st.propKg > 0 && st.isp > 0) ? progRocketEqDv(m_wet, st.propKg, st.isp) : 0;
-      scCum += dv;
-      return `<tr><td class="rl" style="padding-left:20px">${st.name}</td>
-        <td style="text-align:right">${st.propKg > 0 ? st.propKg.toLocaleString() : '&#x2014;'}</td>
-        <td style="text-align:right">${st.isp > 0 ? st.isp : '&#x2014;'}</td>
-        <td style="text-align:right;color:${dv > 0 ? 'var(--accent3)' : 'var(--text-dim)'}">${dv > 0 ? Math.round(dv).toLocaleString() : '&#x2014;'}</td>
-        <td style="text-align:right;color:var(--accent2)">${scCum > 0 ? Math.round(scCum).toLocaleString() : '&#x2014;'}</td>
-      </tr>`;
-    }).join('');
-    scSections += `<tr><td colspan="5" style="padding:4px 8px 2px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;border-top:1px solid var(--border);">&#8627; ${sc.name} (on-orbit)</td></tr>` + scRows;
-    scGrandDv = Math.max(scGrandDv, scCum);
-  }
-
-  const lvTrs = lvRows.map(r => `<tr>
-    <td class="rl">${r.name}</td>
-    <td style="text-align:right">${r.prop > 0 ? r.prop.toLocaleString() : '&#x2014;'}</td>
-    <td style="text-align:right">${r.isp > 0 ? r.isp : '&#x2014;'}</td>
-    <td style="text-align:right;color:${r.dv > 0 ? 'var(--accent3)' : 'var(--text-dim)'}">${r.dv > 0 ? Math.round(r.dv).toLocaleString() : '&#x2014;'}</td>
-    <td style="text-align:right;color:var(--accent)">${r.cum > 0 ? Math.round(r.cum).toLocaleString() : '&#x2014;'}</td>
-  </tr>`).join('');
-
-  const payloadsCount = (entry.payloads || []).length;
-  return `<table class="sc-dv-tbl" style="width:100%"><thead><tr>
-    <th>Stage</th><th style="text-align:right">Prop (kg)</th><th style="text-align:right">Isp (s)</th>
-    <th style="text-align:right">dv (m/s)</th><th style="text-align:right">Cumul. (m/s)</th>
-  </tr></thead><tbody>${lvTrs}${scSections}</tbody></table>
-  <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
-    <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">LV &#916;v</span>
-    <span style="font-family:var(--mono);font-size:16px;color:var(--accent3)">${Math.round(lvTotal).toLocaleString()} m/s</span>
-    ${payloadsCount ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Total payload</span>
-    <span style="font-family:var(--mono);font-size:16px;color:var(--accent)">${payMass.toLocaleString()} kg</span>` : ''}
-  </div>`;
-}
-
-function _fleetRefreshBudget(id) {
-  const el = document.getElementById('fleet-budget-' + id);
-  if (el) el.innerHTML = _fleetBudgetHTML(_fleetGet(id));
-  fleetRenderList();
-}
-
-function fleetRenderDetail() {
-  const el = document.getElementById('fleet-detail');
-  if (!el) return;
-  const entry = _fleetGet();
-  if (!entry) { el.innerHTML = '<div class="placeholder-msg">Add or select a launch vehicle</div>'; return; }
-  const id = entry.fleetId;
-
-  // Stage table
-  const stageTrs = entry.stageData.map((st, i) => `<tr>
-    <td class="rl">${entry.stageNames[i] || 'Stage '+(i+1)}</td>
-    <td>${(st.dry||0).toLocaleString()}</td>
-    <td>${(st.prop||0).toLocaleString()}</td>
-    <td>${st.isp||0}</td>
-    <td style="color:var(--text-dim)">${((st.dry||0)+(st.prop||0)).toLocaleString()}</td>
-  </tr>`).join('');
-
-  const boosterRow = entry.boosterData ? `<tr style="color:var(--text-dim)">
-    <td class="rl">${entry.boosterName||'Booster'} (x${entry.boosterData.count||1})</td>
-    <td>${(entry.boosterData.dry||0).toLocaleString()}</td>
-    <td>${(entry.boosterData.prop||0).toLocaleString()}</td>
-    <td>${entry.boosterData.isp||0}</td>
-    <td>${((entry.boosterData.dry||0)+(entry.boosterData.prop||0)).toLocaleString()}</td>
-  </tr>` : '';
-
-  const totalPayMass = _fleetTotalPayloadMass(entry);
-
-  el.innerHTML = `
-    <div class="cfg-row" style="margin-bottom:16px;gap:16px;align-items:flex-end;">
-      <div class="cfg-item" style="flex:1;min-width:180px;"><label>Vehicle Name</label>
-        <input type="text" class="field" style="width:100%;max-width:340px;" value="${entry.name.replace(/"/g,'&quot;')}"
-          oninput="fleetNameSet('${id}',this.value)"></div>
-      <button class="act-btn green" onclick="fleetSaveJSON('${id}')">&#x2B07; Save JSON</button>
-    </div>
-
-    <div class="sl">Launch Vehicle Configuration</div>
-    <div class="panel" style="padding:12px;margin-bottom:20px;">
-      <table class="fleet-lv-tbl">
-        <thead><tr><th>Stage</th><th>Dry (kg)</th><th>Prop (kg)</th><th>Isp (s)</th><th>Wet (kg)</th></tr></thead>
-        <tbody>${stageTrs}${boosterRow}</tbody>
-      </table>
-    </div>
-
-    <div class="sl">Payload Manifest <span style="color:var(--text);font-size:10px;letter-spacing:0;text-transform:none;">${totalPayMass > 0 ? '(' + totalPayMass.toLocaleString() + ' kg total)' : ''}</span></div>
-    <div class="panel" style="padding:12px;margin-bottom:20px;">
-      <div id="fleet-payload-list-${id}">${_fleetPayloadListHTML(entry)}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-        <select class="field" id="fleet-payload-add-${id}" style="width:220px" onchange="if(this.value)fleetAddPayload('${id}',this.value)">
-          ${_fleetAddPayloadOptions(entry)}
-        </select>
-      </div>
-    </div>
-
-    <div class="sl">&#916;V Budget</div>
-    <div class="panel" style="padding:12px;" id="fleet-budget-${id}">${_fleetBudgetHTML(entry)}</div>`;
-}
-
-
-// ─── MISSION MANAGER ─────────────────────────────────────────────────────
-
-let _missions = [];
-let _missionSel = null;
-
-function _missionMake(name) {
-  return {
-    missionId:     progUUID(),
-    name:          name || 'New Mission',
-    fleetEntryId:  null,
-    payloadScIds:  [],
-    launchOrbit:   { body: 'Earth', alt_km: 185, inc_deg: 28.5, lan_deg: 0 },
-    log:           [],
-    vehicleId:     null,
-  };
-}
-
-function missionNew() {
-  const m = _missionMake('Mission ' + (_missions.length + 1));
-  _missions.push(m);
-  _missionSel = m.missionId;
-  missionRender();
-}
-
-function missionDelete(id) {
-  _missions = _missions.filter(m => m.missionId !== id);
-  if (_missionSel === id) _missionSel = _missions[0]?.missionId ?? null;
-  missionRender();
-}
-
-function missionSelect(id) {
-  _missionSel = id;
-  missionRender();
-}
-
-function _missionGet(id) {
-  return _missions.find(m => m.missionId === id) ?? null;
-}
-
-function missionRender() {
-  missionRenderList();
-  missionRenderDetail();
-}
-
-function missionRenderList() {
-  const search = (document.getElementById('mission-search')?.value || '').toLowerCase();
-  const list   = document.getElementById('mission-list');
-  if (!list) return;
-  const items  = _missions.filter(m => m.name.toLowerCase().includes(search));
-  list.innerHTML = items.map(m => `
-    <div class="lv-item${m.missionId === _missionSel ? ' selected' : ''}" onclick="missionSelect('${m.missionId}')">
-      <button class="lv-item-btn" style="text-align:left;flex:1;cursor:pointer;background:none;border:none;padding:6px 8px;">
-        <span style="display:block;font-size:11px;color:var(--text-bright)">${m.name}</span>
-        <span style="color:var(--text-dim);font-size:9px">${m.log.length ? m.log.length + ' event' + (m.log.length !== 1 ? 's' : '') : 'No events'}</span>
-      </button>
-      <button class="lv-del" onclick="event.stopPropagation();missionDelete('${m.missionId}')" title="Delete">✕</button>
-    </div>`).join('');
-}
-
-function missionRenderDetail() {
-  const detail = document.getElementById('mission-detail');
-  if (!detail) return;
-  const m = _missionGet(_missionSel);
-  if (!m) { detail.innerHTML = '<div class="placeholder-msg">Select or create a mission</div>'; return; }
-  const id = m.missionId;
-
-  const lvOpts = [
-    '<option value="">— select launch vehicle —</option>',
-    ..._fleetEntries.map(e => `<option value="${e.fleetId}"${e.fleetId === m.fleetEntryId ? ' selected' : ''}>${e.name}</option>`)
-  ].join('');
-
-  const payChecks = _scEdSC.map(sc => `
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;">
-      <input type="checkbox"${m.payloadScIds.includes(sc.spacecraftId) ? ' checked' : ''}
-        onchange="missionTogglePayload('${id}','${sc.spacecraftId}',this.checked)">
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright)">${sc.name}</span>
-      <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${_fleetScMassById(sc.spacecraftId).toLocaleString()} kg</span>
-    </label>`).join('');
-
-  const logHTML = m.log.length
-    ? m.log.map(e => _missionLogCardHTML(e)).join('')
-    : '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No events yet. Configure a LAUNCH and click Execute.</div>';
-
-  const bodies = ['Earth','Moon','Mars','Venus','Mercury','Titan'];
-  const bodyOpts = bodies.map(b => `<option${b === m.launchOrbit.body ? ' selected' : ''}>${b}</option>`).join('');
-
-  const canLaunch = !!m.fleetEntryId;
-
-  detail.innerHTML = `
-    <div class="sl" style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
-      <input value="${m.name.replace(/"/g,'&quot;')}" class="sc-stage-name" style="font-size:13px;flex:1;"
-        oninput="missionRename('${id}',this.value)">
-    </div>
-
-    <div class="sl" style="margin-top:16px;">Launch Vehicle</div>
-    <div class="panel" style="padding:10px 12px;">
-      <select style="width:100%;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:5px 8px;"
-        onchange="missionSetFleet('${id}',this.value)">${lvOpts}</select>
-    </div>
-
-    <div class="sl" style="margin-top:16px;">Payload Manifest</div>
-    <div class="panel" style="padding:10px 12px;">
-      ${payChecks || '<span style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No spacecraft defined. Add spacecraft in the Spacecraft tab.</span>'}
-    </div>
-
-    <div class="sl" style="margin-top:16px;">LAUNCH Event — Target Orbit</div>
-    <div class="panel" style="padding:10px 12px;">
-      <div class="cfg-row" style="flex-wrap:wrap;gap:10px 20px;align-items:flex-end;">
-        <div class="cfg-item">
-          <label class="cfg-label">Body</label>
-          <select style="background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;"
-            onchange="missionSetOrbit('${id}','body',this.value)">${bodyOpts}</select>
-        </div>
-        <div class="cfg-item">
-          <label class="cfg-label">Alt (km)</label>
-          <input type="number" class="field" value="${m.launchOrbit.alt_km}" min="0" style="width:90px;"
-            oninput="missionSetOrbit('${id}','alt_km',+this.value)">
-        </div>
-        <div class="cfg-item">
-          <label class="cfg-label">Inc (deg)</label>
-          <input type="number" class="field" value="${m.launchOrbit.inc_deg}" min="0" max="180" style="width:80px;"
-            oninput="missionSetOrbit('${id}','inc_deg',+this.value)">
-        </div>
-        <div class="cfg-item">
-          <label class="cfg-label">LAN (deg)</label>
-          <input type="number" class="field" value="${m.launchOrbit.lan_deg}" min="0" max="360" style="width:80px;"
-            oninput="missionSetOrbit('${id}','lan_deg',+this.value)">
-        </div>
-      </div>
-      <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
-        <button class="act-btn" style="${canLaunch ? 'background:var(--accent);color:#000;font-weight:600;' : ''}padding:7px 18px;"
-          onclick="missionExecLaunch('${id}')"${canLaunch ? '' : ' disabled'}>
-          ▶ Execute Launch
-        </button>
-        ${m.log.length ? `<button class="act-btn" onclick="missionResetLaunch('${id}')">Reset</button>` : ''}
-      </div>
-    </div>
-
-    ${m.vehicleId ? _missionBurnSectionHTML(m) : ''}
-
-    <div class="sl" style="margin-top:16px;">Mission Log</div>
-    <div style="padding:0 0 20px;">${logHTML}</div>
-  `;
-  if (m.vehicleId) setTimeout(() => missionBurnPreview(m.missionId), 0);
-}
-
-function missionRename(id, val) {
-  const m = _missionGet(id);
-  if (m) { m.name = val; missionRenderList(); }
-}
-
-function missionSetFleet(id, fleetId) {
-  const m = _missionGet(id);
-  if (!m) return;
-  m.fleetEntryId = fleetId || null;
-  if (fleetId) {
-    const entry = _fleetGet(fleetId);
-    if (entry) m.payloadScIds = [...(entry.payloads || [])];
-  } else {
-    m.payloadScIds = [];
-  }
-  missionRenderDetail();
-}
-
-function missionTogglePayload(id, scId, checked) {
-  const m = _missionGet(id);
-  if (!m) return;
-  if (checked && !m.payloadScIds.includes(scId)) m.payloadScIds.push(scId);
-  if (!checked) m.payloadScIds = m.payloadScIds.filter(x => x !== scId);
-}
-
-function missionSetOrbit(id, key, val) {
-  const m = _missionGet(id);
-  if (m) m.launchOrbit[key] = val;
-}
-
-function missionExecLaunch(id) {
-  const m = _missionGet(id);
-  if (!m || !m.fleetEntryId) return;
-  const entry = _fleetGet(m.fleetEntryId);
-  if (!entry) return;
-
-  const lvStages = progVehicleDefToLiveStages(entry);
-  let scStages = [];
-  for (const scId of m.payloadScIds) {
-    const sc = _scEdSC.find(s => s.spacecraftId === scId);
-    if (sc) scStages = scStages.concat(progSpacecraftToLiveStages(sc));
-  }
-
-  const allStages = [...lvStages, ...scStages];
-  const ev = progMakeEvent('LAUNCH', {
-    label:       m.name + ' — ' + entry.name,
-    stages:      allStages,
-    targetOrbit: { ...m.launchOrbit },
-    color:       '#61afef',
-  });
-  const result = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
-  m.vehicleId = result.vehicleId;
-
-  // Ascent staging simulation: stage-by-stage dv delivery
-  const fv           = PROG_ACTIVE_PROGRAM.vehicles[result.vehicleId];
-  const dvRequired   = _missionDvToOrbit(m.launchOrbit.body, m.launchOrbit.alt_km);
-  let   dvRemaining  = dvRequired;
-  const stagingLog   = [];
-  const stagesToDrop = [];
-
-  for (let i = 0; i < fv.stages.length; i++) {
-    const s = fv.stages[i];
-    if ((s.isp || 0) <= 0) continue;
-    const prop = progStageRemainingProp(s);
-    if (prop <= 0) continue;
-
-    const massAbove = fv.stages.slice(i + 1).reduce((sum, st) => sum + progStageMass(st), 0);
-    const m_wet     = progStageMass(s) + massAbove;
-    const dvAvail   = progRocketEqDv(m_wet, prop, s.isp);
-    const sname     = _missionStageLabelById(s.stageDefinitionId);
-
-    if (dvAvail >= dvRemaining) {
-      // Insertion stage: partially burned
-      const propNeeded = progRocketEqPropNeeded(m_wet, dvRemaining, s.isp);
-      progBurnPropellant(s, propNeeded);
-      stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(propNeeded), propRemaining: Math.round(prop - propNeeded), dvContrib: Math.round(dvRemaining), expended: false });
-      dvRemaining = 0;
-      break;
-    } else {
-      // Stage fully consumed
-      progBurnPropellant(s, prop);
-      stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(prop), propRemaining: 0, dvContrib: Math.round(dvAvail), expended: true });
-      dvRemaining -= dvAvail;
-      stagesToDrop.push(s.stageDefinitionId);
-    }
-  }
-
-  fv.stages = fv.stages.filter(s => !stagesToDrop.includes(s.stageDefinitionId));
-
-  const stagingResult = {
-    dvRequired:  Math.round(dvRequired),
-    dvDelivered: Math.round(dvRequired - Math.max(dvRemaining, 0)),
-    status:      dvRemaining <= 0 ? 'SUCCESS' : 'MARGINAL',
-    stages:      stagingLog,
-  };
-
-  const payloadMass = m.payloadScIds.reduce((s, scId) => s + _fleetScMassById(scId), 0);
-  m.log.push({
-    type:         'LAUNCH',
-    label:        entry.name,
-    orbit:        { ...m.launchOrbit },
-    vehicleId:    result.vehicleId,
-    stagingResult,
-    payloadMass,
-    payloadNames: m.payloadScIds.map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean),
-  });
-
-  missionRenderDetail();
-}
-
-function missionResetLaunch(id) {
-  const m = _missionGet(id);
-  if (!m) return;
-  m.log = [];
-  m.vehicleId = null;
-  missionRenderDetail();
-}
-
-function _missionLogCardHTML(entry) {
-  if (entry.type === 'BURN')   return _missionBurnLogCardHTML(entry);
-  if (entry.type === 'EXPEND') return `<div class="mission-log-card" style="padding:8px 14px;display:flex;align-items:center;gap:8px;">
-    <span class="mission-log-type">EXPEND</span>
-    <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright)">${entry.stageName}</span>
-    <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:auto">stage dropped</span>
-  </div>`;
-  if (entry.type !== 'LAUNCH') return '';
-  const o  = entry.orbit;
-  const sr = entry.stagingResult || {};
-  const sc = sr.status === 'SUCCESS' ? 'var(--accent3)' : 'var(--accent2)';
-  const payStr = (entry.payloadNames || []).length ? entry.payloadNames.join(', ') : 'None';
-  const stageRows = (sr.stages || []).map(s => {
-    const statusCell = s.expended
-      ? `<td style="color:var(--text-dim);font-family:var(--mono);font-size:9px">EXPENDED</td>`
-      : `<td style="color:var(--accent);font-family:var(--mono);font-size:9px">INSERTION &nbsp;${s.propRemaining.toLocaleString()} kg remain</td>`;
-    return `<tr>
-      <td class="rl">${s.name}</td>
-      <td style="text-align:right">${s.propBurned.toLocaleString()}</td>
-      <td style="text-align:right;color:var(--accent3)">${s.dvContrib.toLocaleString()}</td>
-      ${statusCell}
-    </tr>`;
-  }).join('');
-  return `<div class="mission-log-card">
-    <div class="mission-log-header">
-      <span class="mission-log-type">LAUNCH</span>
-      <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid ${sc};color:${sc}">${sr.status || 'SUCCESS'}</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto">${entry.label}</span>
-    </div>
-    <div class="mission-state-grid">
-      <div class="mission-state-kv"><span class="mission-state-key">Body</span><span class="mission-state-val">${o.body}</span></div>
-      <div class="mission-state-kv"><span class="mission-state-key">Altitude</span><span class="mission-state-val">${o.alt_km.toLocaleString()} km</span></div>
-      <div class="mission-state-kv"><span class="mission-state-key">Inc</span><span class="mission-state-val">${o.inc_deg}&deg;</span></div>
-      <div class="mission-state-kv"><span class="mission-state-key">LAN</span><span class="mission-state-val">${o.lan_deg}&deg;</span></div>
-      <div class="mission-state-kv"><span class="mission-state-key">Payload</span><span class="mission-state-val">${entry.payloadMass.toLocaleString()} kg</span></div>
-    </div>
-    ${(entry.payloadNames || []).length ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:8px;">Payloads: ${payStr}</div>` : ''}
-    ${stageRows ? `<table class="sc-dv-tbl" style="width:100%"><thead><tr>
-      <th>Stage</th><th style="text-align:right">Prop Used (kg)</th><th style="text-align:right">&#916;V (m/s)</th><th>Ascent Status</th>
-    </tr></thead><tbody>${stageRows}</tbody></table>
-    <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Required &#916;V</span>
-      <span style="font-family:var(--mono);font-size:16px;color:var(--text-bright)">${(sr.dvRequired||0).toLocaleString()} m/s</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Delivered</span>
-      <span style="font-family:var(--mono);font-size:16px;color:${sc}">${(sr.dvDelivered||0).toLocaleString()} m/s</span>
-    </div>` : ''}
-  </div>`;
-}
-
-
-
-function _missionDvToOrbit(body, alt_km) {
-  const b = PROG_BODIES[body];
-  if (!b) return 9400;
-  const vCirc_ms = progVcirc(body, alt_km) * 1000;
-  const losses = { Earth: 1550, Moon: 20, Mars: 1100, Venus: 1700, Mercury: 200, Titan: 1400 };
-  return vCirc_ms + (losses[body] || 800);
-}
-
-function _missionStageLabelById(stageDefId) {
-  for (const sc of _scEdSC) {
-    const def = sc.stages.find(d => d.stageId === stageDefId);
-    if (def) return def.name + ' (' + sc.name + ')';
-  }
-  return stageDefId;
-}
-
-function _missionBurnSectionHTML(m) {
-  const fv = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
-  if (!fv || fv.status !== 'ORBIT') return '';
-  const os  = fv.orbitState || {};
-  const id  = m.missionId;
-  const apo  = os.apogee  || 0;
-  const peri = os.perigee ?? apo;
-  const inc  = os.inclination || 0;
-  const body = os.body || 'Earth';
-
-  const stateKV = (k, v) => `<div class="mission-state-kv"><span class="mission-state-key">${k}</span><span class="mission-state-val">${v}</span></div>`;
-
-  const propRows = fv.stages.map(s => {
-    const p = Math.round(progStageRemainingProp(s));
-    const cap = Math.round(progStageTotalCapacity(s));
-    const pct = cap > 0 ? Math.round(p/cap*100) : 0;
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-      <span style="font-family:var(--mono);font-size:9px;color:${p > 0 ? 'var(--text-bright)' : 'var(--text-dim)'};flex:1;">${_missionStageLabelById(s.stageDefinitionId)}: ${p.toLocaleString()} / ${cap.toLocaleString()} kg (${pct}%)</span>
-      <button onclick="missionDropStage('${id}','${s.stageDefinitionId}')" style="font-family:var(--mono);font-size:8px;padding:1px 5px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;letter-spacing:.05em;" title="Expend / separate this stage">expend</button>
-    </div>`;
-  }).join('');
-
-  // default to topmost stage with propellant
-  const defIdx = [...fv.stages].reduceRight((f, s, i) => f === -1 && progStageRemainingProp(s) > 0 ? i : f, -1);
-  const stageOpts = fv.stages.map((s, i) => {
-    const p = Math.round(progStageRemainingProp(s));
-    return `<option value="${s.stageDefinitionId}"${i === defIdx ? ' selected' : ''}${p === 0 ? ' disabled' : ''}>${_missionStageLabelById(s.stageDefinitionId)} (${p.toLocaleString()} kg)</option>`;
-  }).join('');
-
-  return `
-    <div class="sl" style="margin-top:16px;">Current Orbital State</div>
-    <div class="panel" style="padding:10px 12px;">
-      <div class="mission-state-grid">
-        ${stateKV('Body', body)}
-        ${stateKV('Apogee', Math.round(apo).toLocaleString() + ' km')}
-        ${stateKV('Perigee', Math.round(peri).toLocaleString() + ' km')}
-        ${stateKV('Inc', inc + '&deg;')}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:3px;">${propRows}</div>
-    </div>
-
-    <div class="sl" style="margin-top:16px;">BURN Event</div>
-    <div class="panel" style="padding:10px 12px;">
-      <div class="cfg-row" style="flex-wrap:wrap;gap:10px 20px;align-items:flex-end;margin-bottom:10px;">
-        <div class="cfg-item">
-          <label class="cfg-label">Burn Type</label>
-          <select id="burn-type-${id}" style="background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;"
-            onchange="missionBurnTypeChanged('${id}')">
-            <option value="HOHMANN">Hohmann Transfer</option>
-            <option value="CIRC">Circularize at Apo</option>
-            <option value="TLI">Trans-Lunar Injection</option>
-            <option value="LOI">Lunar Orbit Insertion</option>
-            <option value="PLANE_CHANGE">Plane Change</option>
-            <option value="CUSTOM">Custom ΔV</option>
-          </select>
-        </div>
-        <div id="burn-param-${id}" class="cfg-item">
-          <label class="cfg-label" id="burn-param-lbl-${id}">Target Alt (km)</label>
-          <input type="number" id="burn-param-val-${id}" class="field" value="35786" min="0" style="width:100px;"
-            oninput="missionBurnPreview('${id}')">
-        </div>
-        <div class="cfg-item">
-          <label class="cfg-label">Firing Stage</label>
-          <select id="burn-stage-${id}" style="background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;">
-            ${stageOpts}
-          </select>
-        </div>
-      </div>
-      <div id="burn-dv-${id}" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:10px;min-height:1.4em;"></div>
-      <button class="act-btn" onclick="missionExecBurn('${id}')">&#9654; Execute Burn</button>
-    </div>
-  `;
-}
-
-function missionBurnTypeChanged(id) {
-  const bt  = document.getElementById('burn-type-' + id)?.value;
-  const div = document.getElementById('burn-param-' + id);
-  const lbl = document.getElementById('burn-param-lbl-' + id);
-  const val = document.getElementById('burn-param-val-' + id);
-  if (!bt || !div) return;
-  const hidden = bt === 'CIRC' || bt === 'TLI';
-  div.style.display = hidden ? 'none' : 'flex';
-  if (!hidden && lbl && val) {
-    if (bt === 'LOI')          { lbl.textContent = 'LLO Alt (km)';  val.value = '100';   }
-    else if (bt === 'PLANE_CHANGE') { lbl.textContent = 'New Inc (deg)'; val.value = '0'; }
-    else if (bt === 'CUSTOM')  { lbl.textContent = 'ΔV (m/s)';      val.value = '500';   }
-    else                       { lbl.textContent = 'Target Alt (km)'; val.value = '35786'; }
-  }
-  missionBurnPreview(id);
-}
-
-function missionBurnPreview(id) {
-  const m = _missionGet(id);
-  if (!m || !m.vehicleId) return;
-  const fv  = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
-  if (!fv) return;
-  const os   = fv.orbitState || {};
-  const body = os.body || 'Earth';
-  const apo  = os.apogee || 0;
-  const peri = os.perigee ?? apo;
-  const inc  = os.inclination || 0;
-  const bt   = document.getElementById('burn-type-' + id)?.value || 'HOHMANN';
-  const pval = parseFloat(document.getElementById('burn-param-val-' + id)?.value) || 0;
-  const el   = document.getElementById('burn-dv-' + id);
-  if (!el) return;
-  let dv = 0, note = '';
-  try {
-    if      (bt === 'HOHMANN')      { const h = progDvHohmann(body, peri, pval); dv = h.total_ms; note = `dv1 ${Math.round(h.dv1_ms).toLocaleString()} + dv2 ${Math.round(h.dv2_ms).toLocaleString()} m/s`; }
-    else if (bt === 'CIRC')         { dv = progDvCircularizeAtApo(body, peri, apo); note = `circularize @ ${Math.round(apo).toLocaleString()} km`; }
-    else if (bt === 'TLI')          { dv = progDvTLI(peri); note = `from ${Math.round(peri).toLocaleString()} km`; }
-    else if (bt === 'LOI')          { dv = progDvLOI(pval, peri); note = `LLO ${pval} km`; }
-    else if (bt === 'PLANE_CHANGE') { dv = progDvPlaneChange(body, (apo+peri)/2, Math.abs(pval - inc)); note = `${inc}° → ${pval}°`; }
-    else if (bt === 'CUSTOM')       { dv = pval; note = 'manual'; }
-  } catch(e) { dv = 0; note = 'n/a'; }
-  el.innerHTML = `<span style="color:var(--text-dim)">Required ΔV: </span><span style="color:var(--accent3);font-size:13px;">${Math.round(dv).toLocaleString()} m/s</span>${note ? ` &nbsp;<span style="color:var(--text-dim);font-size:10px;">${note}</span>` : ''}`;
-}
-
-function missionExecBurn(id) {
-  const m = _missionGet(id);
-  if (!m || !m.vehicleId) return;
-  const fv  = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
-  if (!fv)  return;
-  const os   = fv.orbitState || {};
-  const body = os.body || 'Earth';
-  const apo  = os.apogee  || 0;
-  const peri = os.perigee ?? apo;
-  const inc  = os.inclination || 0;
-  const lan  = os.lan || 0;
-  const bt   = document.getElementById('burn-type-' + id)?.value || 'HOHMANN';
-  const pval = parseFloat(document.getElementById('burn-param-val-' + id)?.value) || 0;
-  const stageId = document.getElementById('burn-stage-' + id)?.value || null;
-
-  let dvTarget = 0, newOrbit = null, burnLabel = bt;
-  try {
-    if (bt === 'HOHMANN') {
-      const h = progDvHohmann(body, peri, pval);
-      dvTarget  = h.total_ms;
-      newOrbit  = { body, apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `Hohmann → ${pval.toLocaleString()} km`;
-    } else if (bt === 'CIRC') {
-      dvTarget  = progDvCircularizeAtApo(body, peri, apo);
-      newOrbit  = { body, apogee: apo, perigee: apo, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `Circularize @ ${Math.round(apo).toLocaleString()} km`;
-    } else if (bt === 'TLI') {
-      dvTarget  = progDvTLI(peri);
-      newOrbit  = { body: 'Moon', apogee: 100, perigee: 100, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = 'TLI';
-    } else if (bt === 'LOI') {
-      dvTarget  = progDvLOI(pval, peri);
-      newOrbit  = { body: 'Moon', apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `LOI → ${pval} km (Moon)`;
-    } else if (bt === 'PLANE_CHANGE') {
-      dvTarget  = progDvPlaneChange(body, (apo + peri) / 2, Math.abs(pval - inc));
-      newOrbit  = { body, apogee: apo, perigee: peri, inclination: pval, lan, epoch: 0, surface: false };
-      burnLabel = `Plane Change ${inc}° → ${pval}°`;
-    } else if (bt === 'CUSTOM') {
-      dvTarget  = pval;
-      newOrbit  = null;
-      burnLabel = `Custom (${pval.toLocaleString()} m/s)`;
-    }
-  } catch(e) { alert('Burn compute error: ' + e.message); return; }
-
-  const ev = progMakeEvent('BURN', {
-    vehicleId:    m.vehicleId,
-    stagingStageId: stageId || null,
-    burnType:     bt,
-    dvTarget:     dvTarget,
-  });
-  const result = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
-
-  if (newOrbit && result.result !== 'FAILED') {
-    fv.orbitState = newOrbit;
-    fv.status = 'ORBIT';
-  }
-
-  m.log.push({
-    type:          'BURN',
-    burnLabel,
-    burnType:      bt,
-    dvTarget,
-    dv_actual:     result.dv_actual  || 0,
-    prop_consumed: result.prop_consumed || 0,
-    result:        result.result,
-    warnings:      ev.warnings || [],
-    orbitAfter:    fv.orbitState ? { ...fv.orbitState } : null,
-  });
-
-  missionRenderDetail();
-}
-
-function missionDropStage(missionId, stageDefId) {
-  const m = _missionGet(missionId);
-  if (!m || !m.vehicleId) return;
-  const fv = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
-  if (!fv) return;
-  const idx = fv.stages.findIndex(s => s.stageDefinitionId === stageDefId);
-  if (idx < 0) return;
-  // resolve name before removal
-  let label = stageDefId;
-  for (const sc of _scEdSC) {
-    const def = sc.stages.find(d => d.stageId === stageDefId);
-    if (def) { label = def.name + ' (' + sc.name + ')'; break; }
-  }
-  fv.stages.splice(idx, 1);
-  m.log.push({ type: 'EXPEND', stageName: label, orbitAfter: fv.orbitState ? { ...fv.orbitState } : null });
-  missionRenderDetail();
-}
-
-function _missionBurnLogCardHTML(entry) {
-  const statusColor = entry.result === 'SUCCESS' ? 'var(--accent3)' : entry.result === 'MARGINAL' ? 'var(--accent2)' : 'var(--error,#e06c75)';
-  const o   = entry.orbitAfter || {};
-  const stateKV = (k, v) => `<div class="mission-state-kv"><span class="mission-state-key">${k}</span><span class="mission-state-val">${v}</span></div>`;
-  const warns = (entry.warnings || []).map(w => `<div style="color:var(--accent2);font-family:var(--mono);font-size:9px;">${w}</div>`).join('');
-  return `<div class="mission-log-card">
-    <div class="mission-log-header">
-      <span class="mission-log-type">BURN</span>
-      <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid ${statusColor};color:${statusColor}">${entry.result}</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto">${entry.burnLabel}</span>
-    </div>
-    <div class="mission-state-grid">
-      ${stateKV('Target ΔV',   Math.round(entry.dvTarget).toLocaleString() + ' m/s')}
-      ${stateKV('Actual ΔV',   Math.round(entry.dv_actual).toLocaleString() + ' m/s')}
-      ${stateKV('Prop Used',   Math.round(entry.prop_consumed).toLocaleString() + ' kg')}
-    </div>
-    <div class="mission-state-grid">
-      ${stateKV('Body',    o.body || '?')}
-      ${stateKV('Apogee',  Math.round(o.apogee || 0).toLocaleString() + ' km')}
-      ${stateKV('Perigee', Math.round(o.perigee ?? o.apogee ?? 0).toLocaleString() + ' km')}
-      ${stateKV('Inc',     (o.inclination || 0) + '&deg;')}
-    </div>
-    ${warns}
-  </div>`;
-}
-
-function missionInit() {
-  _missions  = [];
-  _missionSel = null;
-}
-
-function progShowTab(tab) {
-  const PANELS   = { spacecraft: 'prog-panel-sc', fleet: 'prog-panel-fleet', mission: 'prog-panel-mission' };
-  const TOOLBARS = { spacecraft: 'prog-tb-sc',    fleet: 'prog-tb-fleet',    mission: 'prog-tb-mission'    };
-  Object.entries(PANELS).forEach(([t, id]) => {
-    const el = document.getElementById(id); if (el) el.style.display = t === tab ? 'flex' : 'none';
-  });
-  Object.entries(TOOLBARS).forEach(([t, id]) => {
-    const el = document.getElementById(id); if (el) el.style.display = t === tab ? 'flex' : 'none';
-  });
-  const TABS = ['spacecraft', 'fleet', 'mission'];
-  document.querySelectorAll('#prog-tabs button').forEach((b, i) => b.classList.toggle('active', TABS[i] === tab));
-}
-
-// ─── SPACECRAFT EDITOR ────────────────────────────────────────────────
-
-const _PROG_SC_PRESETS = [
-  { name: 'Apollo CSM', stages: [
-    { name: 'Service Module',          dry_mass: 6000, isp: 314, propKg: 18410, propType: 'NTO_A50', crewCapacity: 0, dockingPorts: 1, tunnelCapable: true,  isLandingTruss: false, descentPropFraction: 0 },
-    { name: 'Command Module',          dry_mass: 5560, isp: 0,   propKg: 0,     propType: 'NTO_A50', crewCapacity: 3, dockingPorts: 1, tunnelCapable: true,  isLandingTruss: false, descentPropFraction: 0 },
-  ]},
-  { name: 'Apollo Lunar Module', stages: [
-    { name: 'Descent Stage',           dry_mass: 2145, isp: 311, propKg: 8165,  propType: 'NTO_A50', crewCapacity: 2, dockingPorts: 0, tunnelCapable: false, isLandingTruss: true,  descentPropFraction: 0.55 },
-    { name: 'Ascent Stage',            dry_mass: 2445, isp: 311, propKg: 2353,  propType: 'NTO_A50', crewCapacity: 2, dockingPorts: 1, tunnelCapable: true,  isLandingTruss: false, descentPropFraction: 0 },
-  ]},
-  { name: 'Orion', stages: [
-    { name: 'European Service Module', dry_mass: 6000, isp: 321, propKg: 8607,  propType: 'NTO_A50', crewCapacity: 0, dockingPorts: 1, tunnelCapable: true,  isLandingTruss: false, descentPropFraction: 0 },
-    { name: 'Crew Module',             dry_mass: 9300, isp: 0,   propKg: 0,     propType: 'NTO_A50', crewCapacity: 4, dockingPorts: 1, tunnelCapable: true,  isLandingTruss: false, descentPropFraction: 0 },
-  ]},
-  { name: 'Dragon 2', stages: [
-    { name: 'Trunk',                   dry_mass: 1500, isp: 0,   propKg: 0,     propType: 'NTO_A50', crewCapacity: 0, dockingPorts: 0, tunnelCapable: false, isLandingTruss: false, descentPropFraction: 0 },
-    { name: 'Capsule',                 dry_mass: 9616, isp: 293, propKg: 1400,  propType: 'NTO_A50', crewCapacity: 7, dockingPorts: 1, tunnelCapable: false, isLandingTruss: false, descentPropFraction: 0 },
-  ]},
-];
-
-let _scEdSC  = [];    // SpacecraftDefinition[]
-let _scEdSel = null;  // selected spacecraftId
-
-function scEdInit() {
-  _scEdSC = _PROG_SC_PRESETS.map(p => ({
-    spacecraftId: progUUID(),
-    name: p.name,
-    stages: p.stages.map(s => ({ stageId: progUUID(), ...s })),
-  }));
-  _scEdSel = _scEdSC[0]?.spacecraftId ?? null;
-  scEdRender();
-}
-
-function _scEdGet(id) {
-  return _scEdSC.find(s => s.spacecraftId === (id ?? _scEdSel)) ?? null;
-}
-
-function scEdRender() { scEdRenderList(); scEdRenderDetail(); }
-
-function scEdRenderList() {
-  const el = document.getElementById('sc-ed-list');
-  if (!el) return;
-  const q = (document.getElementById('sc-ed-search')?.value ?? '').toLowerCase();
-  const rows = _scEdSC.filter(s => s.name.toLowerCase().includes(q));
-  el.innerHTML = rows.map(s => {
-    const totProp = s.stages.reduce((a, st) => a + (st.propKg || 0), 0);
-    return `<div class="lv-item">
-      <button class="lv-item-btn${s.spacecraftId === _scEdSel ? ' active' : ''}" onclick="scEdSelect('${s.spacecraftId}')">
-        <span style="display:block;font-size:11px;color:var(--text-bright)">${s.name}</span>
-        <span style="color:var(--text-dim);font-size:9px">${s.stages.length} stage${s.stages.length !== 1 ? 's' : ''} &nbsp;&middot;&nbsp; ${totProp.toLocaleString()} kg prop</span>
-      </button>
-      <button class="lv-del" onclick="scEdDelete('${s.spacecraftId}')" title="Delete">&#x2715;</button>
-    </div>`;
-  }).join('') || '<div style="padding:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No spacecraft</div>';
-}
-
-function scEdSelect(id) { _scEdSel = id; scEdRenderList(); scEdRenderDetail(); }
-
-function scEdNew() {
-  const sc = progMakeSpacecraftDefinition('New Spacecraft');
-  sc.stages.push(progMakeSpacecraftStageDef('Stage 1'));
-  _scEdSC.push(sc);
-  _scEdSel = sc.spacecraftId;
-  scEdRender();
-}
-
-function scEdDelete(id) {
-  _scEdSC = _scEdSC.filter(s => s.spacecraftId !== id);
-  if (_scEdSel === id) _scEdSel = _scEdSC[0]?.spacecraftId ?? null;
-  scEdRender();
-}
-
-function scEdSaveJSON(id) {
-  const sc = _scEdGet(id);
-  if (!sc) return;
-  const blob = new Blob([JSON.stringify(sc, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = sc.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.spacecraft.json';
-  a.click();
-}
-
-function scEdLoadJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const sc = JSON.parse(e.target.result);
-      if (!sc.stages || !Array.isArray(sc.stages)) { alert('Invalid spacecraft JSON'); return; }
-      sc.spacecraftId = progUUID();
-      sc.stages = sc.stages.map(st => ({ ...st, stageId: progUUID() }));
-      _scEdSC.push(sc);
-      _scEdSel = sc.spacecraftId;
-      scEdRender();
-    } catch(err) { alert('Failed to parse JSON: ' + err.message); }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
-
-function scEdNameSet(id, val) {
-  const sc = _scEdGet(id);
-  if (sc) sc.name = val;
-  scEdRenderList();
-}
-
-function scEdStageAdd(id) {
-  const sc = _scEdGet(id);
-  if (!sc) return;
-  sc.stages.push(progMakeSpacecraftStageDef('Stage ' + (sc.stages.length + 1)));
-  scEdRenderDetail();
-}
-
-function scEdStageDelete(id, idx) {
-  const sc = _scEdGet(id);
-  if (!sc || sc.stages.length <= 1) return;
-  sc.stages.splice(idx, 1);
-  scEdRenderDetail();
-  scEdRenderList();
-}
-
-function scEdStageSet(id, idx, field, val) {
-  const sc = _scEdGet(id);
-  if (!sc || !sc.stages[idx]) return;
-  sc.stages[idx][field] = val;
-  const dvEl = document.getElementById('sc-dv-' + id);
-  if (dvEl) dvEl.innerHTML = _scEdDvHTML(sc);
-  scEdRenderList();
-}
-
-function _scEdDvBreakdown(sc) {
-  let cum = 0;
-  return sc.stages.map((st, i) => {
-    const m_wet = sc.stages.slice(i).reduce((s, x) => s + (x.dry_mass || 0) + (x.propKg || 0), 0);
-    const dv = (st.propKg > 0 && st.isp > 0) ? progRocketEqDv(m_wet, st.propKg, st.isp) : 0;
-    cum += dv;
-    return { name: st.name, prop: st.propKg || 0, isp: st.isp || 0, dv, cum };
-  });
-}
-
-function _scEdDvHTML(sc) {
-  const rows = _scEdDvBreakdown(sc);
-  const total = rows.reduce((s, r) => s + r.dv, 0);
-  const trs = rows.map(r => `<tr>
-    <td class="rl">${r.name}</td>
-    <td style="text-align:right;color:var(--text-bright)">${r.prop > 0 ? r.prop.toLocaleString() : '&#x2014;'}</td>
-    <td style="text-align:right;color:var(--text-bright)">${r.isp > 0 ? r.isp : '&#x2014;'}</td>
-    <td style="text-align:right;color:${r.dv > 0 ? 'var(--accent3)' : 'var(--text-dim)'}">${r.dv > 0 ? Math.round(r.dv).toLocaleString() : '&#x2014;'}</td>
-    <td style="text-align:right;color:var(--accent)">${r.cum > 0 ? Math.round(r.cum).toLocaleString() : '&#x2014;'}</td>
-  </tr>`).join('');
-  return `<table class="sc-dv-tbl"><thead><tr>
-    <th>Stage</th>
-    <th style="text-align:right">Prop (kg)</th>
-    <th style="text-align:right">Isp (s)</th>
-    <th style="text-align:right">dv (m/s)</th>
-    <th style="text-align:right">Cumul. (m/s)</th>
-  </tr></thead><tbody>${trs}</tbody></table>
-  <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
-    <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Total dv</span>
-    <span style="font-family:var(--mono);font-size:18px;color:var(--accent)">${Math.round(total).toLocaleString()} m/s</span>
-  </div>`;
-}
-
-function scEdRenderDetail() {
-  const el = document.getElementById('sc-ed-detail');
-  if (!el) return;
-  const sc = _scEdGet();
-  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>'; return; }
-  const id = sc.spacecraftId;
-  const stageCards = sc.stages.map((st, i) => {
-    const isBot = i === 0, isTop = i === sc.stages.length - 1;
-    const tag = (isBot && isTop) ? 'Only Stage' : isBot ? 'Stage 1 &middot; Bottom / Fires First' : isTop ? 'Stage ' + (i+1) + ' &middot; Top / Payload End' : 'Stage ' + (i+1);
-    const propOpts = Object.entries(PROG_PROPELLANT_TYPES).map(([k, v]) =>
-      `<option value="${k}"${st.propType === k ? ' selected' : ''}>${v.label}</option>`).join('');
-    const canDel = sc.stages.length > 1;
-    return `<div class="sc-stage-card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;">${tag}</span>
-        <input type="text" class="sc-stage-name" value="${st.name.replace(/\\/g,'\\\\').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"
-          oninput="scEdStageSet('${id}',${i},'name',this.value)" placeholder="Stage name">
-        ${canDel ? `<button class="lv-del" onclick="scEdStageDelete('${id}',${i})" title="Remove" style="font-size:10px;padding:0 8px;flex-shrink:0;">&#x2715;</button>` : ''}
-      </div>
-      <div class="cfg-row" style="margin-bottom:8px;gap:16px;">
-        <div class="cfg-item"><label>Dry Mass (kg)</label>
-          <input type="number" class="field" min="0" value="${st.dry_mass || 0}" style="width:90px"
-            oninput="scEdStageSet('${id}',${i},'dry_mass',+this.value)"></div>
-        <div class="cfg-item"><label>Isp (s)</label>
-          <input type="number" class="field" min="0" value="${st.isp || 0}" style="width:80px"
-            oninput="scEdStageSet('${id}',${i},'isp',+this.value)"></div>
-        <div class="cfg-item"><label>Propellant (kg)</label>
-          <input type="number" class="field" min="0" value="${st.propKg || 0}" style="width:100px"
-            oninput="scEdStageSet('${id}',${i},'propKg',+this.value)"></div>
-        <div class="cfg-item"><label>Prop Type</label>
-          <select class="field" style="width:170px" onchange="scEdStageSet('${id}',${i},'propType',this.value)">${propOpts}</select></div>
-      </div>
-      <div class="cfg-row" style="gap:16px;padding-top:8px;border-top:1px solid var(--border);margin-bottom:0;">
-        <div class="cfg-item"><label>Crew Capacity</label>
-          <input type="number" class="field" min="0" value="${st.crewCapacity || 0}" style="width:70px"
-            oninput="scEdStageSet('${id}',${i},'crewCapacity',+this.value)"></div>
-        <div class="cfg-item"><label>Docking Ports</label>
-          <input type="number" class="field" min="0" value="${st.dockingPorts || 0}" style="width:70px"
-            oninput="scEdStageSet('${id}',${i},'dockingPorts',+this.value)"></div>
-        <div class="cfg-item" style="flex-direction:row;align-items:center;gap:6px;padding-top:14px;">
-          <input type="checkbox" id="sc-tc-${id}-${i}" ${st.tunnelCapable ? 'checked' : ''}
-            onchange="scEdStageSet('${id}',${i},'tunnelCapable',this.checked)">
-          <label for="sc-tc-${id}-${i}" style="margin-bottom:0;cursor:pointer;">Tunnel Capable</label></div>
-        <div class="cfg-item" style="flex-direction:row;align-items:center;gap:6px;padding-top:14px;">
-          <input type="checkbox" id="sc-lt-${id}-${i}" ${st.isLandingTruss ? 'checked' : ''}
-            onchange="scEdStageSet('${id}',${i},'isLandingTruss',this.checked)">
-          <label for="sc-lt-${id}-${i}" style="margin-bottom:0;cursor:pointer;">Landing Truss</label></div>
-        <div class="cfg-item"><label>Descent Prop Frac.</label>
-          <input type="number" class="field" min="0" max="1" step="0.01" value="${(st.descentPropFraction || 0).toFixed(2)}" style="width:80px"
-            oninput="scEdStageSet('${id}',${i},'descentPropFraction',Math.min(1,Math.max(0,+this.value)))"></div>
-      </div>
-    </div>`;
-  }).join('');
-  el.innerHTML = `
-    <div class="cfg-row" style="margin-bottom:16px;gap:16px;align-items:flex-end;">
-      <div class="cfg-item" style="flex:1;min-width:180px;"><label>Spacecraft Name</label>
-        <input type="text" class="field" style="width:100%;max-width:340px;" value="${sc.name.replace(/"/g,'&quot;')}"
-          oninput="scEdNameSet('${id}',this.value)"></div>
-      <button class="act-btn green" onclick="scEdSaveJSON('${id}')">&#x2B07; Save JSON</button>
-    </div>
-    <div class="sl">Stage Stack <span style="color:var(--text);font-size:10px;letter-spacing:0;text-transform:none;">(Stage 1 = bottom / fires first)</span></div>
-    ${stageCards}
-    <div style="margin-bottom:24px;"><button class="act-btn" onclick="scEdStageAdd('${id}')">+ Add Stage</button></div>
-    <div class="sl">dV Breakdown</div>
-    <div class="panel" style="padding:12px;" id="sc-dv-${id}">${_scEdDvHTML(sc)}</div>`;
-}
-
-
 // ─── INIT ────────────────────────────────────────
 buildTable();
 buildPresets();
@@ -7136,9 +5828,6 @@ buildStageLibrary();
 buildCaseList();
 updateFilterChips();
 applyTheme('perigee');
-scEdInit();
-fleetInit();
-missionInit();
 // Initialise default active program with demo pads
 (function(){
   const p = progMakeProgram('New Program');
@@ -7149,7 +5838,12 @@ missionInit();
     progMakePad('Vandenberg', 'SLC', 'VAFB', 48),
   ];
   PROG_ACTIVE_PROGRAM = p;
+  progRenderSpaceport();
 })();
+progRenderTestResults();
+progInitPorkchop();
+progInitBandView();
+progRenderNodeMap();
 
 // Delegated listeners for user-defined tracking
 document.getElementById('stage-tbody').addEventListener('input',e=>{
@@ -7168,94 +5862,3 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('change',()=>markLVUserDefined());
 });
-</script>
-
-<!-- MODAL: Theme editor -->
-
-
-<!-- ── MODAL: Save Performance Case ── -->
-<div class="modal-overlay" id="modal-save-case" style="display:none">
-  <div class="modal" style="max-width:440px;">
-    <div class="modal-header">
-      <span class="modal-title">Save Performance Case</span>
-      <button class="modal-close" onclick="closeModal('modal-save-case')">✕</button>
-    </div>
-    <div class="modal-body">
-      <label>Case Label</label>
-      <input type="text" id="case-label-input" placeholder="e.g. LEO 185 km — KSC" maxlength="80">
-      <div class="save-note" style="margin-top:8px;">
-        Saves the current result alongside any other cases for this vehicle.
-        Download all cases as a single .json file from the cases panel.
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-save-case')">Cancel</button>
-      <button class="modal-btn primary" onclick="doSaveCase()">Save Case</button>
-    </div>
-  </div>
-</div>
-<script>
-// Position fixed tooltips near their trigger
-document.addEventListener('mousemove',e=>{
-  const tip=e.target.closest('.info-tip');
-  if(!tip)return;
-  const box=tip.getBoundingClientRect();
-  const txt=tip.querySelector('.tip-text');
-  if(!txt)return;
-  txt.style.left=box.left+'px';
-  txt.style.top=(box.top-txt.offsetHeight-8)+'px';
-});
-</script>
-
-<!-- ── MODAL: Stage / Vehicle Detail ── -->
-<div class="modal-overlay" id="modal-stage-detail" style="display:none">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-header">
-      <span class="modal-title" id="sdm-title">Stage Details</span>
-      <button class="modal-close" onclick="closeModal('modal-stage-detail')">✕</button>
-    </div>
-    <div class="modal-body" id="sdm-body"></div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-stage-detail')">Close</button>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- ── MODAL: Advanced slot picker ── -->
-<div class="modal-overlay" id="modal-adv-slot" style="display:none">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-header">
-      <span class="modal-title">Load Stage into Slot</span>
-      <button class="modal-close" onclick="closeModal('modal-adv-slot')">✕</button>
-    </div>
-    <div class="modal-body">
-      <label>Select destination slot</label>
-      <select class="field" id="adv-slot-select" style="width:100%;margin-top:6px;"></select>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-adv-slot')">Cancel</button>
-      <button class="modal-btn primary" onclick="doAdvSlotLoad()">Load</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Advanced save stage slot picker -->
-<div class="modal-overlay" id="modal-adv-save-slot" style="display:none">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-header">
-      <span class="modal-title">Save Stage from Slot</span>
-      <button class="modal-close" onclick="closeModal('modal-adv-save-slot')">X</button>
-    </div>
-    <div class="modal-body">
-      <label>Select slot to save</label>
-      <select class="field" id="adv-save-slot-select" style="width:100%;margin-top:6px;"></select>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-btn" onclick="closeModal('modal-adv-save-slot')">Cancel</button>
-      <button class="modal-btn primary" onclick="doAdvSaveSlot()">Download .json</button>
-    </div>
-  </div>
-</div>
-</body>
-</html>
