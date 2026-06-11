@@ -10175,9 +10175,13 @@ function _missionBudgetCardHTML(m) {
   const b = missionBudget(m);
   const capColor = b.dvCapacityRemaining > 0 ? 'var(--accent3)' : 'var(--accent2)';
   const kv = (k, v, color) => `<div class="mission-state-kv"><span class="mission-state-key">${k}</span><span class="mission-state-val"${color ? ` style="color:${color}"` : ''}>${v}</span></div>`;
+  const _fv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
+  const _os = _fv && _fv.orbitState ? _fv.orbitState : null;
+  const orbitGrid = _os ? `<div class="mission-state-grid">${kv('Body', _os.body || 'Earth')}${kv('Apogee', Math.round(_os.apogee || 0).toLocaleString() + ' km')}${kv('Perigee', Math.round(_os.perigee ?? _os.apogee ?? 0).toLocaleString() + ' km')}${kv('Inc', (_os.inclination || 0) + '&deg;')}</div>` : '';
   return `
     <div class="mcc-section-header">Mission ΔV Budget</div>
     <div class="mission-log-card">
+      ${orbitGrid}
       <div class="mission-state-grid">
         ${kv('ΔV Expended', b.dvExpended.toLocaleString() + ' m/s')}
         ${kv('Prop Consumed', b.propConsumed.toLocaleString() + ' kg')}
@@ -10209,22 +10213,17 @@ function _missionBurnSectionHTML(m) {
     </div>`;
   }).join('');
 
-  // default to topmost stage with propellant
-  const defIdx = [...fv.stages].reduceRight((f, s, i) => f === -1 && progStageRemainingProp(s) > 0 ? i : f, -1);
+  // default to the heaviest stage that still has propellant
+  let defIdx = -1, _defMass = -1;
+  fv.stages.forEach((s, i) => { if (progStageRemainingProp(s) > 0) { const mss = progStageMass(s); if (mss > _defMass) { _defMass = mss; defIdx = i; } } });
   const stageOpts = fv.stages.map((s, i) => {
     const p = Math.round(progStageRemainingProp(s));
     return `<option value="${s.stageDefinitionId}"${i === defIdx ? ' selected' : ''}${p === 0 ? ' disabled' : ''}>${_missionStageLabelById(s.stageDefinitionId)} (${p.toLocaleString()} kg)</option>`;
   }).join('');
 
   return `
-    <div class="sl" style="margin-top:16px;">Current Orbital State</div>
+    <div class="sl" style="margin-top:16px;">Stage Propellant</div>
     <div class="panel" style="padding:10px 12px;">
-      <div class="mission-state-grid">
-        ${stateKV('Body', body)}
-        ${stateKV('Apogee', Math.round(apo).toLocaleString() + ' km')}
-        ${stateKV('Perigee', Math.round(peri).toLocaleString() + ' km')}
-        ${stateKV('Inc', inc + '&deg;')}
-      </div>
       <div style="display:flex;flex-direction:column;gap:3px;">${propRows}</div>
     </div>
 
@@ -10761,6 +10760,7 @@ function missionBandScrubTo(id, idx) {
 // ── Band view SVG renderer ─────────────────────────────────────────────────
 function missionSetAddEvt(id, type) {
   _missionAddEvt = (type === _missionAddEvt) ? null : type;
+  if (_missionAddEvt && _missionAddEvt !== '__menu__') _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
