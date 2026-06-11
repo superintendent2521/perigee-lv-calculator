@@ -1,8 +1,16 @@
-# Claude Code local state / agent worktrees
-.claude/
-
-# Unrelated binaries
-CrystalDiskInfo9_9_1.exe
-
-# Unzipped docx (source-of-truth is the .docx itself)
+# Local backups (not for the repo)
+*.bak
+lv_calc.html.premerge
+lv_calc.html.pre-refactor
+lv_calc.html.clean-bak
+lv_calc.html.postband-bak
+lv_calc.html.postui-bak
+LV_calc_saved.html
+lv_calc_saved.html
+# Scratch / scripts / temp
+_*.py
+_*.js
+_*.txt
+~$*
+*.exe
 extracted_docx/

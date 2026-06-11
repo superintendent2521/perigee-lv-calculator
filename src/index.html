@@ -1,0 +1,819 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Playground</title>
+
+<style>/* @@BUILD:CSS@@ */</style>
+</head>
+<body>
+<div id="rp-root">
+
+<header>
+  <h1>Rocket Playground</h1>
+  <nav class="page-nav">
+    <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
+    <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
+    <button class="nav-btn" id="nav-results" onclick="showPage('results')">Results</button>
+    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
+  </nav>
+  <div class="theme-wrap">
+    <label>Theme</label>
+    <select id="theme-select" onchange="applyTheme(this.value)">
+      <option value="perigee" selected>Perigee</option>
+      <option value="default">Default (Dark)</option>
+      <option value="spacex">SpaceX</option>
+      <option value="blueorigin">Blue Origin</option>
+    </select>
+    <button class="th-btn" onclick="openThemeEditor()">EDIT</button>
+    <button class="th-btn g" onclick="saveTheme()">SAVE Theme</button>
+    <label class="th-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadThemeFile(this)"></label>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ PAGE: VEHICLES -->
+<div id="page-vehicles" class="page active">
+
+  <!-- BEGINNER VIEW: Composition + Library -->
+  <div id="vehicles-beginner" style="display:grid;grid-template-columns:200px 2fr 2fr;gap:14px;align-items:stretch;margin-bottom:14px;">
+
+    <!-- ART PANEL: rocket canvas -->
+    <div class="lib-panel" id="veh-art-panel" style="margin-top:0;min-width:0;padding:10px;display:flex;flex-direction:column;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-shrink:0;">
+        <span class="sl" style="margin-bottom:0;flex:1;font-size:9px;">Rocket</span>
+        <button onclick="vehCanvasAutoLayout()" title="Auto-arrange assigned art"
+          style="font-family:var(--mono);font-size:8px;background:transparent;border:1px solid var(--border);
+            color:var(--text-dim);padding:2px 6px;cursor:pointer;letter-spacing:.04em;">Auto</button>
+        <button onclick="vehCanvasClear()" title="Clear canvas"
+          style="font-family:var(--mono);font-size:8px;background:transparent;border:1px solid var(--border);
+            color:var(--text-dim);padding:2px 6px;cursor:pointer;">✕</button>
+      </div>
+      <!-- Stage assignment strip -->
+      <div id="veh-stage-assign" style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;flex-shrink:0;">
+        <!-- built by vehBuildAssignStrip() -->
+      </div>
+      <!-- Freeform canvas -->
+      <div id="veh-canvas" style="flex:1;min-height:0;position:relative;overflow:hidden;
+        background:rgba(0,0,0,.35);border:1px solid var(--border);
+        background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px;">
+      </div>
+    </div>
+
+    <!-- LEFT: Stage Composition + controls -->
+    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div class="sl" style="margin-bottom:0;flex:1;">Stage Composition</div>
+        <button class="act-btn green" onclick="openSaveLVModal()">SAVE LV</button>
+        <button class="act-btn" onclick="openJSONModal()">{ } JSON</button>
+        <label class="act-btn" style="cursor:pointer;">LOAD<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
+      </div>
+
+      <!-- Config controls: stage count, boosters, restartable, fairing jettison -->
+      <div class="cfg-row" style="margin-bottom:8px;flex-wrap:wrap;">
+        <div class="cfg-item">
+          <label style="display:flex;align-items:center;">Inline Stages<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text">Stages ignited one after another in sequence.<br>Each fires only after the previous stage separates.</span></span></label>
+          <div class="seg" id="stage-selector"></div>
+          <input type="hidden" id="stage-count-input" value="1">
+        </div>
+        <div class="cfg-item">
+          <label>Strap-on Boosters?</label>
+          <div class="seg" id="booster-toggle">
+            <button onclick="setBoosters(true)">Yes</button>
+            <button class="active" onclick="setBoosters(false)">No</button>
+          </div>
+        </div>
+        <div class="cfg-item" id="booster-count-wrap" style="display:none">
+          <label># Boosters</label>
+          <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
+        </div>
+        <div class="cfg-item">
+          <label>Restartable Upper?</label>
+          <div class="seg" id="restart-toggle">
+            <button onclick="setRestart(true)">Yes</button>
+            <button class="active" onclick="setRestart(false)">No</button>
+          </div>
+        </div>
+        <div class="cfg-item">
+          <label>Fairing Jettison</label>
+          <select class="field" id="fairing-jettison"><option value="0">Never</option></select>
+        </div>
+        <div class="cfg-item">
+          <label>Fairing Mass (kg)</label>
+          <input type="number" class="field" id="fairing-mass" value="200" min="0">
+        </div>
+      </div>
+
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:0;flex:1;display:flex;flex-direction:column;">
+        <div style="padding:5px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.18);flex-shrink:0;">
+          <span style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;">STAGES</span>
+          <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+          <span id="comp-stage-count" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.55;flex-shrink:0;"></span>
+        </div>
+        <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;padding:6px;max-height:min(340px,calc(100vh - 360px));"></div>
+      </div>
+      <div id="preset-grid" style="display:none"></div>
+    </div>
+
+    <!-- RIGHT: Stage Library, same height cap -->
+    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div class="lib-toggle" onclick="toggleLibrary()">
+        <span class="sl" style="margin-bottom:0;flex:1;">Stage Library
+          <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
+            <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
+              <b>Click</b> any stage card for full specifications.<br>
+              <b>Drag</b> a stage to the Stage Composition area or a column header in the Stage Parameters table to add it to your rocket.<br>
+              <b>Dragging a Preset Vehicle</b> replaces all stages at once.
+            </span>
+          </span>
+        </span>
+        <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
+      </div>
+      <div class="lib-body" id="lib-body">
+        <div style="display:flex;gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
+          <input class="lib-search" type="text" id="lib-search" placeholder="Search stages..." oninput="buildStageLibrary()" style="flex:1;min-width:120px;margin-bottom:0;">
+          <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="white-space:nowrap;">⊟ Filters</button>
+          <button class="act-btn green" onclick="openAddStageModal()" style="white-space:nowrap;">Make Stage</button>
+          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load Stage<input type="file" accept=".json" style="display:none" onchange="loadUserStageFile(this)"></label>
+        </div>
+        <div class="filter-bar" style="margin-bottom:4px;min-height:0;">
+          <div id="active-filter-chips"></div>
+          <button class="filter-toggle-btn" id="clear-filters-btn" onclick="clearAllFilters()" style="display:none;border-color:var(--accent2);color:var(--accent2);">Clear All</button>
+          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;margin-left:auto;">
+            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;buildStageLibrary();">
+            My Stages Only
+          </label>
+        </div>
+        <div id="filter-panel" style="display:none;"></div>
+        <div id="lib-content"></div>
+      </div>
+    </div>
+
+  </div><!-- /vehicles-beginner -->
+
+  <!-- PERFORMANCE SUMMARY PANEL (beginner mode) -->
+  <div id="vehicles-perf">
+    <div class="vp-top-row" style="display:grid;grid-template-columns:1fr 210px;gap:14px;margin-bottom:14px;align-items:stretch;">
+      <!-- ΔV Budget -->
+      <div class="lib-panel" style="padding:12px 14px;" id="vp-dv">
+        <div class="vp-header">ΔV Budget <span class="vp-header-sub">stage-isolation basis · payload not included</span></div>
+        <div id="vp-dv-body"><div class="vp-dv-empty">// No stages loaded</div></div>
+      </div>
+      <!-- Vehicle Stats -->
+      <div class="lib-panel" style="padding:12px 14px;" id="vp-stats">
+        <div class="vp-header">Vehicle Summary</div>
+        <div id="vp-stats-body"><div class="vp-dv-empty">// —</div></div>
+      </div>
+    </div>
+    <!-- Stage Spec Comparison -->
+    <div class="lib-panel" style="padding:12px 14px;" id="vp-table">
+      <div class="vp-header">Stage Specifications</div>
+      <div id="vp-table-body"><div class="vp-dv-empty">// No stages loaded</div></div>
+    </div>
+  </div><!-- /vehicles-perf -->
+
+  <!-- ADVANCED VIEW: compact controls + table -->
+  <div id="vehicles-advanced" style="display:none;">
+    <div style="display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="act-btn green" onclick="openSaveLVModal()">Save LV</button>
+      <button class="act-btn" onclick="openJSONModal()">JSON</button>
+      <label class="act-btn" style="cursor:pointer;">Load LV<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+      <label class="act-btn" style="cursor:pointer;">Load Stage → Slot<input type="file" accept=".json" style="display:none" onchange="advLoadStage(this)"></label>
+      <button class="act-btn" onclick="openAdvSaveSlotModal()">Save Stage from Slot</button>
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px;">
+      <div class="cfg-item">
+        <label style="display:flex;align-items:center;">Inline Stages</label>
+        <div class="seg" id="stage-selector-adv"></div>
+      </div>
+      <div class="cfg-item">
+        <label>Strap-on Boosters?</label>
+        <div class="seg" id="booster-toggle-adv">
+          <button onclick="setBoosters(true)">Yes</button>
+          <button class="active" onclick="setBoosters(false)">No</button>
+        </div>
+      </div>
+      <div class="cfg-item" id="booster-count-wrap-adv" style="display:none;">
+        <label># Boosters</label>
+        <input type="number" class="field" id="num-boosters-adv" value="4" min="1" max="32"
+          oninput="document.getElementById('num-boosters').value=this.value;_suppressUD=true;buildTable();buildStageComposition();">
+      </div>
+      <div class="cfg-item">
+        <label>Restartable Upper?</label>
+        <div class="seg" id="restart-toggle-adv">
+          <button onclick="setRestart(true)">Yes</button>
+          <button class="active" onclick="setRestart(false)">No</button>
+        </div>
+      </div>
+      <div class="cfg-item">
+        <label>Fairing Jettison</label>
+        <select class="field" id="fairing-jettison-adv" onchange="document.getElementById('fairing-jettison').value=this.value;">
+          <option value="0">Never</option>
+        </select>
+      </div>
+      <div class="cfg-item">
+        <label>Fairing Mass (kg)</label>
+        <input type="number" class="field" id="fairing-mass-adv" value="200" min="0"
+          oninput="document.getElementById('fairing-mass').value=this.value;">
+      </div>
+    </div>
+  </div><!-- /vehicles-advanced -->
+
+  <!-- STAGE PARAMETERS (shown in advanced, hidden in beginner) -->
+  <div id="vehicles-stage-params" style="display:none;">
+  <!-- BOTTOM: Stage Parameters -->
+  <div class="panel">
+    <input type="hidden" id="payload-mass" value="0">
+
+    <div id="booster-inputs" style="display:none;margin-bottom:14px;">
+      <div class="sl" style="cursor:default;">Strap-on Boosters (per booster) <span style="font-size:8px;color:var(--text-dim);letter-spacing:.06em;font-weight:normal;">// drag from library</span></div>
+      <table class="stage-table" id="booster-table"
+        ondragover="event.preventDefault();event.dataTransfer.dropEffect='copy';this.style.background='rgba(0,200,255,.07)'"
+        ondragleave="this.style.background=''"
+        ondrop="this.style.background='';if(_draggingStage)applyBoosterData(_draggingStage)">
+        <thead><tr><th>Parameter</th><th class="sh">Booster</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">Dry Mass (kg)</td><td><input type="number" id="b_dry" value="500" min="0"></td></tr>
+          <tr><td class="rl">Propellant (kg)</td><td><input type="number" id="b_prop" value="5000" min="0"></td></tr>
+          <tr><td class="rl">Thrust (kN)</td><td><input type="number" id="b_thrust" value="400" min="0"></td></tr>
+          <tr><td class="rl">Isp (s)</td><td><input type="number" id="b_isp" value="265" min="1"></td></tr>
+          <tr><td class="rl">Residuals (%)</td><td><input type="number" id="b_res" value="2" min="0" max="20"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sl">Stage Parameters</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:6px;">
+      Drag from library → drop on column header &nbsp;|&nbsp; drop on strap-on table
+    </div>
+    <div class="tscroll">
+      <table class="stage-table" id="stage-table">
+        <thead><tr id="stage-header-row"><th>Parameter</th></tr></thead>
+        <tbody id="stage-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /vehicles-stage-params -->
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
+<div id="page-orbits" class="page">
+  <div class="two-col">
+
+    <!-- LEFT: Destination config -->
+    <div class="left-col">
+      <div class="left-section" id="sec-launch">
+      <div class="sl">Launch Site</div>
+      <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+          <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
+            <div id="site-selector-grid"></div>
+            <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+              <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+              <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+              <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+            </div>
+            <div class="site-note" id="site-note"></div>
+            <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+            <div class="site-desc" id="site-desc"></div>
+            <div class="act-row" style="margin-top:10px;">
+              <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
+              <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
+            </div>
+          </div>
+          <canvas id="site-map"></canvas>
+        </div>
+      </div>
+
+      </div><!-- /left-section launch-site -->
+      <div class="left-section" id="sec-orbit">
+      <div class="sl">Define an Orbit</div>
+      <div class="panel" id="panel-define-orbit">
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+          <div style="flex:1 1 220px;min-width:180px;">
+            <div class="mode-tog" style="margin-bottom:10px;">
+              <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
+              <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+            </div>
+            <div id="dest-orbit">
+              <div class="cfg-row">
+                <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+                <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+                <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
+                <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+              </div>
+              <div class="cfg-item">
+                <label>Trajectory</label>
+                <div class="seg" id="traj-toggle">
+                  <button onclick="setTraj('direct')">Direct</button>
+                  <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
+                  <button onclick="setTraj('optimal')">Optimal</button>
+                </div>
+              </div>
+            </div>
+            <div id="dest-escape" style="display:none;">
+              <div class="cfg-row">
+                <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+                <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
+                <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+              </div>
+              <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
+            </div>
+          </div>
+          <canvas id="orbit-diagram"></canvas>
+        </div>
+      </div>
+      </div><!-- /left-section define-orbit -->
+    </div><!-- /left-col -->
+
+    <!-- RIGHT: Orbit categories -->
+    <div>
+      <div class="sl">Destinations</div>
+      <div class="act-row" style="margin-bottom:8px;">
+        <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+        <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".json" style="display:none" onchange="loadOrbitFile(this)"></label>
+      </div>
+      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:8px;">
+      <div class="orbit-scroll" id="orbit-categories"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: RESULTS -->
+<div id="page-results" class="page">
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+    <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
+    <button onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+      style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
+  </div>
+  <div class="results-layout">
+
+    <!-- LEFT: Cases panel -->
+    <div class="cases-panel">
+      <div class="cases-header">
+        <span>Performance Cases</span>
+      </div>
+      <div class="act-row" style="margin-bottom:8px;">
+        <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+      </div>
+      <div id="case-list">
+        <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+      </div>
+      <div class="case-actions">
+        <label class="act-btn" style="cursor:pointer;text-align:center;width:100%;box-sizing:border-box;">Load Vehicle File<input type="file" accept=".json" style="display:none" onchange="loadLVFile(this)"></label>
+        <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled>Download All Cases</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results display -->
+    <div>
+      <div class="sl">Results</div>
+      <div class="results-panel" id="results-panel">
+        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target on the Launch page, then calculate.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div id="page-program" class="page">
+  <div class="sc-ed-toolbar">
+    <div class="seg" id="prog-tabs">
+      <button class="active" onclick="progShowTab('spacecraft')">Spacecraft</button>
+      <button onclick="progShowTab('fleet')">Fleet</button>
+      <button onclick="progShowTab('mission')">Missions</button>
+    </div>
+    <div class="prog-tab-actions" id="prog-tb-sc">
+      <label class="act-btn" style="cursor:pointer;">Load JSON
+        <input type="file" accept=".json" style="display:none" onchange="scEdLoadJSON(this)">
+      </label>
+    </div>
+    <div class="prog-tab-actions" id="prog-tb-fleet" style="display:none;"></div>
+    <div class="prog-tab-actions" id="prog-tb-mission" style="display:none;"></div>
+  </div>
+
+  <!-- Spacecraft panel -->
+  <div id="prog-panel-sc" class="sc-ed-wrap">
+    <div class="sc-ed-list-col">
+      <input type="text" id="sc-ed-search" class="sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
+      <div id="sc-ed-list" class="sc-ed-list-inner lv-list"></div>
+      <div style="padding:8px;border-top:1px solid var(--border);">
+        <button class="act-btn" style="width:100%" onclick="scEdNew()">+ New Spacecraft</button>
+      </div>
+    </div>
+    <div id="sc-ed-detail" class="sc-ed-main-col">
+      <div class="placeholder-msg">Select or create a spacecraft</div>
+    </div>
+  </div>
+
+  <!-- Fleet panel -->
+  <div id="prog-panel-fleet" class="sc-ed-wrap" style="display:none;">
+    <div class="sc-ed-list-col">
+      <input type="text" id="fleet-search" class="sc-ed-search" placeholder="Search fleet..." oninput="fleetRenderList()">
+      <div id="fleet-list" class="sc-ed-list-inner lv-list"></div>
+      <div style="padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+        <button class="act-btn" style="width:100%" onclick="fleetNew()">+ New Entry</button>
+        <button class="act-btn" style="width:100%" onclick="fleetOpenImportModal()">Import Vehicle</button>
+        <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Vehicle
+          <input type="file" accept=".json" style="display:none" onchange="fleetLoadJSON(this)">
+        </label>
+      </div>
+    </div>
+    <div id="fleet-detail" class="sc-ed-main-col">
+      <div class="placeholder-msg">Add or select a launch vehicle</div>
+    </div>
+  </div>
+
+  <!-- Missions panel — full-page command center -->
+  <div id="prog-panel-mission" class="sc-ed-wrap" style="display:none;">
+    <div class="sc-ed-list-col">
+      <input type="text" id="mission-search" class="sc-ed-search" placeholder="Search missions..." oninput="missionRenderList()">
+      <div id="mission-list" class="sc-ed-list-inner lv-list"></div>
+      <div style="padding:8px;border-top:1px solid var(--border);">
+        <button class="act-btn" style="width:100%" onclick="missionNew()">+ New Mission</button>
+      </div>
+    </div>
+    <div id="mission-cc" style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="placeholder-msg">Select or create a mission</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL: Fleet Vehicle Import ── -->
+<div class="modal-overlay" id="modal-fleet-import" style="display:none">
+  <div class="modal" style="max-width:580px;display:flex;flex-direction:column;height:68vh;">
+    <div class="modal-header">
+      <span class="modal-title">Import Launch Vehicle</span>
+      <button class="modal-close" onclick="closeModal('modal-fleet-import')">&#x2715;</button>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <input type="text" id="fleet-import-search" class="search-bar" style="margin-bottom:0;"
+        placeholder="Search vehicles..." oninput="fleetImportRenderList()">
+    </div>
+    <div id="fleet-import-list" style="flex:1;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- ── MODAL: Save LV ── -->
+<div class="modal-overlay" id="modal-save-lv" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Save Launch Vehicle</span><button class="modal-close" onclick="closeModal('modal-save-lv')">✕</button></div>
+    <div class="modal-body">
+      <label>Vehicle Name</label>
+      <input type="text" id="lv-save-name" placeholder="e.g. My Rocket Mk1" maxlength="60">
+      <label>Notes (optional)</label>
+      <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
+      <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Save Orbit ── -->
+<div class="modal-overlay" id="modal-save-orbit" style="display:none">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><span class="modal-title">Save Orbit</span><button class="modal-close" onclick="closeModal('modal-save-orbit')">✕</button></div>
+    <div class="modal-body">
+      <label>Orbit Name</label>
+      <input type="text" id="orbit-save-name" placeholder="e.g. Staging Orbit" maxlength="60">
+      <label style="margin-top:10px;">Category</label>
+      <select class="field" id="orbit-save-category" style="width:100%;margin-bottom:8px;" onchange="onOrbitCategoryChange(this.value)">
+      </select>
+      <div id="orbit-new-cat-wrap" style="display:none;">
+        <label>New Category Name</label>
+        <input type="text" id="orbit-new-cat-name" placeholder="e.g. My Missions" maxlength="40">
+      </div>
+      <div class="save-note" style="margin-top:8px;">Orbit appears inside the selected category alongside presets. Also downloads a .json file.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-orbit')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveOrbit()">Save & Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: JSON editor ── -->
+<div class="modal-overlay" id="modal-json" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">View / Edit Vehicle JSON</span><button class="modal-close" onclick="closeModal('modal-json')">✕</button></div>
+    <div class="modal-body">
+      <textarea id="json-editor" spellcheck="false"></textarea>
+      <div id="json-error" class="error-msg" style="display:none;margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-json')">Cancel</button>
+      <button class="modal-btn primary" onclick="applyJSON()">Apply to Calculator</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Theme editor ── -->
+<div class="modal-overlay" id="modal-theme" style="display:none">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <span class="modal-title">Theme Editor</span>
+      <button class="modal-close" onclick="closeModal('modal-theme')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:72vh;overflow-y:auto;">
+
+      <!-- Presets -->
+      <div class="te-section">Presets</div>
+      <div class="te-preset-row" id="te-preset-row"></div>
+
+      <!-- Colors -->
+      <div class="te-section">Colors</div>
+      <div id="te-color-rows"></div>
+
+      <!-- Fonts -->
+      <div class="te-section">Fonts</div>
+      <div class="te-row">
+        <span class="te-label">Display (sans)</span>
+        <input class="te-font-input" id="te-font-sans" placeholder="Outfit, sans-serif"
+          oninput="teApplyLive()">
+      </div>
+      <div class="te-row">
+        <span class="te-label">Monospace</span>
+        <input class="te-font-input" id="te-font-mono" placeholder="JetBrains Mono, monospace"
+          oninput="teApplyLive()">
+      </div>
+
+      <!-- Name -->
+      <div class="te-section">Save Custom Theme</div>
+      <div class="te-row">
+        <span class="te-label">Theme Name</span>
+        <input class="te-font-input" id="te-theme-name" placeholder="My Theme" style="width:160px;flex:none;">
+        <button class="modal-btn primary" onclick="teSaveCustom()" style="margin:0;">Save</button>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-theme')">Close</button>
+      <button class="modal-btn" onclick="teExportJSON()">Export JSON</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL: Add/Save Stage ── -->
+<div class="modal-overlay" id="modal-add-stage" style="display:none">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Stage to Library</span>
+      <button class="modal-close" onclick="closeModal('modal-add-stage')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="grid-column:1/-1;">
+          <label>Start from existing stage (optional)</label>
+          <select class="field" id="stg-base" style="width:100%;margin-bottom:0;" onchange="onBaseStageChange(this.value)">
+            <option value="">— Blank —</option>
+          </select>
+        </div>
+        <div>
+          <label>Stage Name</label>
+          <input type="text" id="stg-name" placeholder="e.g. My Upper Stage" maxlength="60" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label>Category</label>
+          <select class="field" id="stg-category" style="width:100%;margin-bottom:0;" onchange="onStageCatChange(this.value)">
+            <option value="Booster Stages">Booster Stages</option>
+            <option value="Upper Stages">Upper Stages</option>
+            <option value="Kick Stages">Kick Stages</option>
+            <option value="Side Boosters">Side Boosters</option>
+            <option value="__new__">[ New Category... ]</option>
+          </select>
+        </div>
+        <div id="stg-new-cat-wrap" style="display:none;grid-column:1/-1;">
+          <label>New Category Name</label>
+          <input type="text" id="stg-new-cat" placeholder="e.g. Custom Stages" maxlength="40" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label>Dry Mass (kg)</label>
+          <input type="number" id="stg-dry" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Propellant (kg)</label>
+          <input type="number" id="stg-prop" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Thrust (kN)</label>
+          <input type="number" id="stg-thrust" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Isp (s)</label>
+          <input type="number" id="stg-isp" placeholder="300" min="1" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Residuals (%)</label>
+          <input type="number" id="stg-res" value="2" min="0" max="20" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+        </div>
+        <div>
+          <label>Engine(s)</label>
+          <input type="text" id="stg-engines" placeholder="e.g. 2× RL-10" maxlength="40" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Notes</label>
+          <input type="text" id="stg-note" placeholder="Propellants, mission context, etc." maxlength="120" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="stg-tags" placeholder="e.g. Liquid Oxygen / Kerosene, Restartable, 1970s" style="margin-bottom:0;">
+        </div>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="stg-is-booster" style="accent-color:var(--accent2);">
+          <label style="display:inline;letter-spacing:normal;text-transform:none;font-size:11px;color:var(--text-bright);">Side Booster (populates strap-on booster section when dropped)</label>
+        </div>
+      </div>
+      <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>
+    </div>
+    <div class="modal-footer" id="add-stage-footer">
+      <button class="modal-btn" onclick="closeModal('modal-add-stage')">Cancel</button>
+      <button class="modal-btn" id="add-stage-lib-btn" onclick="doAddStage(false)">Add to Library</button>
+      <button class="modal-btn primary" id="add-stage-save-btn" onclick="doAddStage(true)">Add & Save .json</button>
+      <button class="modal-btn primary" id="edit-stage-save-btn" style="display:none;" onclick="doEditStage()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>/* @@BUILD:JS@@ */</script>
+
+<!-- MODAL: Theme editor -->
+
+
+<!-- ── MODAL: Save Performance Case ── -->
+<div class="modal-overlay" id="modal-save-case" style="display:none">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">Save Performance Case</span>
+      <button class="modal-close" onclick="closeModal('modal-save-case')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Case Label</label>
+      <input type="text" id="case-label-input" placeholder="e.g. LEO 185 km — KSC" maxlength="80">
+      <div class="save-note" style="margin-top:8px;">
+        Saves the current result alongside any other cases for this vehicle.
+        Download all cases as a single .json file from the cases panel.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-case')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveCase()">Save Case</button>
+    </div>
+  </div>
+</div>
+<script>
+// Position fixed tooltips near their trigger
+document.addEventListener('mousemove',e=>{
+  const tip=e.target.closest('.info-tip');
+  if(!tip)return;
+  const box=tip.getBoundingClientRect();
+  const txt=tip.querySelector('.tip-text');
+  if(!txt)return;
+  txt.style.left=box.left+'px';
+  txt.style.top=(box.top-txt.offsetHeight-8)+'px';
+});
+</script>
+
+<!-- ── MODAL: Stage / Vehicle Detail ── -->
+<div class="modal-overlay" id="modal-stage-detail" style="display:none">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="sdm-title">Stage Details</span>
+      <button class="modal-close" onclick="closeModal('modal-stage-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="sdm-body"></div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-stage-detail')">Close</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── MODAL: Advanced slot picker ── -->
+<div class="modal-overlay" id="modal-adv-slot" style="display:none">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title">Load Stage into Slot</span>
+      <button class="modal-close" onclick="closeModal('modal-adv-slot')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Select destination slot</label>
+      <select class="field" id="adv-slot-select" style="width:100%;margin-top:6px;"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-adv-slot')">Cancel</button>
+      <button class="modal-btn primary" onclick="doAdvSlotLoad()">Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Advanced save stage slot picker -->
+<div class="modal-overlay" id="modal-adv-save-slot" style="display:none">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title">Save Stage from Slot</span>
+      <button class="modal-close" onclick="closeModal('modal-adv-save-slot')">X</button>
+    </div>
+    <div class="modal-body">
+      <label>Select slot to save</label>
+      <select class="field" id="adv-save-slot-select" style="width:100%;margin-top:6px;"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-adv-save-slot')">Cancel</button>
+      <button class="modal-btn primary" onclick="doAdvSaveSlot()">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESTORED LV MODALS (from backup) ===== -->
+<div class="modal-overlay" id="modal-save-spaceport" style="display:none">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><span class="modal-title">Save Spaceport</span><button class="modal-close" onclick="closeModal('modal-save-spaceport')">✕</button></div>
+    <div class="modal-body">
+      <label>Name</label>
+      <input type="text" id="ssp-name" placeholder="e.g. My Launch Site" maxlength="60">
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <div style="flex:1"><label>Short Code</label><input type="text" id="ssp-short" placeholder="e.g. MLS" maxlength="6" style="text-transform:uppercase"></div>
+        <div style="flex:2"><label>Country</label><input type="text" id="ssp-country" placeholder="e.g. USA" maxlength="40"></div>
+      </div>
+      <div class="save-note" style="margin-top:8px;">Lat, lon, and azimuth range are pulled from the current fields. Also downloads a .json file.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-save-spaceport')">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveUserSpaceport()">Save & Download</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-confirm" style="display:none">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-confirm-title">Confirm</span>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-confirm-msg" style="font-size:13px;line-height:1.55;color:var(--text);margin:0;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-confirm')">Cancel</button>
+      <button class="modal-btn" id="modal-confirm-ok"
+        style="background:rgba(200,80,60,.18);border-color:#c8503c;color:#e07060;">Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-alert" style="display:none">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-alert-title">Notice</span>
+      <button class="modal-close" onclick="closeModal('modal-alert')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-alert-msg" style="font-size:13px;line-height:1.55;color:var(--text);margin:0;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal('modal-alert')">OK</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-veh-art-picker" style="display:none">
+  <div class="modal" style="width:380px;max-height:70vh;">
+    <div class="modal-header">
+      <span class="modal-title">Assign Stage Art</span>
+      <button onclick="closeModal('modal-veh-art-picker')" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="veh-art-picker-list"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-lookup" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Web Data Lookup</span>
+      <button class="modal-close" onclick="closeModal('modal-lookup')">✕</button>
+    </div>
+    <div id="lu-url-bar">
+      <input id="lu-url-input" type="url"
+        placeholder="Paste a Wikipedia, Astronautix, or Skyrocket URL and press Fetch →"
+        onkeydown="if(event.key==='Enter')lvcLuFetch()">
+      <button class="modal-btn primary" onclick="lvcLuFetch()">Fetch</button>
+    </div>
+    <div class="modal-body" style="padding:14px;" id="lu-detail">
+      <div class="lu-dim-msg">Paste a page URL above and click Fetch</div>
+    </div>
+    <div id="lu-apply-bar">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);" id="lu-apply-note">No data loaded</span>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-btn" onclick="lvcLuSelectAll(true)">Select All</button>
+        <button class="modal-btn" onclick="lvcLuSelectAll(false)">None</button>
+        <button class="modal-btn primary" onclick="lvcLuApply()">Apply Selected to Form</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

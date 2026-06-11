@@ -1,6 +1,14 @@
 # lv_calc.html — Project Guide
 
-Single-file orbital mission planning tool. Everything lives in `lv_calc.html` (~7100 lines): all CSS in `<style>`, all JS in one `<script>` block at end of body. No build system, no npm, no bundler.
+Orbital mission planning tool. Deploys as ONE self-contained `lv_calc.html` (for Squarespace), but is now **split into modular source files under `src/` with a Python build step**.
+
+## ⚠️ BUILD WORKFLOW — read first
+- **`src/` is the source of truth. NEVER edit `lv_calc.html` directly — it is a generated artifact and your changes will be overwritten by the next build.**
+- Edit the small files: `src/js/NNN-name.js` (60 modules, one per section, named after the old `// ─── SECTION ───` markers), `src/css/styles.css`, `src/index.html` (HTML skeleton + body; contains `/* @@BUILD:CSS@@ */` and `/* @@BUILD:JS@@ */` markers).
+- Then run **`python build.py`** → concatenates `src/js/*.js` (sorted by filename = load order) into one `<script>`, `src/css/styles.css` into one `<style>`, and writes `lv_calc.html`. It aborts if any source file contains a `�` (corruption guard).
+- Key modules: `570-mission-manager.js` (~1283 lines, the command center / band view / events), `430-program-module-phase-8-node-map.js`, `360-430` = program engine phases, `210-stage-library.js` (~1884), `230-orbit-diagram.js`, `280-vehicle-canvas.js`. `_missionNodeMapHTML` + the mission UI live in `570`.
+- **DeepSeek**: now give it ONE `src/` module (narrow scope, cheap). After any DeepSeek run, check that module for `�` (`build.py` will also catch it and abort). Then `python build.py` + browser-verify.
+- The earlier "all JS in one `<script>`" structure still describes the BUILT file; section markers map 1:1 to `src/js/` filenames.
 
 ## Hard invariants
 
