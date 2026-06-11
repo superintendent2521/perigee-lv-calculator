@@ -9791,7 +9791,7 @@ function missionRenderDetail() {
 
   // ── events log ──
   const logHTML = m.log.length
-    ? m.log.map((e, i) => `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div><button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button></div>`).join('')
+    ? m.log.map((e, i) => `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div><button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button>${_missionSelEvt===i ? _missionEventDetailHTML(m, i) : ''}</div>`).join('')
     : '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No events yet.<br>Configure a LAUNCH and click Execute.</div>';
 
   // ── center content ──
@@ -9870,7 +9870,6 @@ function missionRenderDetail() {
       <div class="mcc-right-col">
         <div class="mcc-events-header">EVENTS</div>
         <div class="mcc-panel-pad" style="border-bottom:1px solid var(--border);flex-shrink:0;">${_missionAddEventHTML(m)}</div>
-        ${_missionEventDetailHTML(m)}
         <div class="mcc-events-list">${logHTML}</div>
       </div>
     </div>
@@ -10072,9 +10071,9 @@ function missionSelectEvent(id, idx) {
   missionRenderDetail();
 }
 
-function _missionEventDetailHTML(m) {
-  if (_missionSelEvt == null) return '';
-  const e = m.log[_missionSelEvt];
+function _missionEventDetailHTML(m, idx) {
+  if (idx == null) return '';
+  const e = m.log[idx];
   if (!e) return '';
   const id = m.missionId;
   let fields = '';
@@ -10104,14 +10103,41 @@ function _missionEventDetailHTML(m) {
   } else if (e.type === 'EXPEND') {
     fields = `<div class="mission-state-kv"><span class="mission-state-key">Name</span><span class="mission-state-val">${e.vehicleName || e.stageName || ''}</span></div>`;
   }
+
+  const isLatestBurn = e.type === 'BURN' && idx === m.log.length - 1 && PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
+  const editForm = isLatestBurn ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="cfg-row" style="flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:8px;">
+          <div class="cfg-item">
+            <label class="cfg-label">Burn Type</label>
+            <select id="edit-burn-type-${id}" style="background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;">
+              <option value="HOHMANN"${e.burnType==='HOHMANN'?' selected':''}>Hohmann Transfer</option>
+              <option value="CIRC"${e.burnType==='CIRC'?' selected':''}>Circularize at Apo</option>
+              <option value="TLI"${e.burnType==='TLI'?' selected':''}>Trans-Lunar Injection</option>
+              <option value="LOI"${e.burnType==='LOI'?' selected':''}>Lunar Orbit Insertion</option>
+              <option value="PLANE_CHANGE"${e.burnType==='PLANE_CHANGE'?' selected':''}>Plane Change</option>
+              <option value="CUSTOM"${e.burnType==='CUSTOM'?' selected':''}>Custom ΔV</option>
+            </select>
+          </div>
+          <div class="cfg-item">
+            <label class="cfg-label">Param</label>
+            <input type="number" id="edit-burn-param-${id}" class="field" value="${e.burnParam ?? 0}" style="width:100px;">
+          </div>
+        </div>
+        <button class="act-btn" style="background:var(--accent);color:#000;font-weight:600;padding:5px 14px;" onclick="missionApplyBurnEdit('${id}',${idx})">Apply</button>
+      </div>` : '';
+
+  const note = !isLatestBurn && e.type === 'BURN' ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;">// inline editing currently supports the latest burn</div>` : '';
+
   return `<div class="mcc-section-header">EVENT DETAIL</div>
     <div class="mcc-panel-pad">
       <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:8px;">${e.type}</div>
       <div class="mission-state-grid">${fields}</div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;">// editing event parameters is a future enhancement</div>
+      ${note}
+      ${editForm}
       <div style="display:flex;gap:6px;margin-top:8px;">
-        <button class="act-btn" onclick="missionDeleteEvent('${id}',${_missionSelEvt})">Delete Event</button>
-        <button class="act-btn" onclick="missionSelectEvent('${id}',${_missionSelEvt})">Close</button>
+        <button class="act-btn" onclick="missionDeleteEvent('${id}',${idx})">Delete Event</button>
+        <button class="act-btn" onclick="missionSelectEvent('${id}',${idx})">Close</button>
       </div>
     </div>`;
 }
@@ -10303,6 +10329,63 @@ function missionBurnPreview(id) {
   el.innerHTML = `<span style="color:var(--text-dim)">Required ΔV: </span><span style="color:var(--accent3);font-size:13px;">${Math.round(dv).toLocaleString()} m/s</span>${note ? ` &nbsp;<span style="color:var(--text-dim);font-size:10px;">${note}</span>` : ''}`;
 }
 
+function _missionComputeBurn(fv, bt, pval) {
+  const os = fv.orbitState || {};
+  const body = os.body||'Earth';
+  const apo = os.apogee||0;
+  const peri = os.perigee ?? apo;
+  const inc = os.inclination||0;
+  const lan = os.lan||0;
+
+  let dvTarget = 0, newOrbit = null, burnLabel = bt;
+  if (bt === 'HOHMANN') {
+    const h = progDvHohmann(body, peri, pval);
+    dvTarget  = h.total_ms;
+    newOrbit  = { body, apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
+    burnLabel = `Hohmann → ${pval.toLocaleString()} km`;
+  } else if (bt === 'CIRC') {
+    dvTarget  = progDvCircularizeAtApo(body, peri, apo);
+    newOrbit  = { body, apogee: apo, perigee: apo, inclination: inc, lan, epoch: 0, surface: false };
+    burnLabel = `Circularize @ ${Math.round(apo).toLocaleString()} km`;
+  } else if (bt === 'TLI') {
+    dvTarget  = progDvTLI(peri);
+    newOrbit  = { body: 'Moon', apogee: 100, perigee: 100, inclination: inc, lan, epoch: 0, surface: false };
+    burnLabel = 'TLI';
+  } else if (bt === 'LOI') {
+    dvTarget  = progDvLOI(pval, peri);
+    newOrbit  = { body: 'Moon', apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
+    burnLabel = `LOI → ${pval} km (Moon)`;
+  } else if (bt === 'PLANE_CHANGE') {
+    dvTarget  = progDvPlaneChange(body, (apo + peri) / 2, Math.abs(pval - inc));
+    newOrbit  = { body, apogee: apo, perigee: peri, inclination: pval, lan, epoch: 0, surface: false };
+    burnLabel = `Plane Change ${inc}° → ${pval}°`;
+  } else if (bt === 'CUSTOM') {
+    dvTarget  = pval;
+    newOrbit  = null;
+    burnLabel = `Custom (${pval.toLocaleString()} m/s)`;
+  }
+  return { dvTarget, newOrbit, burnLabel };
+}
+
+function _missionSnapState(fv) {
+  return {
+    orbit: fv.orbitState ? {...fv.orbitState} : null,
+    status: fv.status,
+    fills: fv.stages.map(s => (s.tanks||[]).map(t => t.fill))
+  };
+}
+
+function _missionRestoreState(fv, snap) {
+  if (!snap) return;
+  fv.orbitState = snap.orbit ? {...snap.orbit} : fv.orbitState;
+  if (snap.status) fv.status = snap.status;
+  if (snap.fills) fv.stages.forEach((s,i)=>{
+    (s.tanks||[]).forEach((t,j)=>{
+      if (snap.fills[i] && snap.fills[i][j] != null) t.fill = snap.fills[i][j];
+    });
+  });
+}
+
 function missionExecBurn(id) {
   const m = _missionGet(id);
   if (!m || !m.vehicleId) return;
@@ -10318,34 +10401,10 @@ function missionExecBurn(id) {
   const pval = parseFloat(document.getElementById('burn-param-val-' + id)?.value) || 0;
   const stageId = document.getElementById('burn-stage-' + id)?.value || null;
 
-  let dvTarget = 0, newOrbit = null, burnLabel = bt;
+  const _before = _missionSnapState(fv);
+  let dvTarget, newOrbit, burnLabel;
   try {
-    if (bt === 'HOHMANN') {
-      const h = progDvHohmann(body, peri, pval);
-      dvTarget  = h.total_ms;
-      newOrbit  = { body, apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `Hohmann → ${pval.toLocaleString()} km`;
-    } else if (bt === 'CIRC') {
-      dvTarget  = progDvCircularizeAtApo(body, peri, apo);
-      newOrbit  = { body, apogee: apo, perigee: apo, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `Circularize @ ${Math.round(apo).toLocaleString()} km`;
-    } else if (bt === 'TLI') {
-      dvTarget  = progDvTLI(peri);
-      newOrbit  = { body: 'Moon', apogee: 100, perigee: 100, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = 'TLI';
-    } else if (bt === 'LOI') {
-      dvTarget  = progDvLOI(pval, peri);
-      newOrbit  = { body: 'Moon', apogee: pval, perigee: pval, inclination: inc, lan, epoch: 0, surface: false };
-      burnLabel = `LOI → ${pval} km (Moon)`;
-    } else if (bt === 'PLANE_CHANGE') {
-      dvTarget  = progDvPlaneChange(body, (apo + peri) / 2, Math.abs(pval - inc));
-      newOrbit  = { body, apogee: apo, perigee: peri, inclination: pval, lan, epoch: 0, surface: false };
-      burnLabel = `Plane Change ${inc}° → ${pval}°`;
-    } else if (bt === 'CUSTOM') {
-      dvTarget  = pval;
-      newOrbit  = null;
-      burnLabel = `Custom (${pval.toLocaleString()} m/s)`;
-    }
+    ({ dvTarget, newOrbit, burnLabel } = _missionComputeBurn(fv, bt, pval));
   } catch(e) { alert('Burn compute error: ' + e.message); return; }
 
   const ev = progMakeEvent('BURN', {
@@ -10366,6 +10425,9 @@ function missionExecBurn(id) {
     vehicleId:    m.vehicleId,
     burnLabel,
     burnType:      bt,
+    burnParam:     pval,
+    stageId,
+    stateBefore:   _before,
     dvTarget,
     dv_actual:     result.dv_actual  || 0,
     prop_consumed: result.prop_consumed || 0,
@@ -10377,6 +10439,23 @@ function missionExecBurn(id) {
   _missionAddEvt = null;
   _missionViewMode = 'nodemap';
   missionRenderDetail();
+}
+
+function missionApplyBurnEdit(id, idx) {
+  const m = _missionGet(id); if(!m) return;
+  const e = m.log[idx]; if(!e || e.type!=='BURN') return;
+  const fv = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId]; if(!fv || !e.stateBefore) return;
+  const bt = document.getElementById('edit-burn-type-'+id)?.value || e.burnType;
+  const pval = parseFloat(document.getElementById('edit-burn-param-'+id)?.value) || 0;
+  _missionRestoreState(fv, e.stateBefore);
+  let r; try { r = _missionComputeBurn(fv, bt, pval); } catch(err){ return; }
+  const ev = progMakeEvent('BURN', { vehicleId: m.vehicleId, stagingStageId: e.stageId||null, burnType: bt, dvTarget: r.dvTarget });
+  const res = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
+  if (r.newOrbit && res.result!=='FAILED') { fv.orbitState = r.newOrbit; fv.status='ORBIT'; }
+  e.burnType=bt; e.burnParam=pval; e.dvTarget=r.dvTarget; e.burnLabel=r.burnLabel;
+  e.dv_actual=res.dv_actual||0; e.prop_consumed=res.prop_consumed||0; e.result=res.result;
+  e.orbitAfter = fv.orbitState?{...fv.orbitState}:null;
+  _missionSelEvt = null; missionRenderDetail();
 }
 
 function missionDropStage(missionId, stageDefId) {
