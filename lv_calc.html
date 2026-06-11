@@ -9698,6 +9698,7 @@ let _missionSel = null;
 let _missionViewMode  = 'nodemap';    // 'band' | 'nodemap'  (Step 4)
 let _missionBandScrub = null;
 let _missionAddEvt = null;   // null = closed; '__menu__' = picker; or a type          // scrubbed event index for the band view (null = last event)
+let _missionSelEvt = null;   // selected event index for event detail panel
 let _missionBridgeMode = false;        // true while user is drawing a maneuver bridge
 let _missionBridgeFrom = null;         // node id chosen as the bridge start
 
@@ -9790,7 +9791,7 @@ function missionRenderDetail() {
 
   // ── events log ──
   const logHTML = m.log.length
-    ? m.log.map((e, i) => `<div id="mlog-${id}-${i}">${_missionLogCardHTML(e)}</div>`).join('')
+    ? m.log.map((e, i) => `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div><button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button></div>`).join('')
     : '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No events yet.<br>Configure a LAUNCH and click Execute.</div>';
 
   // ── center content ──
@@ -9869,6 +9870,7 @@ function missionRenderDetail() {
       <div class="mcc-right-col">
         <div class="mcc-events-header">EVENTS</div>
         <div class="mcc-panel-pad" style="border-bottom:1px solid var(--border);flex-shrink:0;">${_missionAddEventHTML(m)}</div>
+        ${_missionEventDetailHTML(m)}
         <div class="mcc-events-list">${logHTML}</div>
       </div>
     </div>
@@ -9986,6 +9988,8 @@ function missionExecLaunch(id) {
     payloadNames: m.payloadScIds.map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean),
   });
 
+  _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10051,6 +10055,66 @@ function _missionLogCardHTML(entry) {
 }
 
 
+
+function missionDeleteEvent(id, idx) {
+  const m = _missionGet(id); if (!m) return;
+  if (m.log[idx] && m.log[idx].type === 'LAUNCH') {
+    m.log = []; m.vehicleId = null; m.vehicleIds = [];
+  } else {
+    m.log.splice(idx, 1);
+  }
+  _missionSelEvt = null;
+  missionRenderDetail();
+}
+
+function missionSelectEvent(id, idx) {
+  _missionSelEvt = (_missionSelEvt === idx ? null : idx);
+  missionRenderDetail();
+}
+
+function _missionEventDetailHTML(m) {
+  if (_missionSelEvt == null) return '';
+  const e = m.log[_missionSelEvt];
+  if (!e) return '';
+  const id = m.missionId;
+  let fields = '';
+  if (e.type === 'LAUNCH') {
+    const o = e.orbit || {};
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">Body</span><span class="mission-state-val">${o.body}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Alt</span><span class="mission-state-val">${(o.alt_km||0).toLocaleString()} km</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Inc</span><span class="mission-state-val">${(o.inc_deg||0)}&deg;</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Payload</span><span class="mission-state-val">${(e.payloadMass||0).toLocaleString()} kg</span></div>`;
+  } else if (e.type === 'BURN') {
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">Burn</span><span class="mission-state-val">${e.burnLabel||e.burnType||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Target ΔV</span><span class="mission-state-val">${Math.round(e.dvTarget||0).toLocaleString()} m/s</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Actual ΔV</span><span class="mission-state-val">${Math.round(e.dv_actual||0).toLocaleString()} m/s</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Prop Consumed</span><span class="mission-state-val">${Math.round(e.prop_consumed||0).toLocaleString()} kg</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Result</span><span class="mission-state-val">${e.result||''}</span></div>`;
+  } else if (e.type === 'MANEUVER') {
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">Route</span><span class="mission-state-val">${e.fromLabel||''} → ${e.toLabel||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">ΔV</span><span class="mission-state-val">${e.dv!=null?e.dv.toLocaleString()+' m/s':'n/a'}</span></div>`;
+  } else if (e.type === 'SEPARATE') {
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">From</span><span class="mission-state-val">${e.parentName||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Lower</span><span class="mission-state-val">${e.lowerName||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Upper</span><span class="mission-state-val">${e.upperName||''}</span></div>`;
+  } else if (e.type === 'DOCK') {
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">Vehicle A</span><span class="mission-state-val">${e.aName||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Vehicle B</span><span class="mission-state-val">${e.tName||''}</span></div>
+      <div class="mission-state-kv"><span class="mission-state-key">Merged</span><span class="mission-state-val">${e.mergedName||''}</span></div>`;
+  } else if (e.type === 'EXPEND') {
+    fields = `<div class="mission-state-kv"><span class="mission-state-key">Name</span><span class="mission-state-val">${e.vehicleName || e.stageName || ''}</span></div>`;
+  }
+  return `<div class="mcc-section-header">EVENT DETAIL</div>
+    <div class="mcc-panel-pad">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:8px;">${e.type}</div>
+      <div class="mission-state-grid">${fields}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;">// editing event parameters is a future enhancement</div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="act-btn" onclick="missionDeleteEvent('${id}',${_missionSelEvt})">Delete Event</button>
+        <button class="act-btn" onclick="missionSelectEvent('${id}',${_missionSelEvt})">Close</button>
+      </div>
+    </div>`;
+}
 
 function _missionDvToOrbit(body, alt_km) {
   const b = PROG_BODIES[body];
@@ -10312,6 +10376,7 @@ function missionExecBurn(id) {
   });
 
   _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10401,6 +10466,7 @@ function missionExecSeparate(id, sepIndex) {
     upperName: upper ? upper.name : '?', upperStages: upper ? upper.stages.length : 0,
   });
   _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10429,6 +10495,7 @@ function missionExecDock(id, targetVehId) {
     warnings: ev.warnings || [],
   });
   _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10446,6 +10513,7 @@ function missionExecExpendVehicle(id, vehId) {
     m.vehicleId = next ? next.id : vehId;
   }
   _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10580,6 +10648,7 @@ function missionExecManeuver(id, fromId, toId) {
   _missionBridgeMode = false;
   _missionBridgeFrom = null;
   _missionAddEvt = null;
+  _missionViewMode = 'nodemap';
   missionRenderDetail();
 }
 
@@ -10817,7 +10886,7 @@ function _missionBandViewHTML(m) {
       const lastPt = lane.points[lane.points.length - 1];
       const plusX = X(lastPt.index) + 22;
       const plusY = Y(lastPt.alt);
-      lanesHTML += `<circle cx="${plusX}" cy="${plusY}" r="10" fill="var(--input)" stroke="${lane.color}" stroke-width="1.5" style="cursor:pointer" onclick="missionSetActiveVehicle('${id}','${lane.vehicleId}')"><title>Add event to ${lane.name}</title></circle>`;
+      lanesHTML += `<circle cx="${plusX}" cy="${plusY}" r="10" fill="var(--input)" stroke="${lane.color}" stroke-width="1.5" style="cursor:pointer" onclick="missionSetActiveVehicle('${id}','${lane.vehicleId}');missionSetAddEvt('${id}','__menu__')"><title>Add event to ${lane.name}</title></circle>`;
       lanesHTML += `<text x="${plusX}" y="${plusY + 4}" text-anchor="middle" font-family="var(--mono)" font-size="13" font-weight="bold" fill="${lane.color}" style="cursor:pointer;pointer-events:none">+</text>`;
     }
   }
