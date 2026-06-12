@@ -328,6 +328,29 @@ function _missionLogCardHTML(entry) {
     <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright)">${entry.vehicleLevel ? entry.vehicleName : entry.stageName}</span>
     <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:auto">${entry.vehicleLevel ? 'vehicle expended' : 'stage dropped'}</span>
   </div>`;
+  if (entry.type === 'RENDEZVOUS') return `<div class="mission-log-card" style="padding:8px 14px;">
+    <span class="mission-log-type">RENDEZVOUS</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${entry.activeName||'?'} → matches ${entry.targetName||'?'}</div>
+    ${entry.matched===false ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">// target not found on replay</div>` : ''}
+  </div>`;
+  if (entry.type === 'TRANSFER_PROPELLANT') return `<div class="mission-log-card" style="padding:8px 14px;">
+    <span class="mission-log-type">PROP XFER</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${(entry.transferred||0).toLocaleString()} kg</div>
+    ${(entry.warnings||[]).map(w => `<div style="font-family:var(--mono);font-size:9px;color:var(--accent2);">${w}</div>`).join('')}
+  </div>`;
+  if (entry.type === 'TRANSFER_CREW') return `<div class="mission-log-card" style="padding:8px 14px;">
+    <span class="mission-log-type">CREW XFER</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${entry.transferred||0} crew</div>
+    ${(entry.warnings||[]).map(w => `<div style="font-family:var(--mono);font-size:9px;color:var(--accent2);">${w}</div>`).join('')}
+  </div>`;
+  if (entry.type === 'REENTER') return `<div class="mission-log-card" style="padding:8px 14px;">
+    <span class="mission-log-type">REENTER</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${entry.vehicleName||'?'} → Earth surface</div>
+  </div>`;
+  if (entry.type === 'RECOVER') return `<div class="mission-log-card" style="padding:8px 14px;">
+    <span class="mission-log-type">RECOVER</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${entry.vehicleName||'?'} recovered</div>
+  </div>`;
   if (entry.type !== 'LAUNCH') return '';
   const o  = entry.orbit;
   const sr = entry.stagingResult || {};
@@ -801,6 +824,34 @@ function missionRecompute(m) {
       const tgt = live.find(v => v.name === (e.vehicleName || e.stageName)) || active;
       if (tgt) { tgt.status = 'EXPENDED'; e.vehicleId = tgt.vehicleId; if (active === tgt) active = live.find(v => v !== tgt && v.status !== 'EXPENDED') || tgt; }
     }
+    else if (e.type === 'RENDEZVOUS') {
+      if (active) e.vehicleId = active.vehicleId;
+      const tgt = live.find(v => v !== active && v.name === e.targetName);
+      if (active && tgt && tgt.orbitState) { active.orbitState = { ...tgt.orbitState }; e.matched = true; } else { e.matched = false; }
+    }
+    else if (e.type === 'TRANSFER_PROPELLANT') {
+      if (active) { e.vehicleId = active.vehicleId;
+        const ev = progMakeEvent('TRANSFER_PROPELLANT', { vehicleId: active.vehicleId, sourceStageId: e.sourceStageId, destStageId: e.destStageId, propellantType: e.propellantType, mass_kg: e.mass_kg });
+        const res = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
+        e.result = res.result; e.transferred = res.transferred_kg || 0; e.warnings = ev.warnings || []; }
+    }
+    else if (e.type === 'TRANSFER_CREW') {
+      if (active) { e.vehicleId = active.vehicleId;
+        const ev = progMakeEvent('TRANSFER_CREW', { vehicleId: active.vehicleId, sourceStageId: e.sourceStageId, destStageId: e.destStageId, count: e.count });
+        const res = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
+        e.result = res.result; e.transferred = res.transferred || 0; e.warnings = ev.warnings || []; }
+    }
+    else if (e.type === 'REENTER') {
+      if (active) { e.vehicleId = active.vehicleId;
+        const ev = progMakeEvent('LAND', { vehicleId: active.vehicleId, body: 'Earth' });
+        progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
+        e.orbitAfter = active.orbitState ? { ...active.orbitState } : null; e.result = 'SUCCESS'; }
+    }
+    else if (e.type === 'RECOVER') {
+      const tgt = live.find(v => v.name === e.vehicleName) || active;
+      if (tgt) { tgt.status = 'RECOVERED'; e.vehicleId = tgt.vehicleId;
+        if (active === tgt) active = live.find(v => v !== tgt && v.status !== 'EXPENDED' && v.status !== 'RECOVERED') || tgt; }
+    }
   }
   m.vehicleIds = live.map(v => v.vehicleId);
   m.vehicleId = active ? active.vehicleId : (m.vehicleIds[0] || null);
@@ -943,6 +994,45 @@ function missionExecExpendVehicle(id, vehId) {
   _missionViewMode = 'nodemap';
   missionRecompute(m);
   missionRenderDetail();
+}
+
+function missionExecRendezvous(id, targetVid) {
+  const m = _missionGet(id); if (!m || !targetVid) return;
+  const tgt = PROG_ACTIVE_PROGRAM.vehicles[targetVid];
+  const act = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
+  m.log.push({ type: 'RENDEZVOUS', targetName: tgt ? tgt.name : '?', activeName: act ? act.name : '?' });
+  _missionAddEvt = null; _missionViewMode = 'nodemap'; missionRecompute(m); missionRenderDetail();
+}
+function missionExecPropTransfer(id) {
+  const m = _missionGet(id); if (!m) return;
+  const fv = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId]; if (!fv) return;
+  const src = document.getElementById('xfer-src-' + id)?.value;
+  const dst = document.getElementById('xfer-dst-' + id)?.value;
+  const mass = parseFloat(document.getElementById('xfer-mass-' + id)?.value) || 0;
+  const ss = fv.stages.find(s => s.stageDefinitionId === src);
+  const pt = (ss && ss.tanks && ss.tanks[0]) ? (ss.tanks[0].propellantType ?? ss.tanks[0].type) : null;
+  m.log.push({ type: 'TRANSFER_PROPELLANT', sourceStageId: src, destStageId: dst, propellantType: pt, mass_kg: mass });
+  _missionAddEvt = null; missionRecompute(m); missionRenderDetail();
+}
+function missionExecCrewTransfer(id) {
+  const m = _missionGet(id); if (!m) return;
+  const src = document.getElementById('xfer-csrc-' + id)?.value;
+  const dst = document.getElementById('xfer-cdst-' + id)?.value;
+  const count = parseInt(document.getElementById('xfer-ccount-' + id)?.value) || 0;
+  m.log.push({ type: 'TRANSFER_CREW', sourceStageId: src, destStageId: dst, count });
+  _missionAddEvt = null; missionRecompute(m); missionRenderDetail();
+}
+function missionExecReenter(id) {
+  const m = _missionGet(id); if (!m) return;
+  const act = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
+  m.log.push({ type: 'REENTER', vehicleName: act ? act.name : '?' });
+  _missionAddEvt = null; _missionViewMode = 'nodemap'; missionRecompute(m); missionRenderDetail();
+}
+function missionExecRecover(id, vehId) {
+  const m = _missionGet(id); if (!m || !vehId) return;
+  const fv = PROG_ACTIVE_PROGRAM.vehicles[vehId];
+  m.log.push({ type: 'RECOVER', vehicleName: fv ? fv.name : '?' });
+  _missionAddEvt = null; missionRecompute(m); missionRenderDetail();
 }
 
 function _missionSeparateLogCardHTML(entry) {
@@ -1197,7 +1287,7 @@ function _missionAddEventHTML(m) {
   if (_missionAddEvt == null) {
     return `<button class="act-btn" style="width:100%;" onclick="missionSetAddEvt('${id}','__menu__')">＋ Add Event</button>`;
   }
-  const types = [['burn','Burn'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend']];
+  const types = [['burn','Burn'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend'],['rendezvous','Rendezvous'],['proptransfer','Prop Transfer'],['crewtransfer','Crew Transfer'],['reenter','Reenter'],['recover','Recover']];
   const typeBtns = types.map(([t,label]) =>
     `<button class="act-btn" style="padding:3px 8px;font-size:10px;${_missionAddEvt===t?'background:var(--accent);color:#000;':''}" onclick="missionSetAddEvt('${id}','${t}')">${label}</button>`
   ).join('');
@@ -1245,6 +1335,38 @@ function _missionAddEventHTML(m) {
       <label class="cfg-label">To</label><select id="addev-mvt-${id}" class="mcc-field-select" style="margin-bottom:6px;">${o}</select>
       <button class="act-btn" style="width:100%;" onclick="missionExecManeuver('${id}',document.getElementById('addev-mvf-${id}').value,document.getElementById('addev-mvt-${id}').value)">Add Maneuver</button>
       <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;">// or draw a bridge on the Node Map</div>`;
+  } else if (_missionAddEvt === 'rendezvous') {
+    const others = live.filter(x => x.id !== m.vehicleId);
+    if (others.length) {
+      const o = others.map(x => `<option value="${x.id}">${x.fv.name}</option>`).join('');
+      form = `<select id="addev-rend-${id}" class="mcc-field-select" style="margin-bottom:6px;">${o}</select>
+        <button class="act-btn" style="width:100%;" onclick="missionExecRendezvous('${id}',document.getElementById('addev-rend-${id}').value)">Rendezvous</button>`;
+    } else form = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// need another live vehicle</div>`;
+  } else if (_missionAddEvt === 'proptransfer') {
+    if (fv && fv.stages.length >= 2) {
+      const so = fv.stages.map(s => `<option value="${s.stageDefinitionId}">${_missionStageLabelById(s.stageDefinitionId)}</option>`).join('');
+      form = `<label class="cfg-label">Source Stage</label><select id="xfer-src-${id}" class="mcc-field-select" style="margin-bottom:6px;">${so}</select>
+        <label class="cfg-label">Destination Stage</label><select id="xfer-dst-${id}" class="mcc-field-select" style="margin-bottom:6px;">${so}</select>
+        <label class="cfg-label">Mass (kg)</label><input type="number" id="xfer-mass-${id}" class="field" value="1000" style="width:100%;margin-bottom:6px;">
+        <button class="act-btn" style="width:100%;" onclick="missionExecPropTransfer('${id}')">Transfer Propellant</button>`;
+    } else form = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// dock first — transfer needs ≥2 stages</div>`;
+  } else if (_missionAddEvt === 'crewtransfer') {
+    if (fv && fv.stages.length >= 2) {
+      const so = fv.stages.map(s => `<option value="${s.stageDefinitionId}">${_missionStageLabelById(s.stageDefinitionId)}</option>`).join('');
+      form = `<label class="cfg-label">Source Stage</label><select id="xfer-csrc-${id}" class="mcc-field-select" style="margin-bottom:6px;">${so}</select>
+        <label class="cfg-label">Destination Stage</label><select id="xfer-cdst-${id}" class="mcc-field-select" style="margin-bottom:6px;">${so}</select>
+        <label class="cfg-label">Crew</label><input type="number" id="xfer-ccount-${id}" class="field" value="1" style="width:100%;margin-bottom:6px;">
+        <button class="act-btn" style="width:100%;" onclick="missionExecCrewTransfer('${id}')">Transfer Crew</button>`;
+    } else form = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// dock first — transfer needs ≥2 stages</div>`;
+  } else if (_missionAddEvt === 'reenter') {
+    form = `<button class="act-btn" style="width:100%;" onclick="missionExecReenter('${id}')">Reenter (land on Earth)</button>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;">// zero-ΔV; deorbit burn should precede this</div>`;
+  } else if (_missionAddEvt === 'recover') {
+    if (live.length) {
+      const o = live.map(x => `<option value="${x.id}">${x.fv.name}${x.fv.status==='RECOVERED'?' (recovered)':x.fv.status==='EXPENDED'?' (expended)':''}</option>`).join('');
+      form = `<select id="addev-rec-${id}" class="mcc-field-select" style="margin-bottom:6px;">${o}</select>
+        <button class="act-btn" style="width:100%;" onclick="missionExecRecover('${id}',document.getElementById('addev-rec-${id}').value)">Recover</button>`;
+    } else form = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// no vehicles yet</div>`;
   }
   return `${header}${(_missionAddEvt!=='__menu__'&&_missionAddEvt!=='burn')?vehSel:''}${form}`;
 }
