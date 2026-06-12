@@ -477,8 +477,9 @@ function _missionEventDetailHTML(m, idx) {
     fields = `<div class="mission-state-kv"><span class="mission-state-key">Name</span><span class="mission-state-val">${e.vehicleName || e.stageName || ''}</span></div>`;
   }
 
-  const isBurn = e.type === 'BURN';
-  const editForm = isBurn ? `
+  let editForm = '';
+  if (e.type === 'BURN') {
+    editForm = `
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
         <div class="cfg-row" style="flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:8px;">
           <div class="cfg-item">
@@ -498,7 +499,22 @@ function _missionEventDetailHTML(m, idx) {
           </div>
         </div>
         <button class="act-btn" style="background:var(--accent);color:#000;font-weight:600;padding:5px 14px;" onclick="missionApplyBurnEdit('${id}',${idx})">Apply</button>
-      </div>` : '';
+      </div>`;
+  } else if (e.type === 'MANEUVER') {
+    const _nm  = (typeof PROG_NM_NODES !== 'undefined') ? PROG_NM_NODES : [];
+    const _opt = sel => _nm.map(n => `<option value="${n.id}"${n.id===sel?' selected':''}>${n.label}${n.sub?' ('+n.sub+')':''}</option>`).join('');
+    const _selStyle = 'background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;';
+    editForm = `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="cfg-row" style="flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:8px;">
+          <div class="cfg-item"><label class="cfg-label">From</label>
+            <select id="edit-mv-from-${id}" style="${_selStyle}">${_opt(e.fromNode)}</select></div>
+          <div class="cfg-item"><label class="cfg-label">To</label>
+            <select id="edit-mv-to-${id}" style="${_selStyle}">${_opt(e.toNode)}</select></div>
+        </div>
+        <button class="act-btn" style="background:var(--accent);color:#000;font-weight:600;padding:5px 14px;" onclick="missionApplyManeuverEdit('${id}',${idx})">Apply</button>
+      </div>`;
+  }
 
   return `<div class="mcc-section-header">EVENT DETAIL</div>
     <div class="mcc-panel-pad">
@@ -900,6 +916,18 @@ function missionApplyBurnEdit(id, idx) {
   e.burnType = bt; e.burnParam = pval;
   _missionSelEvt = null;
   missionRecompute(m);
+  missionRenderDetail();
+}
+
+function missionApplyManeuverEdit(id, idx) {
+  const m = _missionGet(id); if(!m) return;
+  const e = m.log[idx]; if(!e || e.type!=='MANEUVER') return;
+  const from = document.getElementById('edit-mv-from-'+id)?.value || e.fromNode;
+  const to   = document.getElementById('edit-mv-to-'+id)?.value || e.toNode;
+  const lbl = nid => { const n = PROG_NM_NODES.find(x => x.id === nid); return n ? (n.sub ? n.label + ' (' + n.sub + ')' : n.label) : nid; };
+  e.fromNode = from; e.toNode = to; e.fromLabel = lbl(from); e.toLabel = lbl(to);
+  _missionSelEvt = null;
+  missionRecompute(m);   // recompute refreshes e.dv from the new node pair
   missionRenderDetail();
 }
 
