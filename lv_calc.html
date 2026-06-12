@@ -9797,11 +9797,10 @@ function missionRenderDetail() {
   // ── events log ──
   const logHTML = m.log.length
     ? m.log.map((e, i) => {
-        const isLaunch = e.type === 'LAUNCH';
-        const upDis = (isLaunch || i <= 1) ? ' disabled' : '';
-        const dnDis = (isLaunch || i >= m.log.length - 1) ? ' disabled' : '';
-        const moveBtns = isLaunch ? '' : `<button class="act-btn" style="position:absolute;top:4px;right:42px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},-1)" title="Move up"${upDis}>▲</button><button class="act-btn" style="position:absolute;top:4px;right:23px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},1)" title="Move down"${dnDis}>▼</button>`;
-        const collapseRight = isLaunch ? '23px' : '61px';
+        const upDis = (i <= 0) ? ' disabled' : '';
+        const dnDis = (i >= m.log.length - 1) ? ' disabled' : '';
+        const moveBtns = `<button class="act-btn" style="position:absolute;top:4px;right:42px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},-1)" title="Move up"${upDis}>▲</button><button class="act-btn" style="position:absolute;top:4px;right:23px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},1)" title="Move down"${dnDis}>▼</button>`;
+        const collapseRight = '61px';
         const collapseBtn = `<button class="act-btn" style="position:absolute;top:4px;right:${collapseRight};padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionToggleCollapse('${id}',${i})" title="Minimize">${e._collapsed ? '▢' : '▬'}</button>`;
         const cardContent = e._collapsed
           ? `<div class="mission-log-card" style="padding:6px 10px;display:flex;align-items:center;gap:8px;"><span class="mission-log-type">${e.type}</span><span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">${e.burnLabel||e.toLabel||e.vehicleName||e.label||e.targetName||''}</span></div>`
@@ -9829,8 +9828,6 @@ function missionRenderDetail() {
           <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Node Map</button>
         </div>
         <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
-        <button class="act-btn" style="padding:7px 18px;${canLaunch ? 'background:var(--accent);color:#000;font-weight:600;' : ''}"
-          onclick="missionExecLaunch('${id}')"${canLaunch ? '' : ' disabled'}>▶ Execute Launch</button>
         ${m.log.length ? `<button class="act-btn" onclick="missionResetLaunch('${id}')">Reset</button>` : ''}
       </div>
     </div>
@@ -9932,22 +9929,24 @@ function missionSetOrbit(id, key, val) {
 
 // ── PURE APPLIER: builds the launch vehicle, runs ascent staging, returns results.
 // Does NOT push to m.log or set m.vehicleId — that is done by missionRecompute.
-function _missionApplyLaunch(m) {
-  const entry = _fleetGet(m.fleetEntryId);
+function _missionApplyLaunch(m, e) {
+  e = e || {};
+  const entry = _fleetGet(e.fleetEntryId || m.fleetEntryId);
   if (!entry) return null;
 
   const lvStages = progVehicleDefToLiveStages(entry);
   let scStages = [];
-  for (const scId of m.payloadScIds) {
+  for (const scId of (e.payloadScIds || m.payloadScIds || [])) {
     const sc = _scEdSC.find(s => s.spacecraftId === scId);
     if (sc) scStages = scStages.concat(progSpacecraftToLiveStages(sc));
   }
 
   const allStages = [...lvStages, ...scStages];
+  const launchOrbit = e.launchOrbit || m.launchOrbit;
   const ev = progMakeEvent('LAUNCH', {
     label:       m.name + ' — ' + entry.name,
     stages:      allStages,
-    targetOrbit: { ...m.launchOrbit },
+    targetOrbit: { ...launchOrbit },
     color:       '#61afef',
   });
   const result = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
@@ -9956,7 +9955,7 @@ function _missionApplyLaunch(m) {
   const fv = PROG_ACTIVE_PROGRAM.vehicles[result.vehicleId];
   if (!fv) return null;
 
-  const dvRequired   = _missionDvToOrbit(m.launchOrbit.body, m.launchOrbit.alt_km);
+  const dvRequired   = _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
   let   dvRemaining  = dvRequired;
   const stagingLog   = [];
   const stagesToDrop = [];
@@ -9989,7 +9988,7 @@ function _missionApplyLaunch(m) {
   }
 
   fv.stages = fv.stages.filter(s => !stagesToDrop.includes(s.stageDefinitionId));
-  fv.orbitState = { body: m.launchOrbit.body, perigee: m.launchOrbit.alt_km, apogee: (m.launchOrbit.apo_km ?? m.launchOrbit.alt_km), inclination: m.launchOrbit.inc_deg, lan: m.launchOrbit.lan_deg, epoch: 0, surface: false };
+  fv.orbitState = { body: launchOrbit.body, perigee: launchOrbit.alt_km, apogee: (launchOrbit.apo_km ?? launchOrbit.alt_km), inclination: launchOrbit.inc_deg, lan: launchOrbit.lan_deg, epoch: 0, surface: false };
 
   const stagingResult = {
     dvRequired:  Math.round(dvRequired),
@@ -9998,10 +9997,32 @@ function _missionApplyLaunch(m) {
     stages:      stagingLog,
   };
 
-  const payloadMass = m.payloadScIds.reduce((s, scId) => s + _fleetScMassById(scId), 0);
-  const payloadNames = m.payloadScIds.map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
+  const payloadMass = (e.payloadScIds || m.payloadScIds || []).reduce((s, scId) => s + _fleetScMassById(scId), 0);
+  const payloadNames = (e.payloadScIds || m.payloadScIds || []).map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
 
   return { fv, stagingResult, payloadMass, payloadNames };
+}
+
+function _missionApplyDeploy(m, e) {
+  e = e || {};
+  const entry = _fleetGet(e.fleetEntryId || m.fleetEntryId);
+  if (!entry) return null;
+  const payloadScIds = e.payloadScIds || m.payloadScIds || [];
+  const lvStages = progVehicleDefToLiveStages(entry);
+  let scStages = [];
+  for (const scId of payloadScIds) {
+    const sc = _scEdSC.find(s => s.spacecraftId === scId);
+    if (sc) scStages = scStages.concat(progSpacecraftToLiveStages(sc));
+  }
+  const allStages = [...lvStages, ...scStages];
+  const o = e.orbit || m.launchOrbit || {};
+  const orbitState = { body: o.body, perigee: o.alt_km, apogee: (o.apo_km ?? o.alt_km), inclination: o.inc_deg, lan: o.lan_deg, epoch: 0, surface: false };
+  const fv = progMakeFlightVehicle(entry.name, allStages, orbitState, '#e5c07b');
+  fv.status = 'ORBIT';
+  PROG_ACTIVE_PROGRAM.vehicles[fv.vehicleId] = fv;
+  const payloadMass = payloadScIds.reduce((s, scId) => s + _fleetScMassById(scId), 0);
+  const payloadNames = payloadScIds.map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
+  return { fv, payloadMass, payloadNames };
 }
 
 function missionExecLaunch(id) {
@@ -10009,11 +10030,21 @@ function missionExecLaunch(id) {
   if (!m || !m.fleetEntryId) return;
   const entry = _fleetGet(m.fleetEntryId);
   if (!entry) return;
-  m.log.push({ type: 'LAUNCH', label: entry.name, orbit: { ...m.launchOrbit } });
+  m.log.push({ type: 'LAUNCH', label: entry.name, fleetEntryId: m.fleetEntryId, payloadScIds: [...(m.payloadScIds||[])], launchOrbit: { ...m.launchOrbit }, orbit: { ...m.launchOrbit } });
   _missionAddEvt = null;
   _missionViewMode = 'nodemap';
   missionRecompute(m);
   missionRenderDetail();
+}
+
+function missionExecDeploy(id) {
+  const m = _missionGet(id);
+  if (!m || !m.fleetEntryId) return;
+  const entry = _fleetGet(m.fleetEntryId);
+  if (!entry) return;
+  m.log.push({ type: 'DEPLOY', label: entry.name, fleetEntryId: m.fleetEntryId, payloadScIds: [...(m.payloadScIds||[])], orbit: { ...m.launchOrbit } });
+  _missionAddEvt = null; _missionViewMode = 'nodemap';
+  missionRecompute(m); missionRenderDetail();
 }
 
 function missionResetLaunch(id) {
@@ -10059,6 +10090,7 @@ function _missionLogCardHTML(entry) {
     <span class="mission-log-type">RECOVER</span>
     <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">${entry.vehicleName||'?'} recovered</div>
   </div>`;
+  if (entry.type === 'DEPLOY') return `<div class="mission-log-card"><div class="mission-log-header"><span class="mission-log-type">DEPLOY</span><span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto">${entry.label||''}</span></div><div class="mission-state-grid"><div class="mission-state-kv"><span class="mission-state-key">Orbit</span><span class="mission-state-val">${(entry.orbit&&entry.orbit.alt_km||0).toLocaleString()} km${entry.orbit&&entry.orbit.apo_km&&entry.orbit.apo_km!==entry.orbit.alt_km?' × '+entry.orbit.apo_km.toLocaleString():''}</span></div><div class="mission-state-kv"><span class="mission-state-key">Body</span><span class="mission-state-val">${entry.orbit&&entry.orbit.body||'Earth'}</span></div></div></div>`;
   if (entry.type !== 'LAUNCH') return '';
   const o  = entry.orbit;
   const sr = entry.stagingResult || {};
@@ -10105,11 +10137,7 @@ function _missionLogCardHTML(entry) {
 
 function missionDeleteEvent(id, idx) {
   const m = _missionGet(id); if (!m) return;
-  if (m.log[idx] && m.log[idx].type === 'LAUNCH') {
-    m.log = []; m.vehicleId = null; m.vehicleIds = [];
-  } else {
-    m.log.splice(idx, 1);
-  }
+  m.log.splice(idx, 1);
   _missionSelEvt = null;
   missionRecompute(m);
   missionRenderDetail();
@@ -10119,8 +10147,6 @@ function missionMoveEvent(id, idx, dir) {
   const m = _missionGet(id); if (!m) return;
   const j = idx + dir;
   if (j < 0 || j >= m.log.length) return;
-  // LAUNCH stays pinned at index 0 — never move it or swap something past it
-  if (m.log[idx].type === 'LAUNCH' || m.log[j].type === 'LAUNCH') return;
   const tmp = m.log[idx]; m.log[idx] = m.log[j]; m.log[j] = tmp;
   _missionSelEvt = null;
   missionRecompute(m);
@@ -10510,11 +10536,16 @@ function missionRecompute(m) {
 
   for (const e of m.log) {
     if (e.type === 'LAUNCH') {
-      const r = _missionApplyLaunch(m);
+      const r = _missionApplyLaunch(m, e);
       if (!r || !r.fv) { e.result = 'FAILED'; continue; }
       e.vehicleId = r.fv.vehicleId; e.stagingResult = r.stagingResult;
       e.payloadMass = r.payloadMass; e.payloadNames = r.payloadNames;
-      active = r.fv; live = [r.fv];
+      live.push(r.fv); active = r.fv;
+    } else if (e.type === 'DEPLOY') {
+      const r = _missionApplyDeploy(m, e);
+      if (!r || !r.fv) { e.result = 'FAILED'; continue; }
+      e.vehicleId = r.fv.vehicleId; e.payloadMass = r.payloadMass; e.payloadNames = r.payloadNames;
+      live.push(r.fv); active = r.fv;
     } else if (e.type === 'BURN') {
       if (!active) continue;
       e.vehicleId = active.vehicleId;
@@ -10887,7 +10918,7 @@ function _missionNodeForLaunch(m) {
 // Ordered list of node ids the mission traverses: launch node, then each MANEUVER destination.
 function _missionNodePath(m) {
   const path = [];
-  if (m.log.some(e => e.type === 'LAUNCH')) path.push(_missionNodeForLaunch(m));
+  if (m.log.some(e => e.type === 'LAUNCH' || e.type === 'DEPLOY')) path.push(_missionNodeForLaunch(m));
   for (const e of m.log) if (e.type === 'MANEUVER' && e.toNode) path.push(e.toNode);
   return path;
 }
@@ -10924,7 +10955,7 @@ function missionNodeClick(id, nodeId) {
   // Not drawing — jump to the most recent event that lands on this node.
   let target = -1;
   m.log.forEach((e, i) => { if (e.type === 'MANEUVER' && e.toNode === nodeId) target = i; });
-  if (target < 0 && nodeId === _missionNodeForLaunch(m)) m.log.forEach((e, i) => { if (e.type === 'LAUNCH') target = i; });
+  if (target < 0 && nodeId === _missionNodeForLaunch(m)) m.log.forEach((e, i) => { if (e.type === 'LAUNCH' || e.type === 'DEPLOY') target = i; });
   if (target >= 0) {
     const tid = 'mlog-' + id + '-' + target;
     setTimeout(() => {
@@ -10990,7 +11021,7 @@ function _missionBandModel(m) {
   const events = [];
   m.log.forEach((e, i) => {
     let vid = e.vehicleId, label = e.type;
-    if (e.type === 'LAUNCH') { const alt = e.orbit?.alt_km ?? 0; ensure(e.vehicleId, 'LV', i); addPt(e.vehicleId, i, alt); label = 'LAUNCH'; }
+    if (e.type === 'LAUNCH' || e.type === 'DEPLOY') { const alt = e.orbit?.alt_km ?? 0; ensure(e.vehicleId, 'LV', i); addPt(e.vehicleId, i, alt); label = e.type; }
     else if (e.type === 'BURN') { ensure(e.vehicleId, 'Vehicle', i); addPt(e.vehicleId, i, altOf(e.orbitAfter)); label = e.burnLabel || 'BURN'; }
     else if (e.type === 'MANEUVER') { ensure(e.vehicleId, 'Vehicle', i); addPt(e.vehicleId, i, nodeAlt(e.toNode)); label = '→ ' + (e.toLabel || e.toNode || ''); }
     else if (e.type === 'SEPARATE' && e.result === 'SUCCESS') {
@@ -11030,7 +11061,7 @@ function _missionAddEventHTML(m) {
   if (_missionAddEvt == null) {
     return `<button class="act-btn" style="width:100%;" onclick="missionSetAddEvt('${id}','__menu__')">＋ Add Event</button>`;
   }
-  const types = [['burn','Burn'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend'],['rendezvous','Rendezvous'],['proptransfer','Prop Transfer'],['crewtransfer','Crew Transfer'],['reenter','Reenter'],['recover','Recover']];
+  const types = [['launch','Launch'],['deploy','Place in Orbit'],['burn','Burn'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend'],['rendezvous','Rendezvous'],['proptransfer','Prop Transfer'],['crewtransfer','Crew Transfer'],['reenter','Reenter'],['recover','Recover']];
   const typeBtns = types.map(([t,label]) =>
     `<button class="act-btn" style="padding:3px 8px;font-size:10px;${_missionAddEvt===t?'background:var(--accent);color:#000;':''}" onclick="missionSetAddEvt('${id}','${t}')">${label}</button>`
   ).join('');
@@ -11050,6 +11081,12 @@ function _missionAddEventHTML(m) {
   const fv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
   if (_missionAddEvt === '__menu__') {
     form = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// pick an event type above</div>`;
+  } else if (_missionAddEvt === 'launch') {
+    const can = !!m.fleetEntryId;
+    form = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:6px;">// uses the Launch Vehicle, Payload & Orbit in the left panel (runs ascent staging)</div><button class="act-btn" style="width:100%;${can?'background:var(--accent);color:#000;font-weight:600;':''}" onclick="missionExecLaunch('${id}')"${can?'':' disabled'}>▶ Launch</button>`;
+  } else if (_missionAddEvt === 'deploy') {
+    const can = !!m.fleetEntryId;
+    form = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:6px;">// places the vehicle directly in the orbit set at left, full tanks, no ascent</div><button class="act-btn" style="width:100%;${can?'background:var(--accent);color:#000;font-weight:600;':''}" onclick="missionExecDeploy('${id}')"${can?'':' disabled'}>⊕ Place in Orbit</button>`;
   } else if (_missionAddEvt === 'burn') {
     form = _missionBurnSectionHTML(m);
   } else if (_missionAddEvt === 'separate') {
