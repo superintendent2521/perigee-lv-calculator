@@ -52,6 +52,8 @@ Use `_missionStageLabelById(stageDefId)` to resolve either to a display name. Do
 
 ## Mission Manager
 
+⚠️ **Event model = re-simulated PLAN (2026-06-11).** `m.log` is the source of truth (a plan). `missionRecompute(m)` tears down the mission's runtime vehicles and REPLAYS the whole log to rebuild state, refreshing each event's cached fields + runtime vehicle-ids. Every mutation MUST go: change `m.log` → `missionRecompute(m)` → `missionRenderDetail()`. Exec fns (`missionExec*`) just push a spec then recompute — they must NOT mutate vehicle state in place (that's what caused the delete/edit double-count bug). Appliers: `_missionApplyLaunch(m)`, `_missionApplyBurn(fv,bt,pval,stageId)`. Known limit: DOCK/EXPEND replay matches the target vehicle by NAME.
+
 **Data model:**
 ```js
 {
