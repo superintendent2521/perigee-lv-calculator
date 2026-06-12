@@ -395,7 +395,8 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 .sc-ed-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
 
 /* ─── Mission Command Center ─────────────────────────────────────────────── */
-#mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+#prog-panel-mission{height:100%;min-height:0;}
+#mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;border:1px solid var(--border);}
 .mcc-topbar{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .mcc-topbar .sl{margin:0;}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}

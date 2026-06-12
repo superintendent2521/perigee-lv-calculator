@@ -402,7 +402,8 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 .sc-ed-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
 
 /* ─── Mission Command Center ─────────────────────────────────────────────── */
-#mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+#prog-panel-mission{height:100%;min-height:0;}
+#mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;border:1px solid var(--border);}
 .mcc-topbar{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .mcc-topbar .sl{margin:0;}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
@@ -9708,7 +9709,7 @@ function _missionMake(name) {
     name:          name || 'New Mission',
     fleetEntryId:  null,
     payloadScIds:  [],
-    launchOrbit:   { body: 'Earth', alt_km: 185, inc_deg: 28.5, lan_deg: 0 },
+    launchOrbit:   { body: 'Earth', alt_km: 185, apo_km: 185, inc_deg: 28.5, lan_deg: 0 },
     log:           [],
     vehicleId:     null,
     vehicleIds:    [],
@@ -9796,7 +9797,12 @@ function missionRenderDetail() {
         const upDis = (isLaunch || i <= 1) ? ' disabled' : '';
         const dnDis = (isLaunch || i >= m.log.length - 1) ? ' disabled' : '';
         const moveBtns = isLaunch ? '' : `<button class="act-btn" style="position:absolute;top:4px;right:42px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},-1)" title="Move up"${upDis}>▲</button><button class="act-btn" style="position:absolute;top:4px;right:23px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},1)" title="Move down"${dnDis}>▼</button>`;
-        return `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div>${moveBtns}<button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button>${_missionSelEvt===i ? _missionEventDetailHTML(m, i) : ''}</div>`;
+        const collapseRight = isLaunch ? '23px' : '61px';
+        const collapseBtn = `<button class="act-btn" style="position:absolute;top:4px;right:${collapseRight};padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionToggleCollapse('${id}',${i})" title="Minimize">${e._collapsed ? '▢' : '▬'}</button>`;
+        const cardContent = e._collapsed
+          ? `<div class="mission-log-card" style="padding:6px 10px;display:flex;align-items:center;gap:8px;"><span class="mission-log-type">${e.type}</span><span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">${e.burnLabel||e.toLabel||e.vehicleName||e.label||e.targetName||''}</span></div>`
+          : _missionLogCardHTML(e);
+        return `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${cardContent}</div>${collapseBtn}${moveBtns}<button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button>${_missionSelEvt===i ? _missionEventDetailHTML(m, i) : ''}</div>`;
       }).join('')
     : '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No events yet.<br>Configure a LAUNCH and click Execute.</div>';
 
@@ -9830,17 +9836,17 @@ function missionRenderDetail() {
       <!-- LEFT COLUMN — setup & vehicles -->
       <div class="mcc-left-col">
         <div class="mcc-section-header">Launch Vehicle</div>
-        <div class="mcc-panel-pad">
+        <div class="mcc-panel-pad"><div class="panel" style="padding:8px 10px;">
           <select class="mcc-field-select" onchange="missionSetFleet('${id}',this.value)">${lvOpts}</select>
-        </div>
+        </div></div>
 
         <div class="mcc-section-header">Payload Manifest</div>
-        <div class="mcc-panel-pad">
+        <div class="mcc-panel-pad"><div class="panel" style="padding:8px 10px;">
           ${payChecks || '<span style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No spacecraft defined. Add spacecraft in the Spacecraft tab.</span>'}
-        </div>
+        </div></div>
 
         <div class="mcc-section-header">Launch Orbit</div>
-        <div class="mcc-panel-pad">
+        <div class="mcc-panel-pad"><div class="panel" style="padding:8px 10px;">
           <div class="cfg-row" style="flex-wrap:wrap;gap:10px 20px;align-items:flex-end;">
             <div class="cfg-item">
               <label class="cfg-label">Body</label>
@@ -9848,9 +9854,14 @@ function missionRenderDetail() {
                 onchange="missionSetOrbit('${id}','body',this.value)">${bodyOpts}</select>
             </div>
             <div class="cfg-item">
-              <label class="cfg-label">Alt (km)</label>
+              <label class="cfg-label">Perigee (km)</label>
               <input type="number" class="field" value="${m.launchOrbit.alt_km}" min="0" style="width:90px;"
                 oninput="missionSetOrbit('${id}','alt_km',+this.value)">
+            </div>
+            <div class="cfg-item">
+              <label class="cfg-label">Apogee (km)</label>
+              <input type="number" class="field" value="${m.launchOrbit.apo_km ?? m.launchOrbit.alt_km}" min="0" style="width:90px;"
+                oninput="missionSetOrbit('${id}','apo_km',+this.value)">
             </div>
             <div class="cfg-item">
               <label class="cfg-label">Inc (deg)</label>
@@ -9863,7 +9874,7 @@ function missionRenderDetail() {
                 oninput="missionSetOrbit('${id}','lan_deg',+this.value)">
             </div>
           </div>
-        </div>
+        </div></div>
 
         ${m.vehicleId ? _missionMultiVehicleHTML(m) : ''}
         ${m.vehicleId ? `<div class="mcc-left-budget">${_missionBudgetCardHTML(m)}</div>` : ''}
@@ -9974,6 +9985,7 @@ function _missionApplyLaunch(m) {
   }
 
   fv.stages = fv.stages.filter(s => !stagesToDrop.includes(s.stageDefinitionId));
+  fv.orbitState = { body: m.launchOrbit.body, perigee: m.launchOrbit.alt_km, apogee: (m.launchOrbit.apo_km ?? m.launchOrbit.alt_km), inclination: m.launchOrbit.inc_deg, lan: m.launchOrbit.lan_deg, epoch: 0, surface: false };
 
   const stagingResult = {
     dvRequired:  Math.round(dvRequired),
@@ -10113,6 +10125,13 @@ function missionMoveEvent(id, idx, dir) {
 
 function missionSelectEvent(id, idx) {
   _missionSelEvt = (_missionSelEvt === idx ? null : idx);
+  missionRenderDetail();
+}
+
+function missionToggleCollapse(id, idx) {
+  const m = _missionGet(id);
+  if (!m || !m.log[idx]) return;
+  m.log[idx]._collapsed = !m.log[idx]._collapsed;
   missionRenderDetail();
 }
 
@@ -10771,11 +10790,11 @@ function _missionMultiVehicleHTML(m) {
     const isActive = vid === m.vehicleId;
     const expended = fv.status === 'EXPENDED';
     return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin-bottom:4px;background:${isActive ? 'var(--input)' : 'transparent'};">
-      <button class="act-btn" style="padding:2px 8px;font-size:10px;${isActive ? 'background:var(--accent);color:#000;' : ''}" onclick="missionSetActiveVehicle('${id}','${vid}')">${isActive ? '● active' : 'select'}</button>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright)">${fv.name}</span>
+      <button class="act-btn" style="padding:2px 8px;font-size:10px;flex-shrink:0;${isActive ? 'background:var(--accent);color:#000;' : ''}" onclick="missionSetActiveVehicle('${id}','${vid}')">${isActive ? '● active' : 'select'}</button>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fv.name}</span>
       <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${fv.stages.length} stages</span>
       ${expended ? '<span style="font-family:var(--mono);font-size:9px;color:var(--error,#e06c75)">EXPENDED</span>' : ''}
-      <button class="act-btn" style="padding:2px 8px;font-size:10px;margin-left:auto;" onclick="missionExecExpendVehicle('${id}','${vid}')"${expended ? ' disabled' : ''}>Expend</button>
+      <button class="act-btn" style="padding:2px 8px;font-size:10px;flex-shrink:0;" onclick="missionExecExpendVehicle('${id}','${vid}')"${expended ? ' disabled' : ''}>Expend</button>
     </div>`;
   }).join('');
 
@@ -11177,6 +11196,7 @@ function _missionNodeMapHTML(m) {
   const id = m.missionId;
   const path = _missionNodePath(m);
   const byId = {}; PROG_NM_NODES.forEach(n => byId[n.id] = n);
+  const BODY_COL = { Earth:'#5db877', Moon:'#8890bc', Mars:'#b85848', Venus:'#b85848', Sun:'#c6a057' };
 
   // Planet geometry (1100x520 world) — matches the original node-map layout.
   const BLOBS = {
@@ -11245,7 +11265,7 @@ function _missionNodeMapHTML(m) {
       nodesHTML += `<text x="${x}" y="${y + blob.bodyR + 11}" text-anchor="middle" font-family="var(--mono)" font-size="8px" font-weight="600" letter-spacing="1" fill="${blob.col}">${n.label}</text>`;
     } else {
       const r = n.r || 16;
-      const stroke = isFrom ? 'var(--accent2)' : inPath ? 'var(--accent)' : 'var(--border-bright)';
+      const stroke = isFrom ? 'var(--accent2)' : inPath ? 'var(--accent)' : (BODY_COL[n.orbit && n.orbit.body] || 'var(--border-bright)');
       const sw = (isFrom || isCurrent) ? 3 : (inPath ? 2.5 : 1.5);
       const dash = n.dashed ? ' stroke-dasharray="4 3"' : '';
       const labelColor = inPath ? 'var(--text-bright)' : 'var(--text-dim)';
