@@ -9791,7 +9791,13 @@ function missionRenderDetail() {
 
   // ── events log ──
   const logHTML = m.log.length
-    ? m.log.map((e, i) => `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div><button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button>${_missionSelEvt===i ? _missionEventDetailHTML(m, i) : ''}</div>`).join('')
+    ? m.log.map((e, i) => {
+        const isLaunch = e.type === 'LAUNCH';
+        const upDis = (isLaunch || i <= 1) ? ' disabled' : '';
+        const dnDis = (isLaunch || i >= m.log.length - 1) ? ' disabled' : '';
+        const moveBtns = isLaunch ? '' : `<button class="act-btn" style="position:absolute;top:4px;right:42px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},-1)" title="Move up"${upDis}>▲</button><button class="act-btn" style="position:absolute;top:4px;right:23px;padding:1px 5px;font-size:9px;" onclick="event.stopPropagation();missionMoveEvent('${id}',${i},1)" title="Move down"${dnDis}>▼</button>`;
+        return `<div id="mlog-${id}-${i}" class="mcc-evt-row${_missionSelEvt===i?' sel':''}" style="position:relative;"><div onclick="missionSelectEvent('${id}',${i})" style="cursor:pointer">${_missionLogCardHTML(e)}</div>${moveBtns}<button class="act-btn" style="position:absolute;top:4px;right:4px;padding:1px 6px;font-size:10px;" onclick="event.stopPropagation();missionDeleteEvent('${id}',${i})" title="Delete event">✕</button>${_missionSelEvt===i ? _missionEventDetailHTML(m, i) : ''}</div>`;
+      }).join('')
     : '<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;">No events yet.<br>Configure a LAUNCH and click Execute.</div>';
 
   // ── center content ──
@@ -10065,6 +10071,18 @@ function missionDeleteEvent(id, idx) {
   } else {
     m.log.splice(idx, 1);
   }
+  _missionSelEvt = null;
+  missionRecompute(m);
+  missionRenderDetail();
+}
+
+function missionMoveEvent(id, idx, dir) {
+  const m = _missionGet(id); if (!m) return;
+  const j = idx + dir;
+  if (j < 0 || j >= m.log.length) return;
+  // LAUNCH stays pinned at index 0 — never move it or swap something past it
+  if (m.log[idx].type === 'LAUNCH' || m.log[j].type === 'LAUNCH') return;
+  const tmp = m.log[idx]; m.log[idx] = m.log[j]; m.log[j] = tmp;
   _missionSelEvt = null;
   missionRecompute(m);
   missionRenderDetail();
