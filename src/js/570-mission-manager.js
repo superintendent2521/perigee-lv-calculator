@@ -513,8 +513,21 @@ function _missionApplyLaunch(m, e) {
   const fv = PROG_ACTIVE_PROGRAM.vehicles[result.vehicleId];
   if (!fv) return null;
 
-  const dvRequired   = _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
-  let   dvRemaining  = dvRequired;
+  const payloadMass = (e.payloadScIds || m.payloadScIds || []).reduce((s, scId) => s + _fleetScMassById(scId), 0);
+  const payloadNames = (e.payloadScIds || m.payloadScIds || []).map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
+
+  // Required ascent ΔV: Earth uses the SAME Townsend-Schilling model as the LV
+  // calculator (shared lvPerformance — vehicle data straight from the fleet entry,
+  // KSC launch site). Other bodies use a circular-velocity + fixed-loss estimate
+  // (Townsend is an Earth atmospheric-ascent fit).
+  let dvRequired;
+  if (launchOrbit.body === 'Earth' && typeof lvPerformance === 'function' && entry.stageData && entry.stageData.length) {
+    const perf = lvPerformance(entry.stageData, entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112);
+    dvRequired = perf.DVasc;
+  } else {
+    dvRequired = _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
+  }
+  let dvRemaining = dvRequired;
   const stagingLog   = [];
   const stagesToDrop = [];
 
@@ -554,9 +567,6 @@ function _missionApplyLaunch(m, e) {
     status:      dvRemaining <= 0 ? 'SUCCESS' : 'MARGINAL',
     stages:      stagingLog,
   };
-
-  const payloadMass = (e.payloadScIds || m.payloadScIds || []).reduce((s, scId) => s + _fleetScMassById(scId), 0);
-  const payloadNames = (e.payloadScIds || m.payloadScIds || []).map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
 
   return { fv, stagingResult, payloadMass, payloadNames };
 }

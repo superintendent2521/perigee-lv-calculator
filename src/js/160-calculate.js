@@ -65,58 +65,11 @@ function calculate(){
     let tThr=stages[0].thrust*1000;
     if(useBooster&&booster)tThr+=booster.thrust*1000*booster.count;
 
+    // Delegates to the shared lvPerformance() so the LV calculator and the Program
+    // section compute launch performance from the SAME math (incl. the corrected Ta).
     function evalAtPayload(pay){
-      let spM=new Array(numStages).fill(0),abv=pay;
-      for(let s=numStages-1;s>=0;s--){spM[s]=abv+((fairingJ>0&&s<fairingJ)?fairingM:0);abv+=stages[s].dry+stages[s].prop;}
-      let sDVs=[],sBTs=[],tDV=0,tBT=0;
-      for(let s=0;s<numStages;s++){
-        const sd=stages[s],up=sd.prop*(1-sd.res/100),pa=spM[s];
-        const m0=sd.dry+up+pa,mf=sd.dry+pa;
-        if(m0<=0||mf<=0||m0<=mf){sDVs.push(0);sBTs.push(0);continue;}
-        const dv=rocketEq(sd.isp,m0,mf);
-        const mflow=(sd.thrust*1000)/(G0*sd.isp);
-        const bt=mflow>0?up/mflow:0;
-        sDVs.push(dv);sBTs.push(bt);tDV+=dv;tBT+=bt;
-      }
-      if(useBooster&&booster){
-        const nB=booster.count,s1=stages[0],pa0=spM[0];
-        const upB=booster.prop*(1-booster.res/100)*nB,upS1=s1.prop*(1-s1.res/100);
-        const mBW=(booster.dry+booster.prop)*nB,m0c=s1.dry+s1.prop+mBW+pa0;
-        const mfB=booster.thrust*1000*nB,mfS1=s1.thrust*1000;
-        const btB=upB/(mfB/G0/booster.isp);
-        const pc1=Math.min((mfS1/G0/s1.isp)*btB,upS1),mfc=m0c-upB-pc1;
-        const ieff=(booster.isp*(mfB/G0/booster.isp)+s1.isp*(mfS1/G0/s1.isp))/((mfB/G0/booster.isp)+(mfS1/G0/s1.isp));
-        const dvbp=rocketEq(ieff,m0c,mfc),rs1=upS1-pc1;
-        const m0s1a=mfc-booster.dry*nB,mfs1a=Math.max(m0s1a-rs1,s1.dry+pa0);
-        const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mfS1/G0/s1.isp,0.001);
-        sDVs[0]=dvbp+dvs1a;sBTs[0]=btB+bts1a;
-        tDV=sDVs.reduce((a,b)=>a+b,0);tBT=sBTs.reduce((a,b)=>a+b,0);
-      }
-      const tMas_=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingM+(useBooster&&booster?(booster.dry+booster.prop)*booster.count:0);
-      const A0_=tThr/Math.max(tMas_,1);
-      const avgIsp_=sBTs.reduce((a,bt,i)=>a+stages[i].isp*bt,0)/Math.max(tBT,1);
-      const T3s_=3*(1-Math.exp(-0.333*Vcirc/(G0*avgIsp_)))*G0*avgIsp_/Math.max(A0_,0.01);
-      // Townsend ascent time Ta = time to accelerate to local CIRCULAR ORBIT VELOCITY,
-      // NOT the full burn of every stage. A low-thrust / high-Isp upper stage keeps firing
-      // long after reaching orbital velocity to add ΔV efficiently in vacuum (past the
-      // high-loss regime); counting that as "ascent" over-states gravity/drag losses and
-      // badly under-predicts payload. Accumulate burn time only until cumulative ΔV reaches
-      // Vcirc, partial-counting the stage that crosses it (burn time ∝ propellant mass).
-      let Ta_=0,cumDV_=0;
-      for(let s=0;s<numStages;s++){
-        const dv=sDVs[s],bt=sBTs[s];if(dv<=0)continue;
-        if(cumDV_+dv>=Vcirc){const need=Vcirc-cumDV_,isp=stages[s].isp||1;
-          const fr=(1-Math.exp(-need/(G0*isp)))/Math.max(1e-9,1-Math.exp(-dv/(G0*isp)));
-          Ta_+=bt*Math.min(1,Math.max(0,fr));cumDV_=Vcirc;break;}
-        Ta_+=bt;cumDV_+=dv;
-      }
-      if(cumDV_<Vcirc)Ta_=tBT;   // can't reach orbit on its own → fall back to full burn
-      const Tmix_=0.405*Ta_+0.595*T3s_;
-      const DVpen_=K3+K4*Tmix_;
-      const DVasc_=Vcirc+DVpen_-Vrot;
-      const DVtot_=DVasc_+onOrbitDV;
-      const margin_=tDV-DVtot_;
-      return{sDVs,sBTs,tDV,tBT,Ta_,tMas_,Tmix_,DVpen_,DVasc_,DVtot_,margin_};
+      const r=lvPerformance(stages,(useBooster&&booster)?booster:null,pay,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
+      return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
     }
 
     let lo=0,hi=2000000,maxPay=0;
