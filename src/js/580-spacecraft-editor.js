@@ -168,7 +168,7 @@ function scEdRenderDetail() {
   const el = document.getElementById('sc-ed-detail');
   if (!el) return;
   const sc = _scEdGet();
-  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>'; return; }
+  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>' + _scStageLibPanelHTML(); return; }
   const id = sc.spacecraftId;
   const stageCards = sc.stages.map((st, i) => {
     const isBot = i === 0, isTop = i === sc.stages.length - 1;
@@ -181,6 +181,7 @@ function scEdRenderDetail() {
         <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;">${tag}</span>
         <input type="text" class="sc-stage-name" value="${st.name.replace(/\\/g,'\\\\').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"
           oninput="scEdStageSet('${id}',${i},'name',this.value)" placeholder="Stage name">
+        <button class="act-btn" style="font-size:9px;padding:3px 7px;flex-shrink:0;" onclick="scStageLibSaveFromCard('${id}',${i})" title="Save this stage to the Stage Library">&#x2193; Lib</button>
         ${canDel ? `<button class="lv-del" onclick="scEdStageDelete('${id}',${i})" title="Remove" style="font-size:10px;padding:0 8px;flex-shrink:0;">&#x2715;</button>` : ''}
       </div>
       <div class="cfg-row" style="margin-bottom:8px;gap:16px;">
@@ -226,8 +227,10 @@ function scEdRenderDetail() {
     </div>
     <div class="sl">Stage Stack <span style="color:var(--text);font-size:10px;letter-spacing:0;text-transform:none;">(Stage 1 = bottom / fires first)</span></div>
     <div class="sc-ed-detail-grid">${stageCards}</div>
+    <div class="fleet-drop-zone" ondragover="fleetDragOver(event)" ondragleave="fleetDragLeave(event)" ondrop="scStageDrop(event)">&#x2295; Drop a library stage here to add it to the stack</div>
     <div style="margin-bottom:24px;"><button class="act-btn" onclick="scEdStageAdd('${id}')">+ Add Stage</button></div>
     <div class="sl">dV Breakdown</div>
-    <div class="panel" style="padding:12px;" id="sc-dv-${id}">${_scEdDvHTML(sc)}</div>`;
+    <div class="panel" style="padding:12px;" id="sc-dv-${id}">${_scEdDvHTML(sc)}</div>
+    ${_scStageLibPanelHTML()}`;
 }
 

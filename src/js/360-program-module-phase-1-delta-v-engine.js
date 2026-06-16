@@ -4,10 +4,16 @@
 
 // ── Body constants ─────────────────────────────────────────────────────────
 const PROG_BODIES = {
-  Earth: { mu: 398600.4418, R: 6371.0  },   // km³/s², km
-  Moon:  { mu:   4902.800,  R: 1737.4  },
-  Mars:  { mu:  42828.375,  R: 3389.5  },
-  Venus: { mu: 324858.592,  R: 6051.8  },
+  Earth:   { mu: 398600.4418,  R: 6371.0  },   // km³/s², km
+  Moon:    { mu:   4902.800,   R: 1737.4  },
+  Mars:    { mu:  42828.375,   R: 3389.5  },
+  Venus:   { mu: 324858.592,   R: 6051.8  },
+  Mercury: { mu:  22031.868,   R: 2439.7  },
+  Jupiter: { mu: 126686534.0,  R: 69911.0 },
+  Saturn:  { mu:  37931187.0,  R: 58232.0 },
+  Uranus:  { mu:   5793939.0,  R: 25362.0 },
+  Neptune: { mu:   6836529.0,  R: 24622.0 },
+  Titan:   { mu:      8978.14, R: 2574.7  },
 };
 const PROG_MU_SUN       = 1.32712440018e11; // km³/s² — heliocentric
 const PROG_HELIO_R      = {                  // km — mean orbital radii

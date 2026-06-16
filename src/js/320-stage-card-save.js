@@ -26,7 +26,7 @@ function saveStageCardAsFile(stageIdx,isBooster){
     };
     stageSaved[stageIdx]=true;
   }
-  const fname=stage.name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'_stage.json';
+  const fname=stage.name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.stage';
   downloadJSON(stage,fname);
   buildStageComposition();
 }

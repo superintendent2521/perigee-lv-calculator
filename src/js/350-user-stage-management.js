@@ -96,7 +96,7 @@ function doAddStage(andSave){
   if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
   userStagesByCategory[cat].unshift(stage); // prepend so new stages appear first
   if(andSave){
-    downloadJSON(stage,(name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase())+'_stage.json');
+    downloadJSON(stage,(name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase())+'.stage');
   }
   closeModal('modal-add-stage');
   buildStageLibrary();

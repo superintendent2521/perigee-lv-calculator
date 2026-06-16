@@ -96,12 +96,27 @@ function calculate(){
       const A0_=tThr/Math.max(tMas_,1);
       const avgIsp_=sBTs.reduce((a,bt,i)=>a+stages[i].isp*bt,0)/Math.max(tBT,1);
       const T3s_=3*(1-Math.exp(-0.333*Vcirc/(G0*avgIsp_)))*G0*avgIsp_/Math.max(A0_,0.01);
-      const Tmix_=0.405*tBT+0.595*T3s_;
+      // Townsend ascent time Ta = time to accelerate to local CIRCULAR ORBIT VELOCITY,
+      // NOT the full burn of every stage. A low-thrust / high-Isp upper stage keeps firing
+      // long after reaching orbital velocity to add ΔV efficiently in vacuum (past the
+      // high-loss regime); counting that as "ascent" over-states gravity/drag losses and
+      // badly under-predicts payload. Accumulate burn time only until cumulative ΔV reaches
+      // Vcirc, partial-counting the stage that crosses it (burn time ∝ propellant mass).
+      let Ta_=0,cumDV_=0;
+      for(let s=0;s<numStages;s++){
+        const dv=sDVs[s],bt=sBTs[s];if(dv<=0)continue;
+        if(cumDV_+dv>=Vcirc){const need=Vcirc-cumDV_,isp=stages[s].isp||1;
+          const fr=(1-Math.exp(-need/(G0*isp)))/Math.max(1e-9,1-Math.exp(-dv/(G0*isp)));
+          Ta_+=bt*Math.min(1,Math.max(0,fr));cumDV_=Vcirc;break;}
+        Ta_+=bt;cumDV_+=dv;
+      }
+      if(cumDV_<Vcirc)Ta_=tBT;   // can't reach orbit on its own → fall back to full burn
+      const Tmix_=0.405*Ta_+0.595*T3s_;
       const DVpen_=K3+K4*Tmix_;
       const DVasc_=Vcirc+DVpen_-Vrot;
       const DVtot_=DVasc_+onOrbitDV;
       const margin_=tDV-DVtot_;
-      return{sDVs,sBTs,tDV,tBT,tMas_,Tmix_,DVpen_,DVasc_,DVtot_,margin_};
+      return{sDVs,sBTs,tDV,tBT,Ta_,tMas_,Tmix_,DVpen_,DVasc_,DVtot_,margin_};
     }
 
     let lo=0,hi=2000000,maxPay=0;
@@ -118,7 +133,7 @@ function calculate(){
     const feasible=r0.margin_>=-50;
     const TWR=tThr/(tMas*G0);
 
-    lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,Tmix,stageDVs:[...stageDVs],destMode,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
+    lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime:res.Ta_,Tmix,stageDVs:[...stageDVs],destMode,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
     const _spb2=document.getElementById('save-case-btn');if(_spb2)_spb2.disabled=false;
 
     renderResults(lastResult);
@@ -129,7 +144,7 @@ function calculate(){
 function renderResults(r){
   const panel=document.getElementById('results-panel');
   if(!panel||!r)return;
-  const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,Tmix,stageDVs,destMode}=r;
+  const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime,Tmix,stageDVs,destMode}=r;
   const fD=v=>(v/1000).toFixed(3)+' km/s';
   const fRenderM=v=>Math.round(v).toLocaleString()+' kg';
   const fS=v=>Math.round(v)+' s';
@@ -150,7 +165,8 @@ function renderResults(r){
     <div class="result-row"><span class="result-label">Ascent Penalty (ΔVpen)</span><span class="result-val warn">${fD(DVpen)}</span></div>
     <div class="result-row"><span class="result-label">Earth Rotation Gain</span><span class="result-val">${fD(Vrot)}</span></div>
     <div class="result-row"><span class="result-label">Launch T:W Ratio</span><span class="result-val ${TWR>=1.2?'':'neg'}">${TWR.toFixed(3)}</span></div>
-    <div class="result-row"><span class="result-label">Total Ascent Time</span><span class="result-val">${fS(totBT)}</span></div>
+    <div class="result-row"><span class="result-label">Ascent Time (to orbit)</span><span class="result-val">${fS(ascentTime!=null?ascentTime:totBT)}</span></div>
+    <div class="result-row"><span class="result-label">Total Burn Time</span><span class="result-val">${fS(totBT)}</span></div>
     <div class="result-row"><span class="result-label">Mixed Ascent Time (Tmix)</span><span class="result-val">${fS(Tmix)}</span></div>
     <div class="stage-breakdown" style="margin-top:14px;">
       <div class="sl" style="margin-bottom:8px;">Stage ΔV Breakdown</div>

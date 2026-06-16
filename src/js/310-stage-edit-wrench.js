@@ -51,7 +51,9 @@ function openEditStageModal(stageIdx,isBooster){
   // S1.5 section — only meaningful for real stage slots (not boosters)
   const s15Sec = document.getElementById('stg-s15-section');
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
-  if (!isBooster && stageIdx >= 0) {
+  // s15 (stage-and-a-half) markup is optional — only populate it when present,
+  // otherwise getElementById(...).checked throws and the modal never opens.
+  if (s15Sec && !isBooster && stageIdx >= 0) {
     const sd = stageStore[stageIdx] || {};
     const on = !!sd.s15;
     document.getElementById('stg-s15').checked = on;

@@ -72,6 +72,38 @@ const PROG_NM_NODES = [
   // Orbit above Venus disc.
   { id:'venus-orbit',   label:'VENUS',   sub:'orbit 300 km',   zone:'interp', cx:848, cy:318, r:20,
     orbit:{ type:'circular', body:'Venus', perigee:300,   apogee:300,   inclination:0 } },
+
+  // ── Mercury ─────────────────────────────────────────────────────────────────
+  { id:'mercury-transit', label:'TRANSIT', sub:'Earth → Mercury', zone:'interp', r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:56.7, departure_body:'Earth', destination:'Mercury' } },
+  { id:'mercury-orbit',   label:'MERCURY', sub:'orbit 200 km',    zone:'interp', r:18,
+    orbit:{ type:'circular', body:'Mercury', perigee:200, apogee:200, inclination:0 } },
+  { id:'mercury-surface', label:'MERCURY', sub:'surface',         zone:'interp', r:14,
+    orbit:{ type:'surface',  body:'Mercury' } },
+
+  // ── Jupiter ─────────────────────────────────────────────────────────────────
+  { id:'jupiter-transit', label:'TRANSIT', sub:'Earth → Jupiter', zone:'interp', r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:77.4, departure_body:'Earth', destination:'Jupiter' } },
+  { id:'jupiter-orbit',   label:'JUPITER', sub:'orbit 1,000 km',  zone:'interp', r:22,
+    orbit:{ type:'circular', body:'Jupiter', perigee:1000, apogee:1000, inclination:0 } },
+
+  // ── Saturn ──────────────────────────────────────────────────────────────────
+  { id:'saturn-transit',  label:'TRANSIT', sub:'Earth → Saturn',  zone:'interp', r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:105.7, departure_body:'Earth', destination:'Saturn' } },
+  { id:'saturn-orbit',    label:'SATURN',  sub:'orbit 1,000 km',  zone:'interp', r:22,
+    orbit:{ type:'circular', body:'Saturn', perigee:1000, apogee:1000, inclination:0 } },
+
+  // ── Uranus ──────────────────────────────────────────────────────────────────
+  { id:'uranus-transit',  label:'TRANSIT', sub:'Earth → Uranus',  zone:'interp', r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:127.5, departure_body:'Earth', destination:'Uranus' } },
+  { id:'uranus-orbit',    label:'URANUS',  sub:'orbit 1,000 km',  zone:'interp', r:20,
+    orbit:{ type:'circular', body:'Uranus', perigee:1000, apogee:1000, inclination:0 } },
+
+  // ── Neptune ─────────────────────────────────────────────────────────────────
+  { id:'neptune-transit', label:'TRANSIT', sub:'Earth → Neptune', zone:'interp', r:17, dashed:true,
+    orbit:{ type:'transit',  body:'Sun', c3:135.9, departure_body:'Earth', destination:'Neptune' } },
+  { id:'neptune-orbit',   label:'NEPTUNE', sub:'orbit 1,000 km',  zone:'interp', r:20,
+    orbit:{ type:'circular', body:'Neptune', perigee:1000, apogee:1000, inclination:0 } },
 ];
 
 // No pre-spawned edges — users draw their own via right-click → Add Edge From Here.

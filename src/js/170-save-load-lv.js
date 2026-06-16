@@ -43,7 +43,7 @@ function doSaveLV(){
   const name=document.getElementById('lv-save-name').value.trim()||'LV';
   const note=document.getElementById('lv-save-note').value.trim();
   const obj=buildLVObject(name,note);
-  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.json');
+  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.vehicle');
   obj._sessionId=Date.now();userLVs.push(obj);buildPresets();closeModal('modal-save-lv');
 }
 function savePerformance(){openSaveCaseModal();} // legacy alias

@@ -31,7 +31,7 @@ function doSaveOrbit(){
   if(!userOrbitsByCategory[cat])userOrbitsByCategory[cat]=[];
   const idx=userOrbitsByCategory[cat].length;
   userOrbitsByCategory[cat].push(o);
-  downloadJSON({...o,_category:cat},(name+'.json').replace(/[^a-z0-9_.\-]/gi,'_').toLowerCase());
+  downloadJSON({...o,_category:cat},(name.replace(/[^a-z0-9_.\-]/gi,'_').toLowerCase())+'.orbit');
   activeOrbitKey=`uorbit_${cat}_${idx}`;
   userDefinedOrbit=false;
   closeModal('modal-save-orbit');

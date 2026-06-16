@@ -1,6 +1,72 @@
 
-// ─── PROGRAM MODULE — Phase 10: Save / Load & Closure Bar ───────────────────
+// ─── PROGRAM MODULE — Phase 10: Save / Load entire program ──────────────────
 //
-// Save: serialize PROG_ACTIVE_PROGRAM to formatVersion:3 JSON and download.
-// Load: read a .json file, validate formatVersion, restore as active program.
-// Closure bar: per-vehicle status strip derived from event results.
+// A ".program" file is just JSON (renamed extension so users can tell it apart
+// from per-vehicle / per-spaceport JSON). It bundles the WHOLE program:
+// spacecraft definitions, fleet, missions, and the active program (pads etc.).
+// Load restores all of them and re-simulates each mission so the runtime
+// vehicles in PROG_ACTIVE_PROGRAM are rebuilt from each mission's log.
+
+function buildProgramObject() {
+  return {
+    kind: 'rocket-playground-program',
+    formatVersion: 1,
+    savedAt: new Date().toISOString(),
+    spacecraft: _scEdSC,
+    fleet: _fleetEntries,
+    missions: _missions,
+    scStageLib: _scStageLib,
+    activeProgram: PROG_ACTIVE_PROGRAM,
+    sel: { fleet: _fleetSel, mission: _missionSel },
+  };
+}
+
+function saveProgramFile() {
+  const obj = buildProgramObject();
+  const base = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name ? PROG_ACTIVE_PROGRAM.name : 'program')
+    .replace(/[^a-z0-9_-]/gi, '_').toLowerCase() || 'program';
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = base + '.program';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadProgramFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let obj;
+    try { obj = JSON.parse(e.target.result); }
+    catch (err) { showAlert('Invalid .program file: ' + err.message, 'Invalid File'); input.value = ''; return; }
+    if (!obj || obj.kind !== 'rocket-playground-program') {
+      showAlert('This file is not a Rocket Playground program (.program) file.', 'Invalid File');
+      input.value = ''; return;
+    }
+    applyProgramObject(obj);
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function applyProgramObject(obj) {
+  _scEdSC       = Array.isArray(obj.spacecraft) ? obj.spacecraft : [];
+  _fleetEntries = Array.isArray(obj.fleet)      ? obj.fleet      : [];
+  _missions     = Array.isArray(obj.missions)   ? obj.missions   : [];
+  if (Array.isArray(obj.scStageLib)) _scStageLib = obj.scStageLib;
+  PROG_ACTIVE_PROGRAM = obj.activeProgram || progMakeProgram('Loaded Program');
+  _fleetSel   = (obj.sel && obj.sel.fleet)   || (_fleetEntries[0] && _fleetEntries[0].fleetId) || null;
+  _missionSel = (obj.sel && obj.sel.mission) || (_missions[0] && _missions[0].missionId)       || null;
+  _scEdSel    = (_scEdSC[0] && _scEdSC[0].spacecraftId) || null;
+  // Re-simulate every mission so PROG_ACTIVE_PROGRAM's runtime vehicles are
+  // rebuilt from each log (m.log is the source of truth).
+  _missions.forEach(m => { try { missionRecompute(m); } catch (err) { /* keep loading the rest */ } });
+  // Refresh all program UI.
+  if (typeof scEdRenderList    === 'function') scEdRenderList();
+  if (typeof scEdRenderDetail  === 'function') scEdRenderDetail();
+  if (typeof fleetRender       === 'function') fleetRender();
+  if (typeof missionRenderList === 'function') missionRenderList();
+  if (typeof missionRenderDetail === 'function') missionRenderDetail();
+}

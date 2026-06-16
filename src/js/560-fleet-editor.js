@@ -29,6 +29,7 @@ const _PROG_LV_PRESETS = [
 
 let _fleetEntries = [];   // FleetEntry[]
 let _fleetSel     = null; // selected fleetId
+let _fleetLibQuery = '';  // search text for the inline Vehicle Library panel
 
 function _fleetClonePreset(p) {
   return {
@@ -95,24 +96,199 @@ function fleetImportRenderList() {
   el.innerHTML = html;
 }
 
-function fleetImportVehicle(source, idx) {
+// Copy a stage record into the fleet's stage shape, PRESERVING stage-and-a-half
+// (S1.5) fields so library/imported/snapshotted vehicles keep their BECO config.
+function _fleetStageCopy(s) {
+  const o = { dry: s.dry||0, prop: s.prop||0, isp: s.isp||1, thrust: s.thrust||0, res: s.res||2 };
+  if (s.s15) {
+    o.s15 = true;
+    o.s15_sust_thrust = s.s15_sust_thrust || 0;
+    o.s15_sust_isp    = s.s15_sust_isp    || 0;
+    o.s15_jet_mass    = s.s15_jet_mass    || 0;
+    o.s15_beco_twr    = s.s15_beco_twr    || 1.2;
+  }
+  return o;
+}
+
+// Expand stageData into the virtual stage sequence used for ΔV math: a S1.5
+// stage splits into Phase 1 (booster pack) + Phase 2 (sustainer), mirroring
+// calculateWithS15() so fleet numbers match the LV calculator.
+function _fleetExpandStages(stageData) {
+  const out = [];
+  (stageData || []).forEach((st, i) => {
+    if (st.s15 && typeof _s15BecoSplit === 'function') {
+      const sp = _s15BecoSplit(st);
+      if (sp.error) { out.push({ dry: st.dry||0, prop: st.prop||0, thrust: st.thrust||0, isp: st.isp||1, res: st.res||2, _src: i, _err: sp.error }); return; }
+      out.push({ dry: st.dry||0,   prop: sp.prop_ph1, thrust: st.thrust||0,          isp: sp.isp_ph1, res: st.res||2, _src: i, _phase: 'Ph.1' });
+      out.push({ dry: sp.dry_ph2,  prop: sp.prop_ph2, thrust: st.s15_sust_thrust||0, isp: sp.isp_ph2, res: st.res||2, _src: i, _phase: 'Ph.2' });
+    } else {
+      out.push({ dry: st.dry||0, prop: st.prop||0, thrust: st.thrust||0, isp: st.isp||1, res: st.res||2, _src: i });
+    }
+  });
+  return out;
+}
+
+// Resolve a library vehicle (source 'builtin'|'user', index) into a fleet-entry
+// spec (no fleetId / payloads). Shared by the import modal AND the drag-drop lib.
+function _fleetVehicleSpecFromLib(source, idx) {
   const p = source === 'builtin' ? BUILTIN_PRESETS[idx] : userLVs[idx];
-  if (!p) return;
+  if (!p) return null;
   const stageData   = resolvePresetStages(p);
   const boosterData = resolvePresetBooster(p);
-  const entry = {
-    fleetId:     progUUID(),
+  return {
     name:        p.name,
     stageNames:  p.stageNames || stageData.map((_, i) => 'Stage ' + (i + 1)),
-    stageData:   stageData.map(s => ({ dry: s.dry||0, prop: s.prop||0, isp: s.isp||1, thrust: s.thrust||0, res: s.res||2 })),
+    stageData:   stageData.map(_fleetStageCopy),
     boosterName: p.boosterName || null,
     boosterData: boosterData || null,
-    payloads:    [],
   };
+}
+
+function fleetImportVehicle(source, idx) {
+  fleetAddVehicleToFleet(source, idx);
+  closeModal('modal-fleet-import');
+}
+
+// Add a library vehicle as a NEW fleet entry (used by the modal + add-drop zone).
+function fleetAddVehicleToFleet(source, idx) {
+  const spec = _fleetVehicleSpecFromLib(source, idx);
+  if (!spec) return;
+  const entry = { fleetId: progUUID(), ...spec, payloads: [] };
   _fleetEntries.push(entry);
   _fleetSel = entry.fleetId;
   fleetRender();
-  closeModal('modal-fleet-import');
+}
+
+// Swap the launch vehicle of an existing entry (keeps its payloads).
+function fleetSwapVehicle(fleetId, source, idx) {
+  const e = _fleetGet(fleetId);
+  if (!e) return;
+  const spec = _fleetVehicleSpecFromLib(source, idx);
+  if (!spec) return;
+  e.name        = spec.name;
+  e.stageNames  = spec.stageNames;
+  e.stageData   = spec.stageData;
+  e.boosterName = spec.boosterName;
+  e.boosterData = spec.boosterData;
+  fleetRender();
+}
+
+// ── Vehicle-library drag & drop ─────────────────────────────────────────────
+function fleetLibDragStart(e, source, idx) {
+  e.dataTransfer.setData('text/plain', 'fleetveh:' + source + ':' + idx);
+  e.dataTransfer.effectAllowed = 'copy';
+}
+function _fleetParseDrag(e) {
+  const d = e.dataTransfer.getData('text/plain') || '';
+  if (!d.startsWith('fleetveh:')) return null;
+  const parts = d.split(':');
+  return { source: parts[1], idx: parseInt(parts[2], 10) };
+}
+function fleetDragOver(e)   { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; e.currentTarget.classList.add('drop-hot'); }
+function fleetDragLeave(e)  { e.currentTarget.classList.remove('drop-hot'); }
+function fleetLibAddDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drop-hot');
+  const p = _fleetParseDrag(e); if (!p) return;
+  fleetAddVehicleToFleet(p.source, p.idx);
+}
+function fleetVehSwapDrop(e, fleetId) {
+  e.preventDefault(); e.currentTarget.classList.remove('drop-hot');
+  const p = _fleetParseDrag(e); if (!p) return;
+  fleetSwapVehicle(fleetId, p.source, p.idx);
+}
+
+// ── Inline Vehicle Library panel (under the fleet detail) ───────────────────
+function fleetLibRender() {
+  const inp = document.getElementById('fleet-lib-search');
+  if (inp) _fleetLibQuery = inp.value;
+  const grid = document.getElementById('fleet-lib-grid');
+  if (grid) grid.innerHTML = _fleetLibChipsHTML();
+}
+function _fleetLibChipsHTML() {
+  const q = (_fleetLibQuery || '').toLowerCase();
+  let html = '';
+  const mine = userLVs.filter(v => !q || v.name.toLowerCase().includes(q));
+  if (mine.length) {
+    html += '<div class="fleet-lib-group-lbl">My Vehicles</div><div class="fleet-lib-row">';
+    html += mine.map(v => {
+      const i = userLVs.indexOf(v);
+      const n = (v.stageData || v.stageNames || []).length;
+      return `<div class="fleet-lib-chip" draggable="true" ondragstart="fleetLibDragStart(event,'user',${i})" onclick="fleetLibInfo('user',${i})" title="Click for details · drag into the fleet list or onto the vehicle slot">
+        <span class="fleet-lib-chip-name">${v.name}</span><span class="fleet-lib-chip-sub">${n} stage${n !== 1 ? 's' : ''}</span></div>`;
+    }).join('');
+    html += '</div>';
+  }
+  const builtins = BUILTIN_PRESETS.filter(v => !q ||
+    v.name.toLowerCase().includes(q) ||
+    (v.note || '').toLowerCase().includes(q) ||
+    (v.tags || []).some(t => t.toLowerCase().includes(q)));
+  if (builtins.length) {
+    html += '<div class="fleet-lib-group-lbl">Vehicle Library</div><div class="fleet-lib-row">';
+    html += builtins.map(v => {
+      const idx = BUILTIN_PRESETS.indexOf(v);
+      const n   = (v.stageNames || []).length;
+      return `<div class="fleet-lib-chip" draggable="true" ondragstart="fleetLibDragStart(event,'builtin',${idx})" onclick="fleetLibInfo('builtin',${idx})" title="Click for details · ${(v.note || '').replace(/"/g,'&quot;')}">
+        <span class="fleet-lib-chip-name">${v.name}</span><span class="fleet-lib-chip-sub">${n} stage${n !== 1 ? 's' : ''}</span></div>`;
+    }).join('');
+    html += '</div>';
+  }
+  if (!html) html = '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px;">No vehicles match.</div>';
+  return html;
+}
+function _fleetLibraryPanelHTML() {
+  return `<div class="fleet-lib-panel">
+    <div class="fleet-lib-hdr">
+      <span>Vehicle Library</span>
+      <input id="fleet-lib-search" class="fleet-lib-search" placeholder="Search vehicles…" oninput="fleetLibRender()" value="${(_fleetLibQuery || '').replace(/"/g,'&quot;')}">
+      <span class="fleet-lib-hint">drag a vehicle into the fleet list (new entry) or onto a vehicle slot (swap)</span>
+    </div>
+    <div id="fleet-lib-grid" class="fleet-lib-grid">${_fleetLibChipsHTML()}</div>
+  </div>`;
+}
+
+// Click a library card → preview its stages + ΔV (same info a fleet entry shows),
+// with an "Add to Fleet" action.
+let _fleetVehInfoSel = null;
+function fleetLibInfo(source, idx) {
+  const spec = _fleetVehicleSpecFromLib(source, idx);
+  if (!spec) return;
+  _fleetVehInfoSel = { source, idx };
+  const tmp = { fleetId: '__preview__', name: spec.name, stageNames: spec.stageNames,
+    stageData: spec.stageData, boosterName: spec.boosterName, boosterData: spec.boosterData, payloads: [] };
+
+  const stageTrs = spec.stageData.map((st, i) => `<tr>
+    <td class="rl">${spec.stageNames[i] || 'Stage '+(i+1)}${st.s15 ? ' <span style="color:var(--accent2);font-size:8px;font-family:var(--mono);letter-spacing:.05em;">S1.5</span>' : ''}</td>
+    <td>${(st.dry||0).toLocaleString()}</td>
+    <td>${(st.prop||0).toLocaleString()}</td>
+    <td>${st.isp||0}</td>
+    <td style="color:var(--text-dim)">${((st.dry||0)+(st.prop||0)).toLocaleString()}</td>
+  </tr>`).join('');
+  const boosterRow = spec.boosterData ? `<tr style="color:var(--text-dim)">
+    <td class="rl">${spec.boosterName||'Booster'} (x${spec.boosterData.count||1})</td>
+    <td>${(spec.boosterData.dry||0).toLocaleString()}</td>
+    <td>${(spec.boosterData.prop||0).toLocaleString()}</td>
+    <td>${spec.boosterData.isp||0}</td>
+    <td>${((spec.boosterData.dry||0)+(spec.boosterData.prop||0)).toLocaleString()}</td>
+  </tr>` : '';
+
+  const titleEl = document.getElementById('fleet-vehinfo-title');
+  if (titleEl) titleEl.textContent = spec.name;
+  const body = document.getElementById('fleet-vehinfo-body');
+  if (body) body.innerHTML = `
+    <div class="sl">Launch Vehicle Configuration</div>
+    <div class="panel" style="padding:12px;">
+      <table class="fleet-lv-tbl">
+        <thead><tr><th>Stage</th><th>Dry (kg)</th><th>Prop (kg)</th><th>Isp (s)</th><th>Wet (kg)</th></tr></thead>
+        <tbody>${stageTrs}${boosterRow}</tbody>
+      </table>
+    </div>
+    <div class="sl" style="margin-top:14px;">&#916;V Budget</div>
+    <div class="panel" style="padding:12px;">${_fleetBudgetHTML(tmp)}</div>`;
+  openModal('modal-fleet-vehinfo');
+}
+function fleetVehInfoAdd() {
+  if (_fleetVehInfoSel) fleetAddVehicleToFleet(_fleetVehInfoSel.source, _fleetVehInfoSel.idx);
+  closeModal('modal-fleet-vehinfo');
 }
 
 function fleetInit() {
@@ -174,7 +350,8 @@ function fleetSnapshotCurrent() {
   const names  = [];
   for (let s = 0; s < (typeof numStages !== 'undefined' ? numStages : 0); s++) {
     const st = stageStore[s] || {};
-    stages.push({ dry: parseFloat(st.dry)||0, prop: parseFloat(st.prop)||0, isp: parseFloat(st.isp)||1, thrust: parseFloat(st.thrust)||0, res: parseFloat(st.res)||2 });
+    stages.push(_fleetStageCopy({ dry: parseFloat(st.dry)||0, prop: parseFloat(st.prop)||0, isp: parseFloat(st.isp)||1, thrust: parseFloat(st.thrust)||0, res: parseFloat(st.res)||2,
+      s15: st.s15, s15_sust_thrust: st.s15_sust_thrust, s15_sust_isp: st.s15_sust_isp, s15_jet_mass: st.s15_jet_mass, s15_beco_twr: st.s15_beco_twr }));
     names.push((typeof currentStageNames !== 'undefined' && currentStageNames[s]) ? currentStageNames[s] : ('Stage ' + (s+1)));
   }
   if (!stages.length) { alert('No stages in LV Calc — configure a vehicle on the Vehicles page first.'); return; }
@@ -211,7 +388,7 @@ function fleetLoadJSON(input) {
         fleetId: progUUID(),
         name: obj.name || obj.vehicleName || file.name.replace(/\.json$/i,''),
         stageNames: names,
-        stageData: stages.map(s => ({ dry: s.dry||0, prop: s.prop||0, isp: s.isp||1, thrust: s.thrust||0, res: s.res||2 })),
+        stageData: stages.map(_fleetStageCopy),
         boosterName: obj.boosterName || null,
         boosterData: obj.boosterData || null,
         payloads: Array.isArray(obj.payloads) ? obj.payloads : [],
@@ -300,14 +477,16 @@ function _fleetAddPayloadOptions(entry) {
 }
 
 function _fleetLvDvBreakdown(entry, payloadMass) {
+  const exp = _fleetExpandStages(entry.stageData);   // S1.5 stages split into Ph.1/Ph.2
   let cum = 0;
-  return entry.stageData.map((st, i) => {
+  return exp.map((st, i) => {
     // wet mass = this stage + all stages above + payload
-    const massAbove = entry.stageData.slice(i+1).reduce((s, x) => s + (x.dry||0) + (x.prop||0), 0);
+    const massAbove = exp.slice(i+1).reduce((s, x) => s + (x.dry||0) + (x.prop||0), 0);
     const m_wet = (st.dry||0) + (st.prop||0) + massAbove + payloadMass;
     const dv = (st.prop > 0 && st.isp > 0) ? progRocketEqDv(m_wet, st.prop, st.isp) : 0;
     cum += dv;
-    return { name: entry.stageNames[i] || ('Stage '+(i+1)), dry: st.dry||0, prop: st.prop||0, isp: st.isp||0, dv, cum };
+    const base = entry.stageNames[st._src] || ('Stage ' + (st._src + 1));
+    return { name: st._phase ? base + ' ' + st._phase : base, dry: st.dry||0, prop: st.prop||0, isp: st.isp||0, dv, cum };
   });
 }
 
@@ -369,12 +548,12 @@ function fleetRenderDetail() {
   const el = document.getElementById('fleet-detail');
   if (!el) return;
   const entry = _fleetGet();
-  if (!entry) { el.innerHTML = '<div class="placeholder-msg">Add or select a launch vehicle</div>'; return; }
+  if (!entry) { el.innerHTML = '<div class="placeholder-msg">Add or select a launch vehicle — or drag one from the library below.</div>' + _fleetLibraryPanelHTML(); return; }
   const id = entry.fleetId;
 
   // Stage table
   const stageTrs = entry.stageData.map((st, i) => `<tr>
-    <td class="rl">${entry.stageNames[i] || 'Stage '+(i+1)}</td>
+    <td class="rl">${entry.stageNames[i] || 'Stage '+(i+1)}${st.s15 ? ' <span style="color:var(--accent2);font-size:8px;font-family:var(--mono);letter-spacing:.05em;">S1.5</span>' : ''}</td>
     <td>${(st.dry||0).toLocaleString()}</td>
     <td>${(st.prop||0).toLocaleString()}</td>
     <td>${st.isp||0}</td>
@@ -401,8 +580,8 @@ function fleetRenderDetail() {
 
     <div class="sc-ed-detail-grid">
       <div>
-        <div class="sl">Launch Vehicle Configuration</div>
-        <div class="panel" style="padding:12px;">
+        <div class="sl">Launch Vehicle Configuration <span style="color:var(--text-dim);font-size:9px;letter-spacing:0;text-transform:none;">— drop a library vehicle here to swap</span></div>
+        <div class="panel fleet-vehbox" style="padding:12px;" ondragover="fleetDragOver(event)" ondragleave="fleetDragLeave(event)" ondrop="fleetVehSwapDrop(event,'${id}')">
           <table class="fleet-lv-tbl">
             <thead><tr><th>Stage</th><th>Dry (kg)</th><th>Prop (kg)</th><th>Isp (s)</th><th>Wet (kg)</th></tr></thead>
             <tbody>${stageTrs}${boosterRow}</tbody>
@@ -426,6 +605,7 @@ function fleetRenderDetail() {
         <div class="sl">&#916;V Budget</div>
         <div class="panel" style="padding:12px;" id="fleet-budget-${id}">${_fleetBudgetHTML(entry)}</div>
       </div>
-    </div>`;
+    </div>
+    ${_fleetLibraryPanelHTML()}`;
 }
 

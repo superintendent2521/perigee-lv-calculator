@@ -7,6 +7,8 @@ lv_calc.html.postband-bak
 lv_calc.html.postui-bak
 LV_calc_saved.html
 lv_calc_saved.html
+# Local Claude Code config / memory (not for the repo)
+.claude/
 # Scratch / scripts / temp
 _*.py
 _*.js

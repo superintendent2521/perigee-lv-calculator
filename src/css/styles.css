@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root{--bg:#3b393a;--panel:#2e2c2d;--border:#524f50;--border-bright:#6e6b6c;--accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;--text:#e7e8ea;--text-dim:#a7a6a4;--text-bright:#ffffff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--nm-bg:#282628;--nm-earth:#5db877;--nm-lunar:#8890bc;--nm-interp:#b85848;--nm-edge:#5a5758;--nm-edge-act:#88c657;--nm-node-fill:#2e2c2d;--nm-label:#a7a6a4;--nm-pill-bg:#2e2c2d;--nm-pill-bd:#524f50;--nm-pill-text:#a7a6a4;--nm-pal-bg:#252325;--nm-pal-hdr:#1e1c1e;--nm-pal-item:#2e2c2d;--nm-pal-item-act:#1e2419;--nm-ghost:#524f50;}
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;}
+html,body{height:100%;margin:0;background:var(--bg);overscroll-behavior:none;}
 #rp-root{background:var(--bg);color:var(--text-bright);font-family:var(--sans);font-size:15px;min-height:100%;padding:0;box-sizing:border-box;display:flex;flex-direction:column;}
 header{flex-shrink:0;}
 
@@ -384,7 +384,7 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 
 .mission-log-card{border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;background:rgba(0,0,0,.18);}
 .mission-log-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.mission-log-type{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);}
+.mission-log-type{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mission-log-status-ok{font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid var(--accent3);color:var(--accent3);}
 .mission-state-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px 16px;margin-bottom:12px;}
 .mission-state-kv{display:flex;flex-direction:column;gap:2px;}
@@ -392,35 +392,108 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 .mission-state-val{font-family:var(--mono);font-size:13px;color:var(--text-bright);}
 
 /* ─── Spacecraft/Fleet detail grid wrapper ─────────────────────────────────── */
-.sc-ed-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.sc-ed-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;align-content:start;}
 
 /* ─── Mission Command Center ─────────────────────────────────────────────── */
-#prog-panel-mission{height:100%;min-height:0;}
+#prog-panel-mission{flex:1;min-height:0;display:flex;flex-direction:column;}
 #mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;border:1px solid var(--border);}
 .mcc-topbar{display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .mcc-topbar .sl{margin:0;}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
 .mcc-left-col{width:260px;min-width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .mcc-left-budget{flex-shrink:0;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);margin-top:auto;}
-.mcc-center-col{flex:1;position:relative;overflow:hidden;border-right:1px solid var(--border);}
+.mcc-center-col{flex:1;min-width:0;position:relative;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.mcc-view-area{flex:1;min-width:0;overflow:auto;min-height:0;padding:0 10px;position:relative;}
+/* node map root is pinned to the view area so the (potentially huge) SVG can
+   never grow the box — .nm-scroll always has a bounded size and scrolls. */
+.nm-root{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;min-width:0;}
+.nm-scroll{flex:1;min-height:0;min-width:0;overflow:auto;cursor:grab;border:1px solid var(--border);margin-top:6px;}
+.nm-scroll:active{cursor:grabbing;}
+/* band view fills the view area: a tall scrollable chart up top, the state
+   monitor pinned below it with its own independent scroll. */
+.band-root{display:flex;flex-direction:column;height:100%;min-height:0;}
+.band-scroll{flex:1;min-height:0;overflow:auto;border:1px solid var(--border);background:var(--panel);}
+.band-monitor{flex-shrink:0;max-height:38%;overflow-y:auto;margin-top:8px;padding:10px 12px;border:1px solid var(--border);background:var(--panel);}
 .mcc-right-col{width:340px;min-width:280px;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .mcc-summary-bar{flex-shrink:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.22);min-height:26px;font-family:var(--mono);font-size:10px;}
 .mcc-section-header{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;padding:8px 10px 4px;flex-shrink:0;}
 .mcc-panel-pad{padding:10px 12px;}
+.mcc-box{background:var(--panel);border:1px solid var(--border);padding:10px 12px;margin:8px 10px;}
+.mcc-box-hdr{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;}
 .mcc-events-header{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;padding:8px 10px 6px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.mcc-events-list{flex:1;overflow-y:auto;padding:8px 10px;}
+.mcc-events-list{flex:1;min-height:0;overflow-y:auto;padding:8px 10px;}
 .mcc-band-placeholder{display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:.06em;}
 .mcc-field-select{width:100%;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:5px 8px;}
 .mcc-field-input{background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;}
 .lv-item.selected{background:rgba(136,198,87,.14);box-shadow:inset 3px 0 0 var(--accent);}
 .lv-item.selected .lv-item-btn span{color:var(--accent3)!important;}
 
+/* event cards: always-visible clickable header strip + (when expanded) a full-width body */
+.mcc-evt-row{margin-bottom:6px;border:1px solid var(--border);background:rgba(0,0,0,.12);}
+.mcc-evt-row[draggable="true"] .mevt-head{cursor:grab;}
+.mcc-evt-row.mevt-drop-hot{border-color:var(--accent);box-shadow:inset 0 2px 0 var(--accent);}
+.mcc-evt-row.sel{border-color:var(--accent);}
+.mevt-head{display:flex;align-items:center;gap:8px;padding:6px 8px;min-height:28px;cursor:pointer;}
+.mevt-head:hover{background:rgba(255,255,255,.03);}
+.mevt-caret{font-size:9px;color:var(--text-dim);width:10px;flex-shrink:0;text-align:center;}
+.mevt-head .mevt-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* grouped event control buttons, in-flow on the right of the header */
+.mevt-ctlbar{display:flex;gap:2px;flex-shrink:0;margin-left:auto;}
+.mevt-ctl{padding:0 3px;font-size:9px;line-height:18px;height:18px;min-width:16px;justify-content:center;}
+.mevt-body{border-top:1px solid var(--border);padding:2px;}
+.mevt-body .mission-log-card{border:none;background:transparent;margin:0;}
+.mcc-evt-row.grpstart{box-shadow:inset 0 0 0 1px var(--accent3);}
+
+/* repeatable event group block */
+.mcc-group{border:1px solid var(--accent3);margin-bottom:8px;background:rgba(176,224,128,.05);}
+.mcc-group-hdr{display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;}
+.mcc-group-name{color:var(--accent3);font-weight:600;letter-spacing:.04em;}
+.mcc-group-rep{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--text-dim);font-size:9px;}
+.mcc-group-body{padding:5px;}
+.mcc-group-body .mcc-evt-row:last-child{margin-bottom:0;}
+
+/* SEPARATE: visual stage-stack split picker */
+.msep-stack{display:flex;flex-direction:column;border:1px solid var(--border);user-select:none;}
+.msep-stage{font-family:var(--mono);font-size:10px;padding:7px 10px;color:var(--text-bright);background:var(--input);text-align:center;border-left:3px solid var(--border-bright);}
+.msep-stage.upper{border-left-color:var(--accent);}
+.msep-stage.lower{border-left-color:var(--border-bright);color:var(--text-dim);}
+.msep-gap{height:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.msep-line{height:2px;width:100%;background:var(--border);}
+.msep-gap:hover .msep-line{background:var(--accent2);}
+.msep-bar{height:14px;width:100%;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;cursor:grab;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;}
+.msep-bar:active{cursor:grabbing;}
+.msep-grip{pointer-events:none;}
+.msep-summary{font-family:var(--mono);font-size:9px;color:var(--text-bright);margin-top:8px;line-height:1.7;}
+
+/* command-center footer: missions list (left) + orbit catalog (right) */
+.mcc-footer{display:flex;flex-shrink:0;border-top:1px solid var(--border);background:rgba(0,0,0,.22);}
+.mcc-missions{width:220px;min-width:200px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.mcc-missions-hdr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.mcc-missions-list{overflow-y:auto;max-height:150px;padding:6px;}
+.mcc-mission-card{display:flex;align-items:center;gap:6px;padding:4px 6px;margin-bottom:4px;border:1px solid var(--border);border-left-width:3px;border-left-color:var(--border);background:var(--input);cursor:pointer;}
+.mcc-mission-card:hover{background:var(--panel);}
+.mcc-mission-card.sel{border-left-color:var(--accent);background:rgba(136,198,87,.14);}
+.mcc-mission-meta{display:flex;flex-direction:column;flex:1;min-width:0;}
+.mcc-mission-name{font-family:var(--mono);font-size:11px;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mcc-mission-card.sel .mcc-mission-name{color:var(--accent3);}
+.mcc-mission-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);}
+
+/* node-map orbit catalog dock (right half of footer) */
+.nm-orbit-dock{flex:1;min-width:0;display:flex;flex-direction:column;}
+.nm-orbit-dock-hdr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.nm-orbit-scroll{overflow-y:auto;max-height:150px;padding:8px 10px;}
+.nm-orbit-group{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:5px;}
+.nm-orbit-planet{font-family:var(--mono);font-size:9px;letter-spacing:.06em;min-width:96px;}
+.nm-orbit-chip{font-family:var(--mono);font-size:9px;color:var(--text-bright);background:var(--input);border:1px solid var(--border);border-left-width:3px;padding:2px 7px;cursor:grab;user-select:none;}
+.nm-orbit-chip:hover{background:var(--panel);}
+.nm-orbit-chip:active{cursor:grabbing;}
+
 /* ===== RESTORED LV CALCULATOR CSS (from backup) ===== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root{--bg:#3b393a;--panel:#2e2c2d;--border:#524f50;--border-bright:#6e6b6c;--accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;--text:#e7e8ea;--text-dim:#a7a6a4;--text-bright:#ffffff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--nm-bg:#282628;--nm-earth:#5db877;--nm-lunar:#8890bc;--nm-interp:#b85848;--nm-edge:#5a5758;--nm-edge-act:#88c657;--nm-node-fill:#2e2c2d;--nm-label:#a7a6a4;--nm-pill-bg:#2e2c2d;--nm-pill-bd:#524f50;--nm-pill-text:#a7a6a4;--nm-pal-bg:#252325;--nm-pal-hdr:#1e1c1e;--nm-pal-item:#2e2c2d;--nm-pal-item-act:#1e2419;--nm-ghost:#524f50;}
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;}
+html,body{height:100%;margin:0;background:var(--bg);overscroll-behavior:none;}
 #rp-root{background:var(--bg);color:var(--text-bright);font-family:var(--sans);font-size:15px;min-height:100%;padding:0;box-sizing:border-box;display:flex;flex-direction:column;}
 header{flex-shrink:0;}
 
@@ -887,4 +960,57 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 .art-ci-rsz{position:absolute;bottom:0;right:0;width:12px;height:12px;cursor:se-resize;
   background:var(--accent);opacity:0;transition:opacity .15s;}
 .art-ci:hover .art-ci-rsz,.art-ci.sel .art-ci-rsz{opacity:.8;}
+
+/* Tutorials / Help modal: topic list (left) + scrollable walkthrough (right) */
+.tut-wrap{display:flex;flex:1;min-height:0;}
+.tut-list{width:230px;min-width:230px;border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;padding:8px;gap:3px;}
+.tut-item{text-align:left;background:transparent;border:1px solid transparent;color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 10px;cursor:pointer;line-height:1.4;}
+.tut-item:hover{color:var(--text-bright);background:rgba(255,255,255,.04);}
+.tut-item.active{color:var(--accent);border-color:var(--accent);background:rgba(136,198,87,.08);}
+.tut-body{flex:1;min-width:0;overflow-y:auto;padding:18px 24px;color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;}
+.tut-body h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:18px 0 8px;}
+.tut-body h3:first-child{margin-top:0;}
+.tut-body p{margin:0 0 10px;}
+.tut-body ul,.tut-body ol{margin:0 0 12px;padding-left:22px;}
+.tut-body li{margin-bottom:6px;}
+.tut-body b{color:var(--text-bright);}
+.tut-tip{border-left:3px solid var(--accent);background:rgba(136,198,87,.06);padding:8px 12px;font-size:13px;color:var(--text-dim);}
+
+/* LV Calculator sub-tab bar (Vehicles / Orbits / Results), shown in the header
+   only while the LV Calculator section is active. */
+.lv-subnav{display:flex;gap:2px;align-items:center;padding-left:14px;margin-left:6px;border-left:1px solid var(--border);}
+.lv-sub-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:all .15s;}
+.lv-sub-btn:hover{border-color:var(--accent);color:var(--accent);}
+.lv-sub-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold;}
+
+/* Fleet: height-capped vehicle box, drag-drop zones, and inline vehicle library */
+.fleet-vehbox{max-height:240px;overflow:auto;}
+.fleet-drop-zone{margin:8px;padding:14px 10px;border:1.5px dashed var(--border-bright);text-align:center;
+  font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.04em;transition:border-color .12s,background .12s,color .12s;}
+.fleet-drop-zone.drop-hot,.fleet-vehbox.drop-hot{border-color:var(--accent);background:rgba(136,198,87,.10);color:var(--accent);}
+.fleet-lib-panel{margin-top:18px;border-top:1px solid var(--border);padding-top:12px;}
+.fleet-lib-hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.fleet-lib-hdr>span:first-child{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);}
+.fleet-lib-search{background:var(--input);border:1px solid var(--border);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);
+  font-family:var(--mono);font-size:10px;padding:5px 10px;width:200px;outline:none;}
+.fleet-lib-search:focus{border-color:var(--accent);}
+.fleet-lib-hint{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:auto;}
+.fleet-lib-group-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin:8px 0 5px;}
+.fleet-lib-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.fleet-lib-chip{background:var(--panel);border:1px solid var(--border);
+  padding:8px 11px;cursor:grab;min-width:140px;transition:border-color .12s,background .12s;}
+.fleet-lib-chip:hover{border-color:var(--accent);background:rgba(255,255,255,.04);}
+.fleet-lib-chip:active{cursor:grabbing;}
+.fleet-lib-chip-name{display:block;font-family:var(--mono);font-size:11px;color:var(--text-bright);}
+.fleet-lib-chip-sub{display:block;font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;}
+
+/* Font fixes ───────────────────────────────────────────────────────────────
+   a. SVG <text> can't resolve var() inside a presentation attribute, so the
+      band-view / node-map labels were falling back to the browser default
+      font. Enforce the project mono font via CSS (which DOES resolve var). */
+.mcc-view-area text{font-family:var(--mono);}
+/* b. Form controls don't inherit font-family by default — point any bare
+      button/input/select/textarea at the project font instead of the
+      browser default. Explicit class fonts win by specificity. */
+button,input,select,textarea{font-family:inherit;}
 
