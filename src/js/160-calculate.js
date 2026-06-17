@@ -96,9 +96,9 @@ function renderResults(r){
   if(!panel||!r)return;
   const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime,Tmix,stageDVs,destMode,boosterMode}=r;
   const bmBadge = (boosterMode && boosterMode.mode === 'crossfeed')
-    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⛽ CROSSFEED</span>`
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">CROSSFEED</span>`
     : (boosterMode && boosterMode.mode === 'throttle')
-    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⏬ CTR ${Math.round((boosterMode.thr||0)*100)}%</span>`
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">THROTTLE ${Math.round((boosterMode.thr||0)*100)}%</span>`
     : '';
   const fD=v=>(v/1000).toFixed(3)+' km/s';
   const fRenderM=v=>Math.round(v).toLocaleString()+' kg';

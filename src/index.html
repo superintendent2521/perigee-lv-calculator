@@ -103,16 +103,16 @@
           <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
         </div>
         <div class="cfg-item" id="booster-mode-wrap" style="display:none">
-          <label>Parallel Staging<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text"><b>Independent:</b> boosters &amp; core each burn their own propellant.<br><b>Crossfeed:</b> boosters feed the core (UR-700) — core stages with full tanks.<br><b>Center throttle:</b> core throttled during the boost phase (Falcon Heavy).</span></span></label>
+          <label>Parallel Staging<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text"><b>Independent:</b> boosters &amp; first stage each burn their own propellant.<br><b>Crossfeed:</b> boosters feed first stage (UR-700) — first stage reaches staging with full tanks.<br><b>Throttle:</b> first stage throttled during the boost phase (Falcon Heavy).</span></span></label>
           <div class="seg" id="b-parallel-seg">
-            <button class="active" data-pm="independent" onclick="setBoosterMode('independent')" title="Boosters and core each burn their own propellant (default)">Indep</button>
-            <button data-pm="crossfeed" onclick="setBoosterMode('crossfeed')" title="Boosters feed the core (UR-700 asparagus) — core stages with full tanks">Crossfeed</button>
-            <button data-pm="throttle" onclick="setBoosterMode('throttle')" title="Center core throttled during the boost phase (Falcon-Heavy tricore)">Throttle</button>
+            <button class="active" data-pm="independent" onclick="setBoosterMode('independent')" title="Boosters and first stage each burn their own propellant (default)">Indep</button>
+            <button data-pm="crossfeed" onclick="setBoosterMode('crossfeed')" title="Boosters feed first stage (UR-700 asparagus) — first stage reaches staging with full tanks">Crossfeed</button>
+            <button data-pm="throttle" onclick="setBoosterMode('throttle')" title="First stage throttled during the boost phase (Falcon-Heavy tricore)">Throttle</button>
           </div>
           <input type="hidden" id="b_parallel_mode" value="independent">
         </div>
         <div class="cfg-item" id="booster-throttle-wrap" style="display:none">
-          <label>Center Throttle %</label>
+          <label>First-Stage Throttle %</label>
           <input type="number" class="field" id="b_core_throttle" value="57" min="10" max="100" oninput="_suppressUD=true;markLVUserDefined&&markLVUserDefined();buildStageComposition();">
         </div>
         <div class="cfg-item">
@@ -724,15 +724,15 @@
         </div>
         <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:4px;padding-top:10px;display:none;" id="stg-parallel-section">
           <label>Parallel Staging
-            <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:5px;">i<span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;"><b>Independent:</b> boosters &amp; core each burn their own propellant (default).<br><br><b>Crossfeed:</b> boosters feed the core (UR-700 asparagus) — the core stages with FULL tanks.<br><br><b>Center throttle:</b> the core is throttled during the boost phase (Falcon-Heavy tricore), so it keeps propellant for after the boosters separate.</span></span>
+            <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:5px;">i<span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;"><b>Independent:</b> boosters &amp; first stage each burn their own propellant (default).<br><br><b>Crossfeed:</b> boosters feed first stage (UR-700 asparagus) — the first stage reaches staging with FULL tanks.<br><br><b>Throttle:</b> the first stage is throttled during the boost phase (Falcon-Heavy tricore), so it keeps propellant for after the boosters separate.</span></span>
           </label>
           <select id="stg-parallel-mode" onchange="_stgParallelToggle(this.value)" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
             <option value="independent">Independent (default)</option>
-            <option value="crossfeed">Crossfeed — boosters feed the core</option>
-            <option value="throttle">Center core throttle-down</option>
+            <option value="crossfeed">Crossfeed — boosters feed first stage</option>
+            <option value="throttle">First-stage throttle-down</option>
           </select>
           <div id="stg-throttle-wrap" style="display:none;margin-top:10px;">
-            <label>Center Throttle % <span style="color:var(--text-dim);font-size:9px;">// core throttle during the boost phase</span></label>
+            <label>First-Stage Throttle % <span style="color:var(--text-dim);font-size:9px;">// first stage throttle during the boost phase</span></label>
             <input type="number" id="stg-throttle" value="57" min="10" max="100" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
           </div>
         </div>

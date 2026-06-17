@@ -1141,16 +1141,16 @@ button,input,select,textarea{font-family:inherit;}
           <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
         </div>
         <div class="cfg-item" id="booster-mode-wrap" style="display:none">
-          <label>Parallel Staging<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text"><b>Independent:</b> boosters &amp; core each burn their own propellant.<br><b>Crossfeed:</b> boosters feed the core (UR-700) — core stages with full tanks.<br><b>Center throttle:</b> core throttled during the boost phase (Falcon Heavy).</span></span></label>
+          <label>Parallel Staging<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text"><b>Independent:</b> boosters &amp; first stage each burn their own propellant.<br><b>Crossfeed:</b> boosters feed first stage (UR-700) — first stage reaches staging with full tanks.<br><b>Throttle:</b> first stage throttled during the boost phase (Falcon Heavy).</span></span></label>
           <div class="seg" id="b-parallel-seg">
-            <button class="active" data-pm="independent" onclick="setBoosterMode('independent')" title="Boosters and core each burn their own propellant (default)">Indep</button>
-            <button data-pm="crossfeed" onclick="setBoosterMode('crossfeed')" title="Boosters feed the core (UR-700 asparagus) — core stages with full tanks">Crossfeed</button>
-            <button data-pm="throttle" onclick="setBoosterMode('throttle')" title="Center core throttled during the boost phase (Falcon-Heavy tricore)">Throttle</button>
+            <button class="active" data-pm="independent" onclick="setBoosterMode('independent')" title="Boosters and first stage each burn their own propellant (default)">Indep</button>
+            <button data-pm="crossfeed" onclick="setBoosterMode('crossfeed')" title="Boosters feed first stage (UR-700 asparagus) — first stage reaches staging with full tanks">Crossfeed</button>
+            <button data-pm="throttle" onclick="setBoosterMode('throttle')" title="First stage throttled during the boost phase (Falcon-Heavy tricore)">Throttle</button>
           </div>
           <input type="hidden" id="b_parallel_mode" value="independent">
         </div>
         <div class="cfg-item" id="booster-throttle-wrap" style="display:none">
-          <label>Center Throttle %</label>
+          <label>First-Stage Throttle %</label>
           <input type="number" class="field" id="b_core_throttle" value="57" min="10" max="100" oninput="_suppressUD=true;markLVUserDefined&&markLVUserDefined();buildStageComposition();">
         </div>
         <div class="cfg-item">
@@ -1762,15 +1762,15 @@ button,input,select,textarea{font-family:inherit;}
         </div>
         <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:4px;padding-top:10px;display:none;" id="stg-parallel-section">
           <label>Parallel Staging
-            <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:5px;">i<span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;"><b>Independent:</b> boosters &amp; core each burn their own propellant (default).<br><br><b>Crossfeed:</b> boosters feed the core (UR-700 asparagus) — the core stages with FULL tanks.<br><br><b>Center throttle:</b> the core is throttled during the boost phase (Falcon-Heavy tricore), so it keeps propellant for after the boosters separate.</span></span>
+            <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:5px;">i<span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;"><b>Independent:</b> boosters &amp; first stage each burn their own propellant (default).<br><br><b>Crossfeed:</b> boosters feed first stage (UR-700 asparagus) — the first stage reaches staging with FULL tanks.<br><br><b>Throttle:</b> the first stage is throttled during the boost phase (Falcon-Heavy tricore), so it keeps propellant for after the boosters separate.</span></span>
           </label>
           <select id="stg-parallel-mode" onchange="_stgParallelToggle(this.value)" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
             <option value="independent">Independent (default)</option>
-            <option value="crossfeed">Crossfeed — boosters feed the core</option>
-            <option value="throttle">Center core throttle-down</option>
+            <option value="crossfeed">Crossfeed — boosters feed first stage</option>
+            <option value="throttle">First-stage throttle-down</option>
           </select>
           <div id="stg-throttle-wrap" style="display:none;margin-top:10px;">
-            <label>Center Throttle % <span style="color:var(--text-dim);font-size:9px;">// core throttle during the boost phase</span></label>
+            <label>First-Stage Throttle % <span style="color:var(--text-dim);font-size:9px;">// first stage throttle during the boost phase</span></label>
             <input type="number" id="stg-throttle" value="57" min="10" max="100" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
           </div>
         </div>
@@ -2163,7 +2163,7 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
     tags:['Historical','Center Throttle'],
-    note:'3× CBC cores + DCSS. ~28.8t LEO. Center core throttles to ~55% after liftoff so it has propellant left once the side CBCs separate (modeled with center-throttle parallel staging). Largest US launcher before SLS.'
+    note:'3× CBC cores + DCSS. ~28.8t LEO. The first stage throttles to ~55% after liftoff so it has propellant left once the side boosters separate (modeled with first-stage throttle-down). Largest US launcher before SLS.'
   },
   {
     name:'Falcon 9 Block 5',
@@ -2193,7 +2193,7 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
     tags:['Active','Reusable','Center Throttle'],
-    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. Center core throttles to ~57% during the boost phase so it stages with propellant remaining after the side cores separate (modeled with center-throttle parallel staging).'
+    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. The first stage throttles to ~57% during the boost phase so it stages with propellant remaining after the side boosters separate (modeled with first-stage throttle-down).'
   },
   {
     name:'Vulcan Centaur',
@@ -2461,7 +2461,7 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:200,perigee:200,inc:51.6},
     tags:['Unbuilt','Exotic','Historical','Crossfeed','Super Heavy (>50 t)'],
-    note:'Chelomei UR-700 super-heavy (never built). 6× outer RD-270 modules feeding a central core via CROSSFEED, so the core stages with full tanks (modeled with crossfeed parallel staging) + storable (N2O4/UDMH) upper. Design ~150t LEO. Stage masses estimated.'
+    note:'Chelomei UR-700 super-heavy (never built). 6× outer RD-270 modules feed the first stage via crossfeed, so the first stage reaches staging with full tanks (modeled with crossfeed parallel staging) + storable (N2O4/UDMH) upper. Design ~150t LEO. Stage masses estimated.'
   }
 ];
 // ─── ORBIT CATEGORIES ─────────────────────────
@@ -3257,10 +3257,10 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
     const nB=booster.count,s1=stages[0],pa0=spM[0];
     // Parallel-staging mode (default 'independent' = legacy behaviour):
     //  independent — boosters burn their own prop; core burns its own at full thrust.
-    //  throttle    — center core throttled to fraction f during the boost phase (Falcon-Heavy
-    //                tricore): less core prop spent in parallel, so more remains for phase B.
-    //  crossfeed   — boosters feed the core (UR-700 asparagus): boosters drain faster and the
-    //                core stages with FULL tanks → much better second-phase mass ratio.
+    //  throttle    — first stage throttled to fraction f during the boost phase (Falcon-Heavy
+    //                tricore): less first-stage prop spent in parallel, so more remains for phase B.
+    //  crossfeed   — boosters feed the first stage (UR-700 asparagus): boosters drain faster and
+    //                the first stage reaches staging with FULL tanks → much better phase-B mass ratio.
     const mode=booster.parallelMode||'independent';
     const f=(mode==='throttle')?Math.min(1,Math.max(0.1,booster.coreThrottle||1)):1;
     const upB=booster.prop*(1-(booster.res||0)/100)*nB,upS1=s1.prop*(1-(s1.res||0)/100);
@@ -3272,9 +3272,9 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
       btB=upB/(mdotB+mdotC);              // booster tanks feed booster + core engines
       mfc=m0c-upB;                        // only booster prop spent; core untouched
       ieffA=(mfB+mfS1)/((mdotB+mdotC)*G0);
-      rs1=upS1;                           // core stages with full tanks
+      rs1=upS1;                           // first stage reaches staging with full tanks
     } else {
-      const mdotCa=f*mdotC;               // f<1 throttles the core during the boost phase
+      const mdotCa=f*mdotC;               // f<1 throttles the first stage during the boost phase
       btB=upB/mdotB;
       const pc1=Math.min(mdotCa*btB,upS1);
       mfc=m0c-upB-pc1;
@@ -3589,9 +3589,9 @@ function renderResults(r){
   if(!panel||!r)return;
   const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime,Tmix,stageDVs,destMode,boosterMode}=r;
   const bmBadge = (boosterMode && boosterMode.mode === 'crossfeed')
-    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⛽ CROSSFEED</span>`
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">CROSSFEED</span>`
     : (boosterMode && boosterMode.mode === 'throttle')
-    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⏬ CTR ${Math.round((boosterMode.thr||0)*100)}%</span>`
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">THROTTLE ${Math.round((boosterMode.thr||0)*100)}%</span>`
     : '';
   const fD=v=>(v/1000).toFixed(3)+' km/s';
   const fRenderM=v=>Math.round(v).toLocaleString()+' kg';
@@ -7145,8 +7145,8 @@ function buildStageComposition(){
       if(pm!=='independent'){
         const thr=Math.round(parseFloat(document.getElementById('b_core_throttle')?.value)||57);
         const badge=document.createElement('span');
-        badge.textContent = pm==='crossfeed' ? '⛽' : ('⏬'+thr+'%');
-        badge.title = pm==='crossfeed' ? 'Crossfeed — boosters feed the core' : ('Center core throttle '+thr+'% during boost');
+        badge.textContent = pm==='crossfeed' ? 'XFEED' : (thr+'%');
+        badge.title = pm==='crossfeed' ? 'Crossfeed — boosters feed first stage' : ('First stage throttled to '+thr+'% during boost');
         badge.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';
         nameEl.appendChild(badge);
       }
@@ -7559,7 +7559,7 @@ function openEditStageModal(stageIdx,isBooster){
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
 
   // Parallel-staging section — only for the strap-on BOOSTER (crossfeed / center-throttle).
-  // This is the counterpart to S1.5: it describes how the booster group interacts with the core.
+  // This is the counterpart to S1.5: it describes how the booster group interacts with the first stage.
   const pSec = document.getElementById('stg-parallel-section');
   if (pSec) pSec.style.display = isBooster ? '' : 'none';
   if (pSec && isBooster) {

@@ -53,7 +53,7 @@ function openEditStageModal(stageIdx,isBooster){
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
 
   // Parallel-staging section — only for the strap-on BOOSTER (crossfeed / center-throttle).
-  // This is the counterpart to S1.5: it describes how the booster group interacts with the core.
+  // This is the counterpart to S1.5: it describes how the booster group interacts with the first stage.
   const pSec = document.getElementById('stg-parallel-section');
   if (pSec) pSec.style.display = isBooster ? '' : 'none';
   if (pSec && isBooster) {

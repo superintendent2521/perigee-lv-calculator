@@ -336,7 +336,7 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
     tags:['Historical','Center Throttle'],
-    note:'3× CBC cores + DCSS. ~28.8t LEO. Center core throttles to ~55% after liftoff so it has propellant left once the side CBCs separate (modeled with center-throttle parallel staging). Largest US launcher before SLS.'
+    note:'3× CBC cores + DCSS. ~28.8t LEO. The first stage throttles to ~55% after liftoff so it has propellant left once the side boosters separate (modeled with first-stage throttle-down). Largest US launcher before SLS.'
   },
   {
     name:'Falcon 9 Block 5',
@@ -366,7 +366,7 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
     tags:['Active','Reusable','Center Throttle'],
-    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. Center core throttles to ~57% during the boost phase so it stages with propellant remaining after the side cores separate (modeled with center-throttle parallel staging).'
+    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. The first stage throttles to ~57% during the boost phase so it stages with propellant remaining after the side boosters separate (modeled with first-stage throttle-down).'
   },
   {
     name:'Vulcan Centaur',
@@ -634,6 +634,6 @@ const BUILTIN_PRESETS=[
     mode:'orbit',
     orbit:{apogee:200,perigee:200,inc:51.6},
     tags:['Unbuilt','Exotic','Historical','Crossfeed','Super Heavy (>50 t)'],
-    note:'Chelomei UR-700 super-heavy (never built). 6× outer RD-270 modules feeding a central core via CROSSFEED, so the core stages with full tanks (modeled with crossfeed parallel staging) + storable (N2O4/UDMH) upper. Design ~150t LEO. Stage masses estimated.'
+    note:'Chelomei UR-700 super-heavy (never built). 6× outer RD-270 modules feed the first stage via crossfeed, so the first stage reaches staging with full tanks (modeled with crossfeed parallel staging) + storable (N2O4/UDMH) upper. Design ~150t LEO. Stage masses estimated.'
   }
 ];

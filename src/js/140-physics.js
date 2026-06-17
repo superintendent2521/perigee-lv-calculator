@@ -35,10 +35,10 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
     const nB=booster.count,s1=stages[0],pa0=spM[0];
     // Parallel-staging mode (default 'independent' = legacy behaviour):
     //  independent — boosters burn their own prop; core burns its own at full thrust.
-    //  throttle    — center core throttled to fraction f during the boost phase (Falcon-Heavy
-    //                tricore): less core prop spent in parallel, so more remains for phase B.
-    //  crossfeed   — boosters feed the core (UR-700 asparagus): boosters drain faster and the
-    //                core stages with FULL tanks → much better second-phase mass ratio.
+    //  throttle    — first stage throttled to fraction f during the boost phase (Falcon-Heavy
+    //                tricore): less first-stage prop spent in parallel, so more remains for phase B.
+    //  crossfeed   — boosters feed the first stage (UR-700 asparagus): boosters drain faster and
+    //                the first stage reaches staging with FULL tanks → much better phase-B mass ratio.
     const mode=booster.parallelMode||'independent';
     const f=(mode==='throttle')?Math.min(1,Math.max(0.1,booster.coreThrottle||1)):1;
     const upB=booster.prop*(1-(booster.res||0)/100)*nB,upS1=s1.prop*(1-(s1.res||0)/100);
@@ -50,9 +50,9 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
       btB=upB/(mdotB+mdotC);              // booster tanks feed booster + core engines
       mfc=m0c-upB;                        // only booster prop spent; core untouched
       ieffA=(mfB+mfS1)/((mdotB+mdotC)*G0);
-      rs1=upS1;                           // core stages with full tanks
+      rs1=upS1;                           // first stage reaches staging with full tanks
     } else {
-      const mdotCa=f*mdotC;               // f<1 throttles the core during the boost phase
+      const mdotCa=f*mdotC;               // f<1 throttles the first stage during the boost phase
       btB=upB/mdotB;
       const pc1=Math.min(mdotCa*btB,upS1);
       mfc=m0c-upB-pc1;
