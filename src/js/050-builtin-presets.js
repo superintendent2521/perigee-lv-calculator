@@ -327,14 +327,16 @@ const BUILTIN_PRESETS=[
     stageNames:['Delta IV CBC','DCSS (Delta IV)'],
     boosterName:'Delta IV CBC',
     boosterCount:2,
+    parallelMode:'throttle',
+    coreThrottle:0.55,
     payload:28790,
     fairingMass:2034,
     fairingJettison:2,
     site:{lat:28.5,azMin:37,azMax:112},
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
-    tags:['Historical'],
-    note:'3× CBC cores + DCSS. ~28.8t LEO. Largest US launcher before SLS.'
+    tags:['Historical','Center Throttle'],
+    note:'3× CBC cores + DCSS. ~28.8t LEO. Center core throttles to ~55% after liftoff so it has propellant left once the side CBCs separate (modeled with center-throttle parallel staging). Largest US launcher before SLS.'
   },
   {
     name:'Falcon 9 Block 5',
@@ -355,14 +357,16 @@ const BUILTIN_PRESETS=[
     stageNames:['Falcon 9 B5 S1','Falcon 9 MVac'],
     boosterName:'Falcon 9 B5 S1',
     boosterCount:2,
+    parallelMode:'throttle',
+    coreThrottle:0.57,
     payload:63800,
     fairingMass:1900,
     fairingJettison:2,
     site:{lat:28.5,azMin:37,azMax:112},
     mode:'orbit',
     orbit:{apogee:400,perigee:400,inc:28.5},
-    tags:['Active','Reusable'],
-    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. Side boosters separate earlier.'
+    tags:['Active','Reusable','Center Throttle'],
+    note:'3× F9 cores + MVac. Expendable config. ~63.8t LEO. Center core throttles to ~57% during the boost phase so it stages with propellant remaining after the side cores separate (modeled with center-throttle parallel staging).'
   },
   {
     name:'Vulcan Centaur',
@@ -615,5 +619,21 @@ const BUILTIN_PRESETS=[
     orbit:{apogee:200,perigee:200,inc:51.6},
     tags:['Historical'],
     note:'Buran/Polyus. 4× Zenit strap-ons + LOX/LH2 core. ~100t LEO (design).'
+  },
+  {
+    name:'UR-700',
+    stageData:[
+      {dry:22000,prop:280000,thrust:6713,isp:322,res:2},
+      {dry:11000,prop:130000,thrust:2400,isp:326,res:2}
+    ],
+    boosterData:{dry:18000,prop:280000,thrust:6713,isp:322,res:2,count:6,parallelMode:'crossfeed'},
+    payload:150000,
+    fairingMass:5000,
+    fairingJettison:2,
+    site:{lat:45.9,azMin:50,azMax:100},
+    mode:'orbit',
+    orbit:{apogee:200,perigee:200,inc:51.6},
+    tags:['Unbuilt','Exotic','Historical','Crossfeed','Super Heavy (>50 t)'],
+    note:'Chelomei UR-700 super-heavy (never built). 6× outer RD-270 modules feeding a central core via CROSSFEED, so the core stages with full tanks (modeled with crossfeed parallel staging) + storable (N2O4/UDMH) upper. Design ~150t LEO. Stage masses estimated.'
   }
 ];

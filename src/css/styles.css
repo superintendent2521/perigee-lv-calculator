@@ -421,10 +421,17 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 .mcc-box{background:var(--panel);border:1px solid var(--border);padding:10px 12px;margin:8px 10px;}
 .mcc-box-hdr{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;}
 .mcc-events-header{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;padding:8px 10px 6px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.mcc-evt-filterbar{display:flex;gap:6px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.15);}
+.mcc-evt-filter{flex:1;min-width:0;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:9px;padding:3px 6px;}
 .mcc-events-list{flex:1;min-height:0;overflow-y:auto;padding:8px 10px;}
 .mcc-band-placeholder{display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:.06em;}
 .mcc-field-select{width:100%;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:5px 8px;}
 .mcc-field-input{background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;}
+/* Force the OS-drawn dropdown popup (and its hover highlight) to dark mode so no
+   <select> ever opens with a white option list / invisible text — add and edit alike. */
+#page-program select,.modal select{color-scheme:dark;}
+#page-program select option,#page-program select optgroup{background:var(--input);color:var(--text-bright);}
+.modal select option{background:var(--input);color:var(--text-bright);}
 .lv-item.selected{background:rgba(136,198,87,.14);box-shadow:inset 3px 0 0 var(--accent);}
 .lv-item.selected .lv-item-btn span{color:var(--accent3)!important;}
 
@@ -480,6 +487,21 @@ td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transp
 
 /* node-map orbit catalog dock (right half of footer) */
 .nm-orbit-dock{flex:1;min-width:0;display:flex;flex-direction:column;}
+/* ORBITS catalog fills the whole Orbit-Map sidebar, darker, scrolls fully */
+.mcc-orbit-cat{flex:1;min-height:0;display:flex;background:var(--panel2);}
+.mcc-orbit-cat .nm-orbit-dock{flex:1;min-height:0;display:flex;flex-direction:column;}
+.mcc-orbit-cat .nm-orbit-scroll{flex:1;min-height:0;max-height:calc(100vh - 230px);overflow-y:auto;padding:6px 8px;}
+/* Add-Event dock: visibly "activates" (accent border + tint) when the panel is open */
+.mcc-addevt-dock{border-top:1px solid var(--border);transition:background .12s,border-color .12s;}
+.mcc-addevt-dock.open{border-top:2px solid var(--accent);background:rgba(136,198,87,.07);}
+.mcc-addevt-btn:hover{filter:brightness(1.08);}
+/* ORBITS catalog rows — LV-calculator orbits, colour-coded by body */
+.orbit-body-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin:9px 0 4px;}
+.orbit-row{display:flex;align-items:baseline;gap:8px;padding:5px 7px;margin-bottom:3px;background:var(--panel);border:1px solid var(--border);cursor:grab;font-family:var(--mono);}
+.orbit-row:hover{border-color:var(--accent);background:rgba(136,198,87,.07);}
+.orbit-row:active{cursor:grabbing;}
+.orbit-row-name{font-size:10px;color:var(--text-bright);flex-shrink:0;}
+.orbit-row-sub{font-size:9px;color:var(--text-dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
 .nm-orbit-dock-hdr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .nm-orbit-scroll{overflow-y:auto;max-height:150px;padding:8px 10px;}
 .nm-orbit-group{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:5px;}

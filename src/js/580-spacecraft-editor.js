@@ -78,7 +78,7 @@ function scEdSaveJSON(id) {
   const blob = new Blob([JSON.stringify(sc, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = sc.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.spacecraft.json';
+  a.download = sc.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.spacecraft';
   a.click();
 }
 

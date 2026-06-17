@@ -143,6 +143,7 @@ function loadPreset(p,key){
     const bd=boosterData;
     ['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});
     document.getElementById('num-boosters').value=bd.count||0;
+    if(typeof applyBoosterModeUI==='function')applyBoosterModeUI(bd);
   }
   if(p.payload!==undefined)document.getElementById('payload-mass').value=p.payload;
   if(p.fairingMass!==undefined)document.getElementById('fairing-mass').value=p.fairingMass;

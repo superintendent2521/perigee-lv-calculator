@@ -189,6 +189,41 @@ function _nmOrbitVAtR(body, orbit, r_km) {
 }
 
 /**
+ * Two-impulse ΔV (m/s) between two COAXIAL orbits (apsides aligned) around the same body,
+ * via vis-viva at the burn points. Considers every apsis→apsis bi-tangent transfer plus the
+ * single-burn case when the two orbits share an apsis radius, and returns the cheapest.
+ * Reduces exactly to a Hohmann transfer for two circular orbits — and, unlike collapsing
+ * each ellipse to its mean altitude, makes BOTH perigee and apogee affect the result.
+ * Reads perigee/apogee directly (not the type label), so a slightly-elliptical "circular"
+ * node is still handled correctly.
+ */
+function _nmCoaxialTransferDv(body, oa, ob) {
+  const b = PROG_BODIES[body]; if (!b) return null;
+  const apsOf = o => {
+    const r1 = b.R + (o.perigee ?? o.apogee ?? 0), r2 = b.R + (o.apogee ?? o.perigee ?? 0);
+    return { rp: Math.min(r1, r2), ra: Math.max(r1, r2) };
+  };
+  const A = apsOf(oa), B = apsOf(ob);
+  // vis-viva speed (km/s) on the orbit with apsides (rp,ra) at radius r:  1/a = 2/(rp+ra)
+  const vAt = (rp, ra, r) => Math.sqrt(Math.max(0, b.mu * (2 / r - 2 / (rp + ra))));
+  const apsA = [A.rp, A.ra], apsB = [B.rp, B.ra];
+  let best = Infinity, dv1b = 0, dv2b = 0, single = false;
+  apsA.forEach(r1 => apsB.forEach(r2 => {
+    // bi-tangent two-burn: transfer ellipse spans r1↔r2; tangential burn at each orbit's apsis
+    const tp = Math.min(r1, r2), ta = Math.max(r1, r2);
+    const d1 = Math.abs(vAt(tp, ta, r1) - vAt(A.rp, A.ra, r1));
+    const d2 = Math.abs(vAt(B.rp, B.ra, r2) - vAt(tp, ta, r2));
+    if (d1 + d2 < best) { best = d1 + d2; dv1b = d1; dv2b = d2; single = false; }
+    // single tangential burn where the orbits cross at a common apsis radius
+    if (Math.abs(r1 - r2) < 1) {
+      const d = Math.abs(vAt(A.rp, A.ra, r1) - vAt(B.rp, B.ra, r1));
+      if (d < best) { best = d; dv1b = d; dv2b = 0; single = true; }
+    }
+  }));
+  return { total_ms: best * 1000, dv1_ms: dv1b * 1000, dv2_ms: dv2b * 1000, single };
+}
+
+/**
  * ΔV (m/s) to depart from `orbit` around `body` onto a hyperbolic/escape trajectory
  * with hyperbolic excess speed v_inf_kms (km/s).  Burn happens at periapsis.
  */
@@ -282,16 +317,20 @@ function _nmDvPhysics(nA, nB) {
         note: `Departure burn from ${alt} km, C3=${c3} km²/s² → ${dest}`, method: 'vis-viva' };
     }
 
-    // Two circular/elliptic orbits around same body — Hohmann via SMA
-    // Guard: only applies to actual orbits, not transit/escape trajectories
+    // Two circular/elliptic orbits around same body — proper coaxial vis-viva transfer
+    // (both perigee AND apogee matter). Guard: actual orbits only, not transit/escape.
     if ((oa.type === 'circular' || oa.type === 'elliptic') &&
         (ob.type === 'circular' || ob.type === 'elliptic')) {
-      const altA = (oa.type === 'elliptic') ? (oa.perigee + oa.apogee) / 2 : (oa.perigee ?? oa.apogee ?? 0);
-      const altB = (ob.type === 'elliptic') ? (ob.perigee + ob.apogee) / 2 : (ob.perigee ?? ob.apogee ?? 0);
-      if (Math.abs(altA - altB) < 1) return { dv: 0, note: 'Same orbit', method: 'trivial' };
-      const h = progDvHohmann(body, altA, altB);
-      const label = (oa.type === 'circular' && ob.type === 'circular') ? 'Hohmann transfer' : 'Hohmann (SMA approx)';
-      return { dv: Math.round(h.total_ms), note: `${label}: ${Math.round(h.dv1_ms)} + ${Math.round(h.dv2_ms)} m/s around ${body}`, method: label };
+      const t = _nmCoaxialTransferDv(body, oa, ob);
+      if (!t) return null;
+      if (t.total_ms < 1) return { dv: 0, note: 'Same orbit', method: 'trivial' };
+      const bothCirc = oa.type === 'circular' && ob.type === 'circular';
+      const label = t.single ? 'Single-burn transfer (shared apsis)'
+                  : bothCirc ? 'Hohmann transfer' : 'Bi-tangent transfer';
+      const note = t.single
+        ? `${label}: ${Math.round(t.dv1_ms)} m/s at shared apsis around ${body}`
+        : `${label}: ${Math.round(t.dv1_ms)} + ${Math.round(t.dv2_ms)} m/s around ${body}`;
+      return { dv: Math.round(t.total_ms), note, method: label };
     }
 
     // Unhandled same-body combination (e.g. transit→transit, escape→transit)

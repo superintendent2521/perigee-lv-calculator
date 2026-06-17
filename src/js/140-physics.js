@@ -33,15 +33,35 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
   }
   if(booster){
     const nB=booster.count,s1=stages[0],pa0=spM[0];
+    // Parallel-staging mode (default 'independent' = legacy behaviour):
+    //  independent — boosters burn their own prop; core burns its own at full thrust.
+    //  throttle    — center core throttled to fraction f during the boost phase (Falcon-Heavy
+    //                tricore): less core prop spent in parallel, so more remains for phase B.
+    //  crossfeed   — boosters feed the core (UR-700 asparagus): boosters drain faster and the
+    //                core stages with FULL tanks → much better second-phase mass ratio.
+    const mode=booster.parallelMode||'independent';
+    const f=(mode==='throttle')?Math.min(1,Math.max(0.1,booster.coreThrottle||1)):1;
     const upB=booster.prop*(1-(booster.res||0)/100)*nB,upS1=s1.prop*(1-(s1.res||0)/100);
     const mBW=(booster.dry+booster.prop)*nB,m0c=s1.dry+s1.prop+mBW+pa0;
     const mfB=booster.thrust*1000*nB,mfS1=s1.thrust*1000;
-    const btB=upB/(mfB/G0/booster.isp);
-    const pc1=Math.min((mfS1/G0/s1.isp)*btB,upS1),mfc=m0c-upB-pc1;
-    const ieff=(booster.isp*(mfB/G0/booster.isp)+s1.isp*(mfS1/G0/s1.isp))/((mfB/G0/booster.isp)+(mfS1/G0/s1.isp));
-    const dvbp=rocketEq(ieff,m0c,mfc),rs1=upS1-pc1;
+    const mdotB=mfB/G0/booster.isp, mdotC=mfS1/G0/s1.isp;   // mass flow at full throttle
+    let btB,mfc,ieffA,rs1;   // phase-A (parallel) burn time, end mass, eff. Isp, core prop left
+    if(mode==='crossfeed'){
+      btB=upB/(mdotB+mdotC);              // booster tanks feed booster + core engines
+      mfc=m0c-upB;                        // only booster prop spent; core untouched
+      ieffA=(mfB+mfS1)/((mdotB+mdotC)*G0);
+      rs1=upS1;                           // core stages with full tanks
+    } else {
+      const mdotCa=f*mdotC;               // f<1 throttles the core during the boost phase
+      btB=upB/mdotB;
+      const pc1=Math.min(mdotCa*btB,upS1);
+      mfc=m0c-upB-pc1;
+      ieffA=(mfB+f*mfS1)/((mdotB+mdotCa)*G0);
+      rs1=upS1-pc1;
+    }
+    const dvbp=rocketEq(ieffA,m0c,mfc);
     const m0s1a=mfc-booster.dry*nB,mfs1a=Math.max(m0s1a-rs1,s1.dry+pa0);
-    const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mfS1/G0/s1.isp,0.001);
+    const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mdotC,0.001);
     sDVs[0]=dvbp+dvs1a;sBTs[0]=btB+bts1a;
     tDV=sDVs.reduce((a,b)=>a+b,0);tBT=sBTs.reduce((a,b)=>a+b,0);
   }
@@ -62,6 +82,25 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
   return{sDVs,sBTs,tDV,tBT,Ta,Tmix,DVpen,DVasc,DVtot,margin,tMas,A0,avgIsp,Vcirc,Vrot};
 }
 
+// Max payload (kg) a vehicle can deliver — binary-search lvPerformance for the
+// payload where ΔV margin hits zero. Single source of truth for BOTH the LV
+// calculator's "Est. Max Payload" and the Program's launch capacity.
+function lvMaxPayload(stages, booster, fairingMass, fairingJ, parkingAlt, onOrbitDV, siteLat, azMin, azMax){
+  const marginAt = pay => lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, onOrbitDV, siteLat, azMin, azMax).margin;
+  if (marginAt(0) < 0) return 0;
+  let lo = 0, hi = 2000000;
+  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (marginAt(mid) > 0) lo = mid; else hi = mid; if (hi - lo < 1) break; }
+  return lo;
+}
+
+// Read the booster parallel-staging mode from the DOM (crossfeed / center-throttle / none).
+// coreThrottle is stored as a 0–1 fraction (the input is a percent).
+function boosterModeFromDOM(){
+  const mode=(document.getElementById('b_parallel_mode')?.value)||'independent';
+  const thr=parseFloat(document.getElementById('b_core_throttle')?.value);
+  return {parallelMode:mode, coreThrottle:(isFinite(thr)?thr/100:0.57)};
+}
+
 function collectVehicle(){
   saveStoreFromDOM();
   const stages=[];
@@ -72,6 +111,6 @@ function collectVehicle(){
     if(sd.s15){st.s15=true;st.s15_sust_thrust=sd.s15_sust_thrust||0;st.s15_sust_isp=sd.s15_sust_isp||0;st.s15_jet_mass=sd.s15_jet_mass||0;st.s15_beco_twr=sd.s15_beco_twr||1.2;}
     stages.push(st);
   }
-  const booster=useBooster?{dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0}:null;
+  const booster=useBooster?{dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()}:null;
   return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
 }

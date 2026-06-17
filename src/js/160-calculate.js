@@ -12,7 +12,7 @@ function calculate(){
     for(let s=0;s<numStages;s++)stages.push({dry:gv(`s${s+1}_dry`),prop:gv(`s${s+1}_prop`),thrust:gv(`s${s+1}_thrust`),isp:parseFloat(document.getElementById(`s${s+1}_isp`).value)||1,res:gv(`s${s+1}_res`)});
     let booster=null;
     if(useBooster){
-      booster={dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0};
+      booster={dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()};
       if(booster.count<1){panel.innerHTML='<div class="error-msg">// ERROR: Set booster count > 0.</div>';return;}
     }
 
@@ -72,12 +72,9 @@ function calculate(){
       return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
     }
 
-    let lo=0,hi=2000000,maxPay=0;
     const r0=evalAtPayload(0);
-    if(r0.margin_>=0){
-      for(let i=0;i<40;i++){const mid=(lo+hi)/2;const rm=evalAtPayload(mid);if(rm.margin_>0)lo=mid;else hi=mid;if(hi-lo<1)break;}
-      maxPay=lo;
-    }
+    // shared max-payload search (same code the Program uses)
+    const maxPay=lvMaxPayload(stages,(useBooster&&booster)?booster:null,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
 
     const res=evalAtPayload(maxPay);
     const stageDVs=res.sDVs,stageBTs=res.sBTs;
@@ -86,7 +83,7 @@ function calculate(){
     const feasible=r0.margin_>=-50;
     const TWR=tThr/(tMas*G0);
 
-    lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime:res.Ta_,Tmix,stageDVs:[...stageDVs],destMode,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
+    lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime:res.Ta_,Tmix,stageDVs:[...stageDVs],destMode,boosterMode:(useBooster&&booster)?{mode:booster.parallelMode,thr:booster.coreThrottle}:null,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
     const _spb2=document.getElementById('save-case-btn');if(_spb2)_spb2.disabled=false;
 
     renderResults(lastResult);
@@ -97,7 +94,12 @@ function calculate(){
 function renderResults(r){
   const panel=document.getElementById('results-panel');
   if(!panel||!r)return;
-  const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime,Tmix,stageDVs,destMode}=r;
+  const {modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime,Tmix,stageDVs,destMode,boosterMode}=r;
+  const bmBadge = (boosterMode && boosterMode.mode === 'crossfeed')
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⛽ CROSSFEED</span>`
+    : (boosterMode && boosterMode.mode === 'throttle')
+    ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 6px;margin-left:6px;border:1px solid var(--accent3);color:var(--accent3)">⏬ CTR ${Math.round((boosterMode.thr||0)*100)}%</span>`
+    : '';
   const fD=v=>(v/1000).toFixed(3)+' km/s';
   const fRenderM=v=>Math.round(v).toLocaleString()+' kg';
   const fS=v=>Math.round(v)+' s';
@@ -106,7 +108,7 @@ function renderResults(r){
   const bdown=stageDVs.map((dv,i)=>`<div class="breakdown-row"><span>Stage ${i+1}</span><span>${fD(dv)}</span></div>`).join('');
   const badge=destMode==='escape'?'<span class="escape-badge">ESCAPE</span>':'';
   panel.innerHTML=`
-    <div class="result-row"><span class="result-label">Target${badge}</span><span class="result-val" style="font-size:11px;color:var(--text-dim)">${modeLabel}</span></div>
+    <div class="result-row"><span class="result-label">Target${badge}${bmBadge}</span><span class="result-val" style="font-size:11px;color:var(--text-dim)">${modeLabel}</span></div>
     <div class="result-row"><span class="result-label">Est. Max Payload</span><span class="result-val ${maxPay>0?'hl':'neg'}">${fRenderM(maxPay)}</span></div>
     <div class="result-row"><span class="result-label">Capacity Range (±10%)</span><span class="result-val" style="font-size:11px;">${maxPay>0?fRenderM(maxPay*.9)+' – '+fRenderM(maxPay*1.1):'—'}</span></div>
     <div class="result-row"><span class="result-label">Mission Feasible?</span><span class="result-val ${feasible?'':'neg'}">${feasible?'✓ YES':'✗ NO'}</span></div>

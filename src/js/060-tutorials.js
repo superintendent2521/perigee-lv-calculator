@@ -96,10 +96,10 @@ const TUTORIALS = [
       <li><b>Zoom</b> with the buttons or scroll-wheel; click a node to inspect; the panel below shows the full state at that event.</li>
       <li><b>⬇ PNG</b> saves the current view as an image (the band export includes a vehicle colour key).</li>
     </ul>
-    <h3>Node Map</h3>
+    <h3>Orbit Map</h3>
     <ul>
-      <li>A solar-system map of orbital <b>nodes</b>. Use <b>＋ Draw Maneuver</b> to connect a start node to a destination (computes the ΔV).</li>
-      <li><b>＋ Custom Node</b> or drag from the <b>Orbit Catalog</b> to add your own nodes; right-drag to reposition.</li>
+      <li>A solar-system map of orbital <b>nodes</b> — it's only about maneuvers. Use <b>＋ Draw Maneuver</b> to connect a start node to a destination (computes the ΔV).</li>
+      <li>The <b>Orbits</b> panel is the list view of these same nodes (catalog and map are one set). Add with <b>+ Custom</b> or <b>Load</b> a .orbit file; right-drag a node to reposition.</li>
     </ul>` },
 
   { id: 'multi-vehicle', title: 'Missions — multi-vehicle ops', body: () => `

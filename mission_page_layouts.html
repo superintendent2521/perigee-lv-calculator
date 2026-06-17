@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Page — Layout Reorganizations</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#3b393a;--panel:#2e2c2d;--panel2:#252325;--border:#524f50;--border-bright:#6e6b6c;
+  --accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;
+  --text:#e7e8ea;--text-bright:#ffffff;--text-dim:#a7a6a4;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;padding:30px 26px 80px;}
+.doc-h1{font-family:var(--mono);font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.doc-sub{color:var(--text-dim);font-size:13px;margin-bottom:32px;max-width:820px;line-height:1.6;}
+.doc-sub b{color:var(--text-bright);}
+.concept{margin-bottom:44px;border:1px solid var(--border);background:rgba(0,0,0,.12);}
+.concept-head{display:flex;align-items:baseline;gap:14px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--panel);flex-wrap:wrap;}
+.concept-head .num{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.1em;}
+.concept-head h2{font-size:20px;font-weight:600;color:var(--text-bright);}
+.concept-head .tag{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#000;background:var(--accent);padding:3px 8px;}
+.concept-desc{padding:12px 18px 0;color:var(--text-dim);font-size:13.5px;line-height:1.65;max-width:920px;}
+.concept-desc b{color:var(--text);}
+.mock-wrap{padding:18px;}
+.mock{background:var(--bg);border:1px solid var(--border-bright);overflow:hidden;}
+
+.bar{display:flex;align-items:center;gap:9px;padding:8px 12px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.logo{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+.sel{font-family:var(--mono);font-size:11px;color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 10px;background:var(--panel);}
+.lbl{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);}
+.btn{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border-bright);background:transparent;padding:6px 11px;}
+.btn.go{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+.btn.ghost{border-color:var(--border);}
+.seg{display:inline-flex;border:1px solid var(--border-bright);}
+.seg span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);padding:6px 13px;border-right:1px solid var(--border-bright);}
+.seg span:last-child{border-right:none;}
+.seg span.on{background:var(--accent);color:#000;font-weight:600;}
+.panel{background:var(--panel);border:1px solid var(--border);}
+.sect{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);padding:9px 11px 5px;}
+.field{font-family:var(--mono);font-size:10px;color:var(--text-bright);border:1px solid var(--border);background:var(--panel2);padding:6px 9px;}
+.chip{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--border);color:var(--text-dim);}
+.chip.ok{border-color:var(--accent);color:var(--accent);} .chip.warn{border-color:var(--accent2);color:var(--accent2);}
+.mono{font-family:var(--mono);} .dim{color:var(--text-dim);}
+.evt{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);margin:0 0 5px;font-family:var(--mono);font-size:10px;background:var(--panel);}
+.evt .ty{color:var(--accent3);min-width:74px;}
+.evt.sel{border-color:var(--accent);background:rgba(136,198,87,.10);}
+.evt .ctl{margin-left:auto;color:var(--text-dim);letter-spacing:1px;}
+.veh{display:flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid var(--border);border-left:3px solid var(--border);margin-bottom:4px;font-family:var(--mono);font-size:10px;}
+.veh.on{border-color:var(--accent);border-left-color:var(--accent);background:rgba(136,198,87,.12);color:var(--accent3);}
+.view{position:relative;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
+.zone{height:24px;border-bottom:1px dotted var(--border-bright);display:flex;align-items:center;padding:0 10px;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+.track{position:absolute;height:2px;background:var(--accent);} .trackb{position:absolute;height:2px;background:var(--accent2);}
+.addbtn{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px dashed var(--accent);background:rgba(136,198,87,.06);padding:7px 11px;text-align:center;}
+.flex{display:flex;} .col{flex-direction:column;} .g6{gap:6px;} .g8{gap:8px;} .g10{gap:10px;} .g12{gap:12px;}
+.mt6{margin-top:6px;} .mt8{margin-top:8px;} .mt10{margin-top:10px;} .mt12{margin-top:12px;}
+.subtle{font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.6;}
+.fab{width:30px;height:30px;background:var(--accent);color:#000;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.tree-row{font-family:var(--mono);font-size:10px;padding:5px 10px;color:var(--text);}
+.tree-row.h{color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;font-size:9px;padding-top:11px;}
+.tree-row.on{color:var(--accent3);background:rgba(136,198,87,.10);border-left:2px solid var(--accent);}
+.kv{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.kv b{color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="doc-h1">Mission Page · Layout Reorganizations</div>
+<div class="doc-sub">Four ways to re-arrange the <b>existing</b> mission elements — mission picker, launch setup (LV / payload / orbit), vehicle roster &amp; multi-vehicle ops, the events list + add-event, the band / node-map view, the state monitor, the ΔV budget, the orbit catalog, PNG export — into something more intuitive. No new copy telling you what to do; the <b>structure</b> does the guiding. Same dark / mono style.</div>
+
+<!-- ════════ A · PLAN / FLY ════════ -->
+<section class="concept">
+  <div class="concept-head"><span class="num">A</span><h2>Plan / Fly</h2><span class="tag">Two modes, one toggle</span></div>
+  <p class="concept-desc"><b>The split:</b> today everything is on screen at once. This splits the page into two modes via the top toggle. <b>PLAN</b> = set up the rocket and build the event list (no big chart competing for space). <b>FLY</b> = the chart goes full-width with the scrubber, state monitor and roster. The single <b>[ Plan · Fly ]</b> toggle is the only new affordance and it reads instantly: "set it up" vs "watch it run." Each mode is half as busy as today.</p>
+  <div class="mock-wrap"><div class="mock">
+    <div class="bar"><span class="logo">Mission</span><span class="sel">Artemis test ▾</span>
+      <span class="seg" style="margin-left:6px;"><span class="on">Plan</span><span>Fly</span></span>
+      <span style="margin-left:auto;" class="btn ghost">⬇ PNG</span><span class="btn ghost">Reset</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px;">
+      <div class="panel">
+        <div class="sect">① Vehicle &amp; Payload</div>
+        <div style="padding:0 11px 12px;" class="flex col g8">
+          <div class="field">Launch Vehicle ▾ &nbsp; Jupiter 244</div>
+          <div class="field">Payload ▾ &nbsp; Orion + EUS</div>
+          <div class="flex g8"><span class="chip ok">✓ fits</span><span class="chip">108,241 kg → LEO</span></div>
+        </div>
+        <div class="sect">② Launch Orbit</div>
+        <div style="padding:0 11px 14px;" class="flex g8">
+          <span class="field">Earth</span><span class="field">200 km</span><span class="field">28.5°</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="sect">③ Flight Plan · 4 events</div>
+        <div style="padding:0 11px 11px;">
+          <div class="evt"><span class="ty">LAUNCH</span>Jupiter 244<span class="ctl">✎ ⤓ ✕</span></div>
+          <div class="evt"><span class="ty">BURN</span>TLI<span class="ctl">✎ ⤓ ✕</span></div>
+          <div class="evt"><span class="ty">SEPARATE</span>EUS<span class="ctl">✎ ⤓ ✕</span></div>
+          <div class="evt"><span class="ty">DOCK</span>Orion + LM<span class="ctl">✎ ⤓ ✕</span></div>
+          <div class="addbtn mt6">＋ Add event</div>
+        </div>
+      </div>
+    </div>
+    <div class="subtle" style="padding:0 16px 14px;">▸ Flipping to <b style="color:var(--accent3)">Fly</b> hides this and shows the full-width band/node view + scrubber + state monitor + roster.</div>
+  </div></div>
+</section>
+
+<!-- ════════ B · INSPECTOR ════════ -->
+<section class="concept">
+  <div class="concept-head"><span class="num">B</span><h2>Inspector</h2><span class="tag">Select → edit on the right</span></div>
+  <p class="concept-desc"><b>The split:</b> a left <b>browser</b> (the mission's vehicles &amp; events as a tree), a big center <b>view</b>, and a single right <b>inspector</b> that always shows whatever is selected — click an event and its editor appears; click a vehicle and its multi-vehicle ops appear; click empty space and you get add-event. Replaces today's scattered side panels with one predictable rule: <b>select something → it's editable on the right.</b> The roster/setup/event-editor stop fighting for the same column.</p>
+  <div class="mock-wrap"><div class="mock">
+    <div class="bar"><span class="logo">Mission</span><span class="sel">Artemis test ▾</span><span class="seg" style="margin-left:6px;"><span class="on">Band</span><span>Node Map</span></span><span style="margin-left:auto;" class="btn ghost">⬇ PNG</span></div>
+    <div style="display:grid;grid-template-columns:190px 1fr 250px;min-height:280px;">
+      <div class="panel" style="border-top:none;border-bottom:none;border-left:none;">
+        <div class="tree-row h">▍ Vehicles</div>
+        <div class="tree-row on">● Jupiter 244</div>
+        <div class="tree-row">○ Orion</div>
+        <div class="tree-row">○ Lunar Module</div>
+        <div class="tree-row h">▍ Events</div>
+        <div class="tree-row">LAUNCH</div>
+        <div class="tree-row" style="color:var(--accent3)">▸ BURN · TLI</div>
+        <div class="tree-row">SEPARATE</div>
+        <div class="tree-row">DOCK</div>
+      </div>
+      <div class="view" style="margin:10px;">
+        <div class="zone">NRHO</div><div class="zone">Cislunar</div><div class="zone" style="color:var(--accent3)">LEO</div><div class="zone">Earth</div>
+        <div class="track" style="left:14%;bottom:30px;width:30%;"></div>
+        <div class="track" style="left:44%;bottom:30px;width:2px;height:54px;"></div>
+        <div class="track" style="left:44%;bottom:84px;width:42%;"></div>
+      </div>
+      <div class="panel" style="border-top:none;border-bottom:none;border-right:none;">
+        <div class="sect" style="color:var(--accent3)">Inspector · BURN</div>
+        <div style="padding:0 11px 12px;" class="flex col g8">
+          <div class="lbl">Type</div><div class="field">Trans-Lunar Injection ▾</div>
+          <div class="lbl">Firing stage</div><div class="field">EUS — 142,000 kg ▾</div>
+          <div class="lbl">ΔV</div><div class="field">3,150 m/s</div>
+          <span class="btn go" style="text-align:center;">Apply</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ════════ C · SUB-TABS ════════ -->
+<section class="concept">
+  <div class="concept-head"><span class="num">C</span><h2>Stages</h2><span class="tag">Setup · Flight Plan · Analysis</span></div>
+  <p class="concept-desc"><b>The split:</b> three sub-tabs inside the mission, mirroring the natural order of work. <b>Setup</b> (vehicle, payload, orbit), <b>Flight Plan</b> (roster + events + add-event), <b>Analysis</b> (band/node view + state monitor + ΔV budget + PNG). Same tab pattern you already use for Spacecraft/Fleet/Missions, so it's instantly familiar — and each tab is calm instead of the current everything-at-once wall.</p>
+  <div class="mock-wrap"><div class="mock">
+    <div class="bar"><span class="logo">Mission</span><span class="sel">Artemis test ▾</span>
+      <span class="seg" style="margin-left:10px;"><span>Setup</span><span class="on">Flight Plan</span><span>Analysis</span></span></div>
+    <div style="display:grid;grid-template-columns:240px 1fr;gap:14px;padding:16px;">
+      <div class="panel">
+        <div class="sect">Vehicles &amp; Ops</div>
+        <div style="padding:0 11px 11px;">
+          <div class="veh on">● Jupiter 244 · 2 stages</div>
+          <div class="veh">○ Orion · 2 stages</div>
+          <div class="veh">○ Lunar Module</div>
+          <div class="flex g8 mt8"><span class="btn ghost" style="flex:1;text-align:center;">⇕ Separate</span><span class="btn ghost" style="flex:1;text-align:center;">⊕ Dock</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="sect">Events · drag to reorder</div>
+        <div style="padding:0 11px 12px;">
+          <div class="evt"><span class="ty">LAUNCH</span>Jupiter 244<span class="ctl">✎ ▲ ▼ ✕</span></div>
+          <div class="evt sel"><span class="ty">BURN</span>TLI<span class="ctl">✎ ▲ ▼ ✕</span></div>
+          <div class="evt"><span class="ty">SEPARATE</span>EUS<span class="ctl">✎ ▲ ▼ ✕</span></div>
+          <div class="evt"><span class="ty">DOCK</span>Orion + LM<span class="ctl">✎ ▲ ▼ ✕</span></div>
+          <div class="addbtn mt6">＋ Add event</div>
+        </div>
+      </div>
+    </div>
+    <div class="subtle" style="padding:0 16px 14px;">▸ <b style="color:var(--text)">Setup</b> tab = vehicle/payload/orbit · <b style="color:var(--text)">Analysis</b> tab = full band/node view + state monitor + ΔV budget + PNG.</div>
+  </div></div>
+</section>
+
+<!-- ════════ D · STAGE STRIP ════════ -->
+<section class="concept">
+  <div class="concept-head"><span class="num">D</span><h2>Flight Strip</h2><span class="tag">View on top, timeline below</span></div>
+  <p class="concept-desc"><b>The split:</b> keep one page but stack it by purpose. The <b>view</b> (band/node map) spans the top as the hero. Directly beneath runs the <b>event timeline as a horizontal strip</b> aligned under it, with the active-vehicle roster as a compact left dock and an inline <b>＋</b> between events for inserting. The ΔV budget + state ride a thin bottom status bar. Vertical order = "see it → plan it → check it," and the horizontal event strip lines up with the chart so cause and effect are visually obvious.</p>
+  <div class="mock-wrap"><div class="mock">
+    <div class="bar"><span class="logo">Mission</span><span class="sel">Artemis test ▾</span><span class="seg" style="margin-left:6px;"><span class="on">Band</span><span>Node Map</span></span><span style="margin-left:auto;" class="btn ghost">⬇ PNG</span></div>
+    <div class="flex g10" style="padding:12px;">
+      <div class="panel" style="width:150px;flex-shrink:0;">
+        <div class="sect">Active</div>
+        <div style="padding:0 9px 9px;">
+          <div class="veh on">● Jupiter 244</div>
+          <div class="veh">○ Orion</div>
+          <div class="veh">○ LM</div>
+        </div>
+      </div>
+      <div style="flex:1;" class="flex col g10">
+        <div class="view" style="height:120px;">
+          <div class="zone">Cislunar</div><div class="zone" style="color:var(--accent3)">LEO</div><div class="zone">Earth</div>
+          <div class="track" style="left:8%;bottom:22px;width:34%;"></div>
+          <div class="track" style="left:42%;bottom:22px;width:2px;height:46px;"></div>
+          <div class="track" style="left:42%;bottom:68px;width:48%;"></div>
+        </div>
+        <div class="flex g6" style="align-items:stretch;">
+          <div class="evt" style="flex-direction:column;align-items:flex-start;margin:0;flex:1;"><span class="ty">LAUNCH</span><span class="dim">Jupiter 244</span></div>
+          <div class="flex" style="align-items:center;color:var(--accent);">＋</div>
+          <div class="evt sel" style="flex-direction:column;align-items:flex-start;margin:0;flex:1;"><span class="ty">BURN</span><span class="dim">TLI</span></div>
+          <div class="flex" style="align-items:center;color:var(--accent);">＋</div>
+          <div class="evt" style="flex-direction:column;align-items:flex-start;margin:0;flex:1;"><span class="ty">SEPARATE</span><span class="dim">EUS</span></div>
+          <div class="flex" style="align-items:center;color:var(--accent);">＋</div>
+          <div class="evt" style="flex-direction:column;align-items:flex-start;margin:0;flex:1;"><span class="ty">DOCK</span><span class="dim">Orion+LM</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="bar" style="border-top:1px solid var(--border);border-bottom:none;background:var(--panel2);">
+      <span class="lbl">State @ BURN</span><span class="chip">Orion · LEO · ΔV 4,180 m/s · prop 142 t</span>
+      <span style="margin-left:auto;" class="lbl">Mission ΔV</span><span class="chip ok">9,930 / 11,350 m/s</span></div>
+  </div></div>
+</section>
+
+<div class="subtle" style="margin-top:10px;">// Static layout mockups · existing elements rearranged · open in a browser to review</div>
+
+</body>
+</html>

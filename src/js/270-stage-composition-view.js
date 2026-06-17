@@ -224,6 +224,18 @@ function buildStageComposition(){
       badge.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';
       nameEl.appendChild(badge);
     }
+    // Crossfeed / center-throttle badge (booster only)
+    if(isBooster){
+      const pm=document.getElementById('b_parallel_mode')?.value||'independent';
+      if(pm!=='independent'){
+        const thr=Math.round(parseFloat(document.getElementById('b_core_throttle')?.value)||57);
+        const badge=document.createElement('span');
+        badge.textContent = pm==='crossfeed' ? '⛽' : ('⏬'+thr+'%');
+        badge.title = pm==='crossfeed' ? 'Crossfeed — boosters feed the core' : ('Center core throttle '+thr+'% during boost');
+        badge.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';
+        nameEl.appendChild(badge);
+      }
+    }
     card.appendChild(nameEl);
     if(dry||prop||thrust||isp){
       const specs=document.createElement('div');specs.className='comp-card-specs';

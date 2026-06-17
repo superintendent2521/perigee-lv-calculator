@@ -79,11 +79,11 @@ function applyLVObject(obj){
     _suppressUD=true;setStages(resolved.length);
     const bData=resolvePresetBooster(obj);
     setBoosters(!!bData);
-    if(bData){['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bData[k]??0;});document.getElementById('num-boosters').value=bData.count||0;}
+    if(bData){['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bData[k]??0;});document.getElementById('num-boosters').value=bData.count||0;applyBoosterModeUI(bData);}
   } else {
     _suppressUD=true;setStages(obj.stages||1);
     setBoosters(obj.boosters||false);
-    if(obj.boosters&&obj.boosterData){const bd=obj.boosterData;['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});document.getElementById('num-boosters').value=bd.count||0;}
+    if(obj.boosters&&obj.boosterData){const bd=obj.boosterData;['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});document.getElementById('num-boosters').value=bd.count||0;applyBoosterModeUI(bd);}
   }
   if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
   if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;

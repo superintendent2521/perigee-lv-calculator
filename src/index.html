@@ -22,8 +22,7 @@
     <button class="lv-sub-btn" data-lv="results" onclick="showPage('results')">Results</button>
   </nav>
   <nav class="lv-subnav" id="prog-subnav" style="display:none;">
-    <button class="lv-sub-btn active" data-prog="spacecraft" onclick="progShowTab('spacecraft')">Spacecraft</button>
-    <button class="lv-sub-btn" data-prog="fleet" onclick="progShowTab('fleet')">Fleet</button>
+    <button class="lv-sub-btn active" data-prog="hangar" onclick="progShowTab('hangar')">Hangar</button>
     <button class="lv-sub-btn" data-prog="mission" onclick="progShowTab('mission')">Missions</button>
   </nav>
   <div class="prog-header-actions" id="prog-header-actions" style="display:none;margin-left:auto;gap:8px;align-items:center;">
@@ -102,6 +101,19 @@
         <div class="cfg-item" id="booster-count-wrap" style="display:none">
           <label># Boosters</label>
           <input type="number" class="field" id="num-boosters" value="4" min="1" max="32" oninput="_suppressUD=true;buildTable();buildStageComposition();">
+        </div>
+        <div class="cfg-item" id="booster-mode-wrap" style="display:none">
+          <label>Parallel Staging<span class="info-tip" onclick="event.stopPropagation()">i<span class="tip-text"><b>Independent:</b> boosters &amp; core each burn their own propellant.<br><b>Crossfeed:</b> boosters feed the core (UR-700) — core stages with full tanks.<br><b>Center throttle:</b> core throttled during the boost phase (Falcon Heavy).</span></span></label>
+          <div class="seg" id="b-parallel-seg">
+            <button class="active" data-pm="independent" onclick="setBoosterMode('independent')" title="Boosters and core each burn their own propellant (default)">Indep</button>
+            <button data-pm="crossfeed" onclick="setBoosterMode('crossfeed')" title="Boosters feed the core (UR-700 asparagus) — core stages with full tanks">Crossfeed</button>
+            <button data-pm="throttle" onclick="setBoosterMode('throttle')" title="Center core throttled during the boost phase (Falcon-Heavy tricore)">Throttle</button>
+          </div>
+          <input type="hidden" id="b_parallel_mode" value="independent">
+        </div>
+        <div class="cfg-item" id="booster-throttle-wrap" style="display:none">
+          <label>Center Throttle %</label>
+          <input type="number" class="field" id="b_core_throttle" value="57" min="10" max="100" oninput="_suppressUD=true;markLVUserDefined&&markLVUserDefined();buildStageComposition();">
         </div>
         <div class="cfg-item">
           <label>Restartable Upper?</label>
@@ -242,23 +254,6 @@
   <div class="panel">
     <input type="hidden" id="payload-mass" value="0">
 
-    <div id="booster-inputs" style="display:none;margin-bottom:14px;">
-      <div class="sl" style="cursor:default;">Strap-on Boosters (per booster) <span style="font-size:8px;color:var(--text-dim);letter-spacing:.06em;font-weight:normal;">// drag from library</span></div>
-      <table class="stage-table" id="booster-table"
-        ondragover="event.preventDefault();event.dataTransfer.dropEffect='copy';this.style.background='rgba(0,200,255,.07)'"
-        ondragleave="this.style.background=''"
-        ondrop="this.style.background='';if(_draggingStage)applyBoosterData(_draggingStage)">
-        <thead><tr><th>Parameter</th><th class="sh">Booster</th></tr></thead>
-        <tbody>
-          <tr><td class="rl">Dry Mass (kg)</td><td><input type="number" id="b_dry" value="500" min="0"></td></tr>
-          <tr><td class="rl">Propellant (kg)</td><td><input type="number" id="b_prop" value="5000" min="0"></td></tr>
-          <tr><td class="rl">Thrust (kN)</td><td><input type="number" id="b_thrust" value="400" min="0"></td></tr>
-          <tr><td class="rl">Isp (s)</td><td><input type="number" id="b_isp" value="265" min="1"></td></tr>
-          <tr><td class="rl">Residuals (%)</td><td><input type="number" id="b_res" value="2" min="0" max="20"></td></tr>
-        </tbody>
-      </table>
-    </div>
-
     <div class="sl">Stage Parameters</div>
     <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:6px;">
       Drag from library → drop on column header &nbsp;|&nbsp; drop on strap-on table
@@ -396,11 +391,11 @@
 </div>
 <div id="page-program" class="page">
   <div class="sc-ed-toolbar">
-    <div class="prog-tab-actions" id="prog-tb-sc">
-      <label class="act-btn" style="cursor:pointer;">Load JSON
-        <input type="file" accept=".json" style="display:none" onchange="scEdLoadJSON(this)">
-      </label>
+    <div class="seg" id="hangar-pick" style="margin-right:6px;">
+      <button class="active" data-hv="spacecraft" onclick="progSetHangar('spacecraft')">Spacecraft</button>
+      <button data-hv="fleet" onclick="progSetHangar('fleet')">Vehicle</button>
     </div>
+    <div class="prog-tab-actions" id="prog-tb-sc"></div>
     <div class="prog-tab-actions" id="prog-tb-fleet" style="display:none;"></div>
     <div class="prog-tab-actions" id="prog-tb-mission" style="display:none;"></div>
   </div>
@@ -410,8 +405,11 @@
     <div class="sc-ed-list-col">
       <input type="text" id="sc-ed-search" class="sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
       <div id="sc-ed-list" class="sc-ed-list-inner lv-list"></div>
-      <div style="padding:8px;border-top:1px solid var(--border);">
+      <div style="padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
         <button class="act-btn" style="width:100%" onclick="scEdNew()">+ New Spacecraft</button>
+        <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Spacecraft
+          <input type="file" accept=".spacecraft,.json" style="display:none" onchange="scEdLoadJSON(this)">
+        </label>
       </div>
     </div>
     <div id="sc-ed-detail" class="sc-ed-main-col">
@@ -429,7 +427,7 @@
         <button class="act-btn" style="width:100%" onclick="fleetNew()">+ New Entry</button>
         <button class="act-btn" style="width:100%" onclick="fleetOpenImportModal()">Import Vehicle</button>
         <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Vehicle
-          <input type="file" accept=".json" style="display:none" onchange="fleetLoadJSON(this)">
+          <input type="file" accept=".vehicle,.json" style="display:none" onchange="fleetLoadJSON(this)">
         </label>
       </div>
     </div>
@@ -722,6 +720,20 @@
               </div>
             </div>
             <div id="stg-s15-preview" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:8px;padding:6px 8px;background:rgba(0,0,0,.25);border:1px solid var(--border);letter-spacing:.04em;"></div>
+          </div>
+        </div>
+        <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:4px;padding-top:10px;display:none;" id="stg-parallel-section">
+          <label>Parallel Staging
+            <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:5px;">i<span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;"><b>Independent:</b> boosters &amp; core each burn their own propellant (default).<br><br><b>Crossfeed:</b> boosters feed the core (UR-700 asparagus) — the core stages with FULL tanks.<br><br><b>Center throttle:</b> the core is throttled during the boost phase (Falcon-Heavy tricore), so it keeps propellant for after the boosters separate.</span></span>
+          </label>
+          <select id="stg-parallel-mode" onchange="_stgParallelToggle(this.value)" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+            <option value="independent">Independent (default)</option>
+            <option value="crossfeed">Crossfeed — boosters feed the core</option>
+            <option value="throttle">Center core throttle-down</option>
+          </select>
+          <div id="stg-throttle-wrap" style="display:none;margin-top:10px;">
+            <label>Center Throttle % <span style="color:var(--text-dim);font-size:9px;">// core throttle during the boost phase</span></label>
+            <input type="number" id="stg-throttle" value="57" min="10" max="100" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
           </div>
         </div>
       </div>

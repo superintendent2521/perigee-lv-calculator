@@ -4,6 +4,7 @@
 let _missions = [];
 let _missionSel = null;
 let _missionViewMode  = 'band';       // 'band' | 'nodemap'  — band is the primary view
+let _missionEvtFilter = { type: 'ALL', veh: 'ALL' };   // events-list filter
 let _missionBandScrub = null;
 let _missionBandSpacing = 90;          // px per timeline column (user-configurable)
 let _missionBandZoom = 1;              // band-view zoom factor (scales rendered SVG)
@@ -130,6 +131,9 @@ function missionUngroup(id, gid) {
 }
 let _missionAddEvt = null;   // null = closed; '__menu__' = picker; or a type          // scrubbed event index for the band view (null = last event)
 let _missionSelEvt = null;   // selected event index for event detail panel
+// Maneuver add-form draft: the composite step program being built (BURN / SEPARATE steps).
+// [] = a single full burn from the default stage. Reset whenever the maneuver form opens.
+let _missionAddMv = { from: null, to: null, steps: [] };
 
 // Collapse every event card except the last one (used after adding an event so the
 // newest is shown expanded). Cards use `_expanded` (default falsy = collapsed/compact).
@@ -275,7 +279,13 @@ function missionRenderDetail() {
 
   // ── events log (with group blocks + repetition) ──
   const grpSel = _missionGroupMode;
+  // event filter: by type and/or vehicle. On the Orbit Map the type is forced to
+  // MANEUVER (it's the only event the map is about).
+  const effType = (_missionViewMode === 'nodemap') ? 'MANEUVER' : (_missionEvtFilter.type || 'ALL');
+  const effVeh  = _missionEvtFilter.veh || 'ALL';
+  const matchEvt = e => (effType === 'ALL' || e.type === effType) && (effVeh === 'ALL' || e.vehicleId === effVeh);
   const card = (e, i) => {
+    if (!grpSel && !matchEvt(e)) return '';   // hidden by filter (never hide while picking a group)
     const expanded = !!e._expanded;
     const upDis = (i <= 0) ? ' disabled' : '';
     const dnDis = (i >= m.log.length - 1) ? ' disabled' : '';
@@ -292,7 +302,7 @@ function missionRenderDetail() {
         <span class="mevt-sub">${sub}</span>
         ${grpSel ? '' : ctl}
       </div>
-      ${(!grpSel && expanded) ? `<div class="mevt-body">${_missionLogCardHTML(e)}</div>` : ''}
+      ${(!grpSel && expanded) ? `<div class="mevt-body">${_missionLogCardHTML(e, id, i)}</div>` : ''}
     </div>`;
   };
   let logHTML = '';
@@ -306,6 +316,7 @@ function missionRenderDetail() {
         let j = i; while (j < m.log.length && m.log[j].groupId === gid) j++;
         const g = m.groups[gid];
         let inner = ''; for (let k = i; k < j; k++) inner += card(m.log[k], k);
+        if (!inner) { i = j; continue; }   // whole group filtered out
         logHTML += `<div class="mcc-group">
           <div class="mcc-group-hdr">
             <span class="mcc-group-name" style="cursor:pointer" title="Click to rename / change repeat" onclick="missionOpenGroupModal('${id}',${i},${j-1},'${gid}')">⊞ ${g.name || 'Group'}</span>
@@ -320,7 +331,21 @@ function missionRenderDetail() {
         i = j;
       } else { logHTML += card(m.log[i], i); i++; }
     }
+    if (!logHTML) logHTML = `<div style="color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:6px;">No events match the filter.</div>`;
   }
+
+  // ── events filter row (by type + vehicle; type is locked to MANEUVER on Orbit Map) ──
+  const _vehName = vid => { const fv = PROG_ACTIVE_PROGRAM.vehicles[vid]; return fv ? _missionVehicleDisplayName(fv) : '?'; };
+  const distinctTypes = [...new Set(m.log.map(e => e.type))];
+  const vehIds = [...new Set(m.log.map(e => e.vehicleId).filter(Boolean))];
+  const _fsel = 'class="mcc-evt-filter"';
+  const typeSel = (_missionViewMode === 'nodemap')
+    ? `<span style="font-family:var(--mono);font-size:9px;color:var(--accent3);align-self:center;white-space:nowrap;">▸ Maneuvers only</span>`
+    : `<select ${_fsel} onchange="missionSetEvtFilter('${id}','type',this.value)"><option value="ALL"${effType==='ALL'?' selected':''}>All types</option>${distinctTypes.map(t => `<option value="${t}"${effType===t?' selected':''}>${t}</option>`).join('')}</select>`;
+  const vehSelF = `<select ${_fsel} onchange="missionSetEvtFilter('${id}','veh',this.value)"><option value="ALL"${effVeh==='ALL'?' selected':''}>All vehicles</option>${vehIds.map(v => `<option value="${v}"${effVeh===v?' selected':''}>${_vehName(v)}</option>`).join('')}</select>`;
+  const filterRow = m.log.length
+    ? `<div class="mcc-evt-filterbar">${typeSel}${vehIds.length > 1 || effVeh !== 'ALL' ? vehSelF : ''}</div>`
+    : '';
 
   // ── center content (view only — orbit catalog now lives in the footer) ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
@@ -334,7 +359,7 @@ function missionRenderDetail() {
       <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
         <div class="seg">
           <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
-          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Node Map</button>
+          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
         </div>
         <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
         <button class="act-btn" onclick="missionExportPNG('${id}')" title="Save the current view as a PNG image">&#x2B07; PNG</button>
@@ -344,14 +369,16 @@ function missionRenderDetail() {
 
     <!-- BODY -->
     <div class="mcc-body">
-      <!-- LEFT COLUMN — setup & vehicles -->
+      <!-- LEFT COLUMN — Orbit Map: the ORBITS catalog fills it; Band: vehicles + budget -->
       <div class="mcc-left-col">
-        ${m.vehicleId ? '' : `<div class="mcc-section-header">Setup</div>
-        <div class="mcc-panel-pad"><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.7;">
-          Use <b style="color:var(--text-bright)">＋ Add Event → Launch</b> (or Place in Orbit) on the right to configure a launch vehicle, payload &amp; target orbit and bring a vehicle into the mission.
-        </div></div>`}
-        ${m.vehicleId ? _missionMultiVehicleHTML(m) : ''}
-        ${m.vehicleId ? `<div class="mcc-left-budget">${_missionBudgetCardHTML(m)}</div>` : ''}
+        ${_missionViewMode === 'nodemap'
+          ? `<div class="mcc-orbit-cat">${_missionOrbitPaletteHTML(m)}</div>`
+          : `${m.vehicleId ? '' : `<div class="mcc-section-header">Setup</div>
+            <div class="mcc-panel-pad"><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.7;">
+              Use <b style="color:var(--text-bright)">＋ Add Event → Launch</b> (or Place in Orbit) on the right to bring a vehicle into the mission.
+            </div></div>`}
+            ${m.vehicleId ? _missionMultiVehicleHTML(m) : ''}
+            ${m.vehicleId ? `<div class="mcc-left-budget">${_missionBudgetCardHTML(m)}</div>` : ''}`}
       </div>
 
       <!-- CENTER COLUMN — node map / band view -->
@@ -360,16 +387,15 @@ function missionRenderDetail() {
       <!-- RIGHT COLUMN — events (list on top, Add Event docked at the bottom) -->
       <div class="mcc-right-col">
         <div class="mcc-events-header" style="display:flex;align-items:center;gap:8px;">
-          <span>EVENTS</span>
+          <span style="color:var(--accent3);">EVENTS</span>
+          ${m.log.length ? `<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">${m.log.length}</span>` : ''}
           ${m.log.length >= 1 ? `<button class="act-btn" style="margin-left:auto;padding:1px 8px;font-size:9px;${_missionGroupMode?'background:var(--accent);color:#000;':''}" onclick="missionToggleGroupMode('${id}')">${_missionGroupMode ? (_missionGroupStart==null?'⊞ pick start…':'⊞ pick end…') : '⊞ Group'}</button>${_missionGroupMode?`<button class="act-btn" style="padding:1px 8px;font-size:9px;" onclick="missionToggleGroupMode('${id}')">✕</button>`:''}` : ''}
         </div>
+        ${filterRow}
         <div class="mcc-events-list">${logHTML}</div>
-        <div class="mcc-panel-pad" style="border-top:1px solid var(--border);flex-shrink:0;">${_missionAddEventHTML(m)}</div>
+        <div class="mcc-panel-pad mcc-addevt-dock${_missionAddEvt != null ? ' open' : ''}" style="flex-shrink:0;">${_missionAddEventHTML(m)}</div>
       </div>
     </div>
-
-    <!-- FOOTER — missions list (left) + orbit catalog (right) -->
-    <div class="mcc-footer">${_missionFooterHTML(m)}</div>
   `;
   if (m.vehicleId) setTimeout(() => missionBurnPreview(m.missionId), 0);
   if (_missionViewMode === 'nodemap') _missionCenterNmEarth();
@@ -492,7 +518,7 @@ function _missionApplyLaunch(m, e) {
   const entry = _fleetGet(e.fleetEntryId || m.fleetEntryId);
   if (!entry) return null;
 
-  const lvStages = progVehicleDefToLiveStages(entry);
+  const lvStages = progVehicleDefToLiveStages(entry);   // boosters are NOT live stages — they're handled in the LV math (lvPerformance)
   let scStages = [];
   for (const scId of (e.payloadScIds || m.payloadScIds || [])) {
     const sc = _scEdSC.find(s => s.spacecraftId === scId);
@@ -509,48 +535,69 @@ function _missionApplyLaunch(m, e) {
   });
   const result = progDispatchEvent(PROG_ACTIVE_PROGRAM, ev);
 
-  // Ascent staging simulation: stage-by-stage dv delivery
   const fv = PROG_ACTIVE_PROGRAM.vehicles[result.vehicleId];
   if (!fv) return null;
 
   const payloadMass = (e.payloadScIds || m.payloadScIds || []).reduce((s, scId) => s + _fleetScMassById(scId), 0);
   const payloadNames = (e.payloadScIds || m.payloadScIds || []).map(scId => _scEdSC.find(s => s.spacecraftId === scId)?.name).filter(Boolean);
 
-  // Required ascent ΔV: Earth uses the SAME Townsend-Schilling model as the LV
-  // calculator (shared lvPerformance — vehicle data straight from the fleet entry,
-  // KSC launch site). Other bodies use a circular-velocity + fixed-loss estimate
-  // (Townsend is an Earth atmospheric-ascent fit).
-  let dvRequired;
-  if (launchOrbit.body === 'Earth' && typeof lvPerformance === 'function' && entry.stageData && entry.stageData.length) {
-    const perf = lvPerformance(entry.stageData, entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112);
-    dvRequired = perf.DVasc;
-  } else {
-    dvRequired = _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
-  }
+  // Earth launches go through the EXACT LV-calculator math (lvPerformance) — same
+  // parallel-booster handling, same Townsend ascent penalty. We read its per-stage
+  // ΔV (perf.sDVs, boosters folded into stage 0) + ascent requirement, then map that
+  // onto the live vehicle. Other bodies use the simpler circular-velocity estimate.
+  const perf = (launchOrbit.body === 'Earth' && typeof lvPerformance === 'function' && entry.stageData && entry.stageData.length)
+    ? lvPerformance(entry.stageData, entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    : null;
+  const dvRequired = perf ? perf.DVasc : _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
   let dvRemaining = dvRequired;
   const stagingLog   = [];
   const stagesToDrop = [];
 
-  for (let i = 0; i < fv.stages.length; i++) {
-    const s = fv.stages[i];
-    if ((s.isp || 0) <= 0) continue;
-    const prop = progStageRemainingProp(s);
-    if (prop <= 0) continue;
-
-    const massAbove = fv.stages.slice(i + 1).reduce((sum, st) => sum + progStageMass(st), 0);
-    const m_wet     = progStageMass(s) + massAbove;
-    const dvAvail   = progRocketEqDv(m_wet, prop, s.isp);
-    const sname     = _missionStageLabelById(s.stageDefinitionId);
-
-    if (dvAvail >= dvRemaining) {
-      // Insertion stage: partially burned
-      const propNeeded = progRocketEqPropNeeded(m_wet, dvRemaining, s.isp);
-      progBurnPropellant(s, propNeeded);
-      stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(propNeeded), propRemaining: Math.round(prop - propNeeded), dvContrib: Math.round(dvRemaining), expended: false });
-      dvRemaining = 0;
-      break;
-    } else {
-      // Stage fully consumed
+  if (perf) {
+    // staging from the LV calculator's own per-stage ΔVs (stage 0 already includes
+    // the boosters). Fully-consumed stages expend; the one that crosses the
+    // requirement is the insertion stage; the payload rides up as dead mass.
+    const nLv = entry.stageData.length;
+    const hasB = !!(entry.boosterData && entry.boosterData.count > 0);
+    for (let i = 0; i < nLv && i < fv.stages.length; i++) {
+      const s = fv.stages[i];
+      if (_missionStageOwner(s.stageDefinitionId)) break;   // safety: never burn payload
+      const dvStage  = perf.sDVs[i] || 0;
+      const prop     = progStageRemainingProp(s);
+      const sname    = _missionStageLabelById(s.stageDefinitionId) + (i === 0 && hasB ? ' + boosters' : '');
+      if (dvStage >= dvRemaining) {
+        const massAbove  = fv.stages.slice(i + 1).reduce((sum, st) => sum + progStageMass(st), 0);
+        const m_wet      = progStageMass(s) + massAbove;
+        const propNeeded = Math.min(prop, progRocketEqPropNeeded(m_wet, dvRemaining, s.isp));
+        progBurnPropellant(s, propNeeded);
+        stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(propNeeded), propRemaining: Math.round(progStageRemainingProp(s)), dvContrib: Math.round(dvRemaining), expended: false });
+        dvRemaining = 0;
+        break;
+      }
+      progBurnPropellant(s, prop);
+      stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(prop), propRemaining: 0, dvContrib: Math.round(dvStage), expended: true });
+      dvRemaining -= dvStage;
+      stagesToDrop.push(s.stageDefinitionId);
+    }
+  } else {
+    // non-Earth fallback: live-stage rocket equation (payload not burned)
+    for (let i = 0; i < fv.stages.length; i++) {
+      const s = fv.stages[i];
+      if (_missionStageOwner(s.stageDefinitionId)) break;
+      if ((s.isp || 0) <= 0) continue;
+      const prop = progStageRemainingProp(s);
+      if (prop <= 0) continue;
+      const massAbove = fv.stages.slice(i + 1).reduce((sum, st) => sum + progStageMass(st), 0);
+      const m_wet     = progStageMass(s) + massAbove;
+      const dvAvail   = progRocketEqDv(m_wet, prop, s.isp);
+      const sname     = _missionStageLabelById(s.stageDefinitionId);
+      if (dvAvail >= dvRemaining) {
+        const propNeeded = progRocketEqPropNeeded(m_wet, dvRemaining, s.isp);
+        progBurnPropellant(s, propNeeded);
+        stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(propNeeded), propRemaining: Math.round(prop - propNeeded), dvContrib: Math.round(dvRemaining), expended: false });
+        dvRemaining = 0;
+        break;
+      }
       progBurnPropellant(s, prop);
       stagingLog.push({ name: sname, propTotal: Math.round(prop), propBurned: Math.round(prop), propRemaining: 0, dvContrib: Math.round(dvAvail), expended: true });
       dvRemaining -= dvAvail;
@@ -561,11 +608,21 @@ function _missionApplyLaunch(m, e) {
   fv.stages = fv.stages.filter(s => !stagesToDrop.includes(s.stageDefinitionId));
   fv.orbitState = { body: launchOrbit.body, perigee: launchOrbit.alt_km, apogee: (launchOrbit.apo_km ?? launchOrbit.alt_km), inclination: launchOrbit.inc_deg, lan: launchOrbit.lan_deg, epoch: 0, surface: false };
 
+  // Verdict + capacity come straight from the LV calculator's math: feasibility is
+  // its ΔV margin, and max payload is its binary search (lvMaxPayload), so the
+  // program reports exactly what the calculator would for this vehicle + orbit.
+  const maxPayload = perf
+    ? lvMaxPayload(entry.stageData, entry.boosterData || null, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    : null;
+  const ok = perf ? (perf.margin >= 0) : (dvRemaining <= 0);
   const stagingResult = {
     dvRequired:  Math.round(dvRequired),
     dvDelivered: Math.round(dvRequired - Math.max(dvRemaining, 0)),
-    status:      dvRemaining <= 0 ? 'SUCCESS' : 'MARGINAL',
+    status:      ok ? 'SUCCESS' : 'MARGINAL',
     stages:      stagingLog,
+    dvAvailable: perf ? Math.round(perf.tDV) : null,
+    dvMargin:    perf ? Math.round(perf.margin) : null,
+    maxPayload:  maxPayload != null ? Math.round(maxPayload) : null,
   };
 
   return { fv, stagingResult, payloadMass, payloadNames };
@@ -596,6 +653,9 @@ function missionExecLaunch(id) {
   _missionAddEvt = null;  _missionExpandLast(m);
   missionRecompute(m);
   missionRenderDetail();
+  // prompt the user to name the freshly-launched vehicle (skippable → keeps auto name)
+  const fv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
+  if (fv && fv._originKey) setTimeout(() => missionRenameVehicle(id, fv._originKey), 0);
 }
 
 function missionExecDeploy(id, scId) {
@@ -619,11 +679,11 @@ function missionResetLaunch(id) {
   missionRenderDetail();
 }
 
-function _missionLogCardHTML(entry) {
+function _missionLogCardHTML(entry, id, idx) {
   if (entry.type === 'BURN')     return _missionBurnLogCardHTML(entry);
   if (entry.type === 'SEPARATE') return _missionSeparateLogCardHTML(entry);
   if (entry.type === 'DOCK')     return _missionDockLogCardHTML(entry);
-  if (entry.type === 'MANEUVER') return _missionManeuverLogCardHTML(entry);
+  if (entry.type === 'MANEUVER') return _missionManeuverLogCardHTML(entry, id, idx);
   if (entry.type === 'EXPEND') return `<div class="mission-log-card" style="padding:8px 14px;display:flex;align-items:center;gap:8px;">
     <span class="mission-log-type">EXPEND</span>
     <span style="font-family:var(--mono);font-size:11px;color:var(--text-bright)">${entry.vehicleLevel ? entry.vehicleName : entry.stageName}</span>
@@ -682,6 +742,7 @@ function _missionLogCardHTML(entry) {
       <div class="mission-state-kv"><span class="mission-state-key">Inc</span><span class="mission-state-val">${o.inc_deg}&deg;</span></div>
       <div class="mission-state-kv"><span class="mission-state-key">LAN</span><span class="mission-state-val">${o.lan_deg}&deg;</span></div>
       <div class="mission-state-kv"><span class="mission-state-key">Payload</span><span class="mission-state-val">${entry.payloadMass.toLocaleString()} kg</span></div>
+      ${sr.maxPayload != null ? `<div class="mission-state-kv"><span class="mission-state-key">Max to this orbit</span><span class="mission-state-val" style="color:${entry.payloadMass <= sr.maxPayload ? 'var(--accent3)' : 'var(--accent2)'}">${sr.maxPayload.toLocaleString()} kg</span></div>` : ''}
     </div>
     ${(entry.payloadNames || []).length ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:8px;">Payloads: ${payStr}</div>` : ''}
     ${stageRows ? `<table class="sc-dv-tbl" style="width:100%"><thead><tr>
@@ -690,8 +751,10 @@ function _missionLogCardHTML(entry) {
     <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
       <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Required &#916;V</span>
       <span style="font-family:var(--mono);font-size:16px;color:var(--text-bright)">${(sr.dvRequired||0).toLocaleString()} m/s</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Delivered</span>
-      <span style="font-family:var(--mono);font-size:16px;color:${sc}">${(sr.dvDelivered||0).toLocaleString()} m/s</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Available</span>
+      <span style="font-family:var(--mono);font-size:16px;color:${sc}">${(sr.dvAvailable != null ? sr.dvAvailable : sr.dvDelivered || 0).toLocaleString()} m/s</span>
+      ${sr.dvMargin != null ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;">Margin</span>
+      <span style="font-family:var(--mono);font-size:16px;color:${sr.dvMargin >= 0 ? 'var(--accent3)' : 'var(--accent2)'}">${sr.dvMargin.toLocaleString()} m/s</span>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -836,13 +899,6 @@ function _missionEventDetailHTML(m, idx) {
     const _nm  = _missionNmNodes();
     const _opt = sel => _nm.map(n => `<option value="${n.id}"${n.id===sel?' selected':''}>${n.label}${n.sub?' ('+n.sub+')':''}</option>`).join('');
     const _selStyle = 'background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 8px;';
-    // firing-stage options come from the vehicle's state AT THIS EVENT (snapshot),
-    // so propellant shown is point-in-time — not the depleted end-of-mission value.
-    const mvStages = _missionPreSnapStages(m, idx, e.activeKey, e.vehicleId);
-    const stageSel = mvStages.length ? `<div class="cfg-item"><label class="cfg-label">Firing Stage (ΔV from)</label>
-        <select id="edit-mv-stage-${id}" style="${_selStyle}">${mvStages.map(s =>
-          `<option value="${s.id}"${s.id===(e.firingStageId||e.firedStageId)?' selected':''}>${s.name} (${(s.prop||0).toLocaleString()} kg)</option>`
-        ).join('')}</select></div>` : '';
     editForm = `
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
         <div class="cfg-row" style="flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:8px;">
@@ -850,8 +906,8 @@ function _missionEventDetailHTML(m, idx) {
             <select id="edit-mv-from-${id}" style="${_selStyle}">${_opt(e.fromNode)}</select></div>
           <div class="cfg-item"><label class="cfg-label">To</label>
             <select id="edit-mv-to-${id}" style="${_selStyle}">${_opt(e.toNode)}</select></div>
-          ${stageSel}
         </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:8px;">// edit the burn/separate steps on the maneuver card itself</div>
         <button class="act-btn" style="background:var(--accent);color:#000;font-weight:600;padding:5px 14px;" onclick="missionApplyManeuverEdit('${id}',${idx})">Apply</button>
       </div>`;
   } else if (e.type === 'DEPLOY') {
@@ -870,17 +926,24 @@ function _missionEventDetailHTML(m, idx) {
     const tStages = _missionPreSnapStages(m, idx, e.activeKey, e.vehicleId);
     if (tStages.length) {
       const nameCnt = {}; tStages.forEach(s => { nameCnt[s.name] = (nameCnt[s.name] || 0) + 1; });
-      let seen = {};
-      const opt = (sel) => tStages.map((s, i) => {
-        let lbl = s.name; if (nameCnt[s.name] > 1) { seen[s.name] = (seen[s.name] || 0) + 1; lbl = s.name + ' (' + seen[s.name] + ')'; }
-        return `<option value="${i}"${i === sel ? ' selected' : ''}>${lbl} — ${(s.prop || 0).toLocaleString()} kg</option>`;
-      }).join('');
+      const lblOf = s => {
+        if (nameCnt[s.name] <= 1) return s.name;
+        const same = tStages.filter(x => x.name === s.name);
+        const parents = [...new Set(same.map(x => x.parent || ''))];
+        if (s.parent && parents.length > 1) return `${s.name} (${s.parent})`;
+        const kids = [...new Set(same.map(x => String(x.parentKid)))];
+        const inst = kids.indexOf(String(s.parentKid)) + 1;
+        return s.parent ? `${s.name} (${s.parent} #${inst})` : `${s.name} (${inst})`;
+      };
+      const opt = (sel) => tStages.map((s, i) =>
+        `<option value="${i}"${i === sel ? ' selected' : ''}>${lblOf(s)} — ${(s.prop || 0).toLocaleString()} kg</option>`
+      ).join('');
       editForm = `
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
           <label class="cfg-label">Source Stage</label>
-          <select id="edit-xfer-src-${id}" class="mcc-field-select" style="margin-bottom:6px;">${(seen = {}, opt(e.sourceIndex))}</select>
+          <select id="edit-xfer-src-${id}" class="mcc-field-select" style="margin-bottom:6px;">${opt(e.sourceIndex)}</select>
           <label class="cfg-label">Destination Stage</label>
-          <select id="edit-xfer-dst-${id}" class="mcc-field-select" style="margin-bottom:6px;">${(seen = {}, opt(e.destIndex))}</select>
+          <select id="edit-xfer-dst-${id}" class="mcc-field-select" style="margin-bottom:6px;">${opt(e.destIndex)}</select>
           <label class="cfg-label">Mass (kg)</label>
           <div style="display:flex;gap:6px;margin-bottom:8px;"><input type="number" id="edit-xfer-mass-${id}" class="field" value="${e.mass_kg||0}" style="flex:1;"><button class="act-btn" style="flex-shrink:0;" onclick="missionPropXferEditMax('${id}',${idx})">Max</button></div>
           <button class="act-btn" style="background:var(--accent);color:#000;font-weight:600;padding:5px 14px;" onclick="missionApplyPropTransferEdit('${id}',${idx})">Apply</button>
@@ -993,13 +1056,28 @@ function _missionStageLabelById(stageDefId) {
 // spacecraft's name. Otherwise fall back to the joined stage names, then fv.name.
 // Build <option> list for a vehicle's stages, addressed by index, with duplicate
 // stage labels disambiguated as "Centaur V (1)" / "Centaur V (2)".
+// Disambiguated label for a stage when its name repeats within `fv` (e.g. two
+// identical stages in a separation / fuel-transfer stack): "Stage (Parent Vehicle)".
+// If the parents share a name too, number them ("Centaur V (Vulcan Centaur #2)").
+function _missionStageDisambig(fv, s, idx) {
+  const base = x => _missionStageLabelById(x.stageDefinitionId);
+  const name = base(s);
+  const same = fv.stages.filter(x => base(x) === name);
+  if (same.length <= 1) return name;
+  const parent = s._parentName || '';
+  const distinctParents = [...new Set(same.map(x => x._parentName || ''))];
+  if (parent && distinctParents.length > 1) return `${name} (${parent})`;
+  // parents collide (or unknown) → number by launch instance (parent kid)
+  const kids = [...new Set(same.map(x => (x._parentKid != null ? String(x._parentKid) : '?')))];
+  const inst = kids.indexOf(s._parentKid != null ? String(s._parentKid) : '?') + 1;
+  return parent ? `${name} (${parent} #${inst})` : `${name} (${inst})`;
+}
+
 function _missionStageOptions(fv, detailFn) {
   const base = s => _missionStageLabelById(s.stageDefinitionId);
   const cnts = {}; fv.stages.forEach(s => { const b = base(s); cnts[b] = (cnts[b] || 0) + 1; });
-  const seen = {};
   return fv.stages.map((s, i) => {
-    const b = base(s); let lbl = b;
-    if (cnts[b] > 1) { seen[b] = (seen[b] || 0) + 1; lbl = b + ' (' + seen[b] + ')'; }
+    const lbl = cnts[base(s)] > 1 ? _missionStageDisambig(fv, s, i) : base(s);
     const detail = detailFn ? detailFn(s) : '';
     return `<option value="${i}">${lbl}${detail ? ' — ' + detail : ''}</option>`;
   }).join('');
@@ -1304,16 +1382,43 @@ function _missionApplyBurn(fv, bt, pval, stageId) {
 
 // Capture a serialisable snapshot of every live vehicle's state at a point in time.
 // Names are disambiguated (#N) within the snapshot so duplicates are distinguishable.
-function _missionCaptureSnapshot(live, baseOf) {
-  // disambiguate duplicate names by stable birth order (matches the final naming pass)
+// Single source of truth for vehicle display names. When several live vehicles share
+// a base name, distinguish them by the (user-chosen) parent launch name carried on
+// their stages; only fall back to "#N" when parents repeat or are unknown. Returns a
+// Map(vehicle -> resolved name). Used by BOTH the recompute naming pass and snapshots
+// so the roster, editors, cards, band view and state monitor never disagree.
+function _missionResolveDisplayNames(live, baseOf) {
+  const parentOf = v => {
+    const ps = [...new Set((v.stages || []).map(s => s._parentName).filter(Boolean))];
+    return ps.length === 1 ? ps[0] : (ps.length ? ps.join(' + ') : '');
+  };
   const byBase = {};
   live.forEach(v => { const b = baseOf(v); (byBase[b] = byBase[b] || []).push(v); });
-  const nameOf = v => {
-    const b = baseOf(v); const arr = byBase[b];
-    if (arr.length === 1) return b;
-    const ord = [...arr].sort((x, y) => (x._birthOrd || 0) - (y._birthOrd || 0));
-    return b + ' #' + (ord.indexOf(v) + 1);
-  };
+  const out = new Map();
+  Object.keys(byBase).forEach(b => {
+    const arr = byBase[b];
+    if (arr.length === 1) { out.set(arr[0], b); return; }
+    arr.sort((x, y) => (x._birthOrd || 0) - (y._birthOrd || 0));
+    const parents = arr.map(parentOf);
+    if (parents.every(Boolean) && new Set(parents).size === arr.length) {
+      arr.forEach((v, i) => out.set(v, b + ' (' + parents[i] + ')'));
+    } else {
+      const cnt = {}; parents.forEach(p => { if (p) cnt[p] = (cnt[p] || 0) + 1; });
+      const seen = {};
+      arr.forEach((v, i) => {
+        const p = parents[i];
+        if (p) { seen[p] = (seen[p] || 0) + 1; out.set(v, b + ' (' + p + (cnt[p] > 1 ? ' #' + seen[p] : '') + ')'); }
+        else out.set(v, b + ' #' + (i + 1));
+      });
+    }
+  });
+  return out;
+}
+
+function _missionCaptureSnapshot(live, baseOf) {
+  // disambiguate duplicate names with the shared resolver (parent-launch aware)
+  const _names = _missionResolveDisplayNames(live, baseOf);
+  const nameOf = v => _names.get(v) || baseOf(v);
   return live.map(v => {
     const name = nameOf(v);
     const os = v.orbitState;
@@ -1330,6 +1435,7 @@ function _missionCaptureSnapshot(live, baseOf) {
       stages: v.stages.map(st => ({
         id: st.stageDefinitionId,
         name: _missionStageLabelById(st.stageDefinitionId),
+        parent: st._parentName || '', parentKid: st._parentKid,
         prop: Math.round(progStageRemainingProp(st)),
         cap: Math.round(progStageTotalCapacity(st)),
         crew: st.crewAboard || 0,
@@ -1462,7 +1568,7 @@ function missionRecompute(m) {
   // so two launches of the same vehicle (incl. repeated group launches) get distinct
   // owner tracks AND stage-level ops can re-target the right repetition's vehicle.
   m._ownerLabels = {};
-  const tagOwners = (fv, kid) => {
+  const tagOwners = (fv, kid, parentName) => {
     fv.stages.forEach((st, i) => {
       const sc = _missionStageOwner(st.stageDefinitionId);
       if (sc) {
@@ -1477,6 +1583,9 @@ function missionRecompute(m) {
         st._ownerKey = 'lv' + i + '#' + kid;
         st._ownerLabel = _missionStageLabelById(st.stageDefinitionId);
       }
+      // remember which launch/vehicle this stage came from, so identical stages in a
+      // docked / transfer stack can be told apart by their parent.
+      st._parentName = parentName; st._parentKid = kid;
       m._ownerLabels[st._ownerKey] = st._ownerLabel;
     });
   };
@@ -1501,7 +1610,7 @@ function missionRecompute(m) {
       const r = _missionApplyLaunch(m, e);
       if (!r || !r.fv) { e.result = 'FAILED'; continue; }
       r.fv._originKey = 'launch:' + kid;
-      tagOwners(r.fv, kid); markBirth(r.fv);
+      tagOwners(r.fv, kid, (m.vehicleNames && m.vehicleNames['launch:' + kid]) || e.label || 'Vehicle'); markBirth(r.fv);
       e.vehicleId = r.fv.vehicleId; e.stagingResult = r.stagingResult;
       e.payloadMass = r.payloadMass; e.payloadNames = r.payloadNames;
       live.push(r.fv); active = r.fv;
@@ -1509,7 +1618,7 @@ function missionRecompute(m) {
       const r = _missionApplyDeploy(m, e);
       if (!r || !r.fv) { e.result = 'FAILED'; continue; }
       r.fv._originKey = 'deploy:' + kid;
-      tagOwners(r.fv, kid); markBirth(r.fv);
+      tagOwners(r.fv, kid, (m.vehicleNames && m.vehicleNames['deploy:' + kid]) || e.label || 'Vehicle'); markBirth(r.fv);
       e.vehicleId = r.fv.vehicleId; e.payloadMass = r.payloadMass; e.payloadNames = r.payloadNames;
       live.push(r.fv); active = r.fv;
     } else if (e.type === 'BURN') {
@@ -1620,14 +1729,8 @@ function missionRecompute(m) {
   // ── resolve display names: custom rename (by stable origin key) + #N for duplicates,
   //    numbered by stable BIRTH order so a vehicle's # never shifts as docks/separates
   //    reorder the live array. ──
-  const byBase = {};
-  live.forEach(v => { const b = baseOf(v); (byBase[b] = byBase[b] || []).push(v); });
-  Object.keys(byBase).forEach(b => {
-    const arr = byBase[b];
-    if (arr.length === 1) { arr[0].displayName = b; return; }
-    arr.sort((x, y) => (x._birthOrd || 0) - (y._birthOrd || 0));
-    arr.forEach((v, i) => { v.displayName = b + ' #' + (i + 1); });
-  });
+  const _resolved = _missionResolveDisplayNames(live, baseOf);
+  live.forEach(v => { v.displayName = _resolved.get(v) || baseOf(v); });
   // refresh cached child names on separate/dock cards to match
   expanded.forEach(e => {
     if (e.type === 'SEPARATE' && e.result === 'SUCCESS') {
@@ -1711,12 +1814,10 @@ function missionApplyManeuverEdit(id, idx) {
   const e = m.log[idx]; if(!e || e.type!=='MANEUVER') return;
   const from = document.getElementById('edit-mv-from-'+id)?.value || e.fromNode;
   const to   = document.getElementById('edit-mv-to-'+id)?.value || e.toNode;
-  const stage = document.getElementById('edit-mv-stage-'+id)?.value;
   const lbl = nid => { const n = _missionNmNodeById(nid); return n ? (n.sub ? n.label + ' (' + n.sub + ')' : n.label) : nid; };
   e.fromNode = from; e.toNode = to; e.fromLabel = lbl(from); e.toLabel = lbl(to);
-  if (stage) e.firingStageId = stage;
   closeModal('modal-mission-evt');
-  missionRecompute(m);   // recompute refreshes ΔV/prop from the new node pair + firing stage
+  missionRecompute(m);   // recompute refreshes ΔV/prop from the new node pair (steps unchanged)
   missionRenderDetail();
 }
 
@@ -1896,6 +1997,29 @@ function missionSetActiveVehicle(id, vehId) {
   missionRenderDetail();
 }
 
+function missionSetEvtFilter(id, kind, val) {
+  if (kind === 'type') _missionEvtFilter.type = val;
+  else if (kind === 'veh') _missionEvtFilter.veh = val;
+  missionRenderDetail();
+}
+
+// Bodies you must INJECT toward (can't arrive without the transfer burn) → the
+// transfer-corridor node that represents that injection.
+const _MISSION_SOI_INJECT = { Moon: 'tli-corridor', Mars: 'mars-transfer', Venus: 'venus-transfer' };
+
+// Click a body's SOI ring → add the injection maneuver from the focused vehicle's
+// current orbit to that body's transfer corridor (TLI / TMI / TVI).
+function missionInjectToBody(id, body) {
+  const m = _missionGet(id);
+  if (!m) return;
+  const toNode = _MISSION_SOI_INJECT[body];
+  if (!toNode) return;
+  const fv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
+  let fromNode = fv ? _progNmVehicleNode(fv) : null;
+  if (!fromNode) { const path = _missionNodePath(m); fromNode = path.length ? path[path.length - 1] : 'leo-185'; }
+  missionExecManeuver(id, fromNode, toNode);
+}
+
 // ── Visual stage-stack split picker (for the SEPARATE add-event form) ────────
 // Lists the active vehicle's stages top→bottom; the user drags a horizontal bar
 // (or clicks between stages) to choose the split point. _missionSepIndex i means
@@ -2060,10 +2184,7 @@ function missionPropXferMax(id) {
 // two identical stages (same stageDefinitionId, e.g. docked twin Centaurs) work.
 // Disambiguated stage label for stage at `idx` within a vehicle ("Centaur V (2)").
 function _missionStageNameAt(fv, idx) {
-  const base = s => _missionStageLabelById(s.stageDefinitionId);
-  const target = base(fv.stages[idx]); let occ = 0, total = 0;
-  fv.stages.forEach((s, i) => { if (base(s) === target) { total++; if (i <= idx) occ++; } });
-  return total > 1 ? `${target} (${occ})` : target;
+  return _missionStageDisambig(fv, fv.stages[idx], idx);
 }
 
 function _missionApplyPropTransfer(fv, e) {
@@ -2147,8 +2268,9 @@ function _missionSeparateLogCardHTML(entry) {
   return `<div class="mission-log-card" style="padding:8px 14px;">
     <div class="mission-log-header"><span class="mission-log-type">SEPARATE</span>
       <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto">${entry.parentName} @ stage ${entry.sepIndex}</span></div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;">
-      ${entry.lowerName} (${entry.lowerStages} stage${entry.lowerStages===1?'':'s'}) &nbsp;|&nbsp; ${entry.upperName} (${entry.upperStages} stage${entry.upperStages===1?'':'s'})
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;line-height:1.5;">
+      <div>▸ ${entry.lowerName} <span style="color:var(--text-dim)">— ${entry.lowerStages} stage${entry.lowerStages===1?'':'s'}</span></div>
+      <div>▸ ${entry.upperName} <span style="color:var(--text-dim)">— ${entry.upperStages} stage${entry.upperStages===1?'':'s'}</span></div>
     </div>
   </div>`;
 }
@@ -2174,7 +2296,6 @@ function _missionMultiVehicleHTML(m) {
   const live = _missionLiveVehicles(m);
   if (!live.length) return '';
   const id = m.missionId;
-  const activeFV = PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId];
 
   const rows = live.map(({ id: vid, fv }) => {
     const isActive = vid === m.vehicleId;
@@ -2182,7 +2303,7 @@ function _missionMultiVehicleHTML(m) {
     // whole row is clickable to make this the active vehicle; active = green
     return `<div onclick="missionSetActiveVehicle('${id}','${vid}')" title="Click to make active" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 8px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-left:3px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin-bottom:4px;background:${isActive ? 'rgba(136,198,87,.14)' : 'transparent'};cursor:pointer;">
       <span style="flex-shrink:0;width:12px;font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-dim)'};">${isActive ? '●' : '○'}</span>
-      <span style="font-family:var(--mono);font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isActive ? '600' : '400'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_missionVehicleDisplayName(fv)}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isActive ? '600' : '400'};flex:1 1 100px;min-width:80px;white-space:normal;word-break:break-word;line-height:1.3;">${_missionVehicleDisplayName(fv)}</span>
       <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${fv.stages.length} stages</span>
       ${expended ? '<span style="font-family:var(--mono);font-size:9px;color:var(--error,#e06c75)">EXPENDED</span>' : ''}
       <button class="act-btn" style="padding:2px 6px;font-size:10px;flex-shrink:0;" onclick="event.stopPropagation();missionRenameVehicle('${id}','${fv._originKey || ''}')" title="Rename this vehicle">✎</button>
@@ -2190,36 +2311,12 @@ function _missionMultiVehicleHTML(m) {
     </div>`;
   }).join('');
 
-  let sepHTML = '';
-  if (activeFV && activeFV.stages.length >= 2 && activeFV.status !== 'EXPENDED') {
-    const opts = [];
-    for (let i = 1; i < activeFV.stages.length; i++) {
-      opts.push(`<option value="${i}">${_missionStageLabelById(activeFV.stages[i].stageDefinitionId)}</option>`);
-    }
-    sepHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-      <select id="mission-sep-idx-${id}" style="flex:1;min-width:0;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:10px;padding:4px 8px;">${opts.join('')}</select>
-      <button class="act-btn" style="padding:5px 12px;flex-shrink:0;" onclick="missionExecSeparate('${id}', document.getElementById('mission-sep-idx-${id}').value)">⇕ Separate</button>
-    </div>`;
-  }
-
-  let dockHTML = '';
-  const targets = live.filter(x => x.id !== m.vehicleId && x.fv.status !== 'EXPENDED');
-  if (activeFV && activeFV.status !== 'EXPENDED' && targets.length) {
-    const opts = targets.map(x => {
-      const match = activeFV.orbitState && x.fv.orbitState && progOrbitalStateMatch(activeFV.orbitState, x.fv.orbitState);
-      return `<option value="${x.id}">${_missionVehicleDisplayName(x.fv)}${match ? ' ✓ orbit match' : ' ✗ orbit mismatch'}</option>`;
-    }).join('');
-    dockHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-      <select id="mission-dock-tgt-${id}" style="flex:1;min-width:0;background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:10px;padding:4px 8px;">${opts}</select>
-      <button class="act-btn" style="padding:5px 12px;flex-shrink:0;" onclick="missionExecDock('${id}', document.getElementById('mission-dock-tgt-${id}').value)">⊕ Dock</button>
-    </div>`;
-  }
-
+  // Separate & Dock are done via ＋ Add Event; this panel is purely the vehicle list.
+  // Selecting a row sets the focused vehicle that the Orbit Map edits and that new
+  // events default to.
   return `<div class="mcc-box">
-      <div class="mcc-box-hdr">Vehicles &amp; Multi-Vehicle Ops</div>
+      <div class="mcc-box-hdr">Vehicles</div>
       ${rows}
-      ${sepHTML}
-      ${dockHTML}
     </div>`;
 }
 
@@ -2281,9 +2378,13 @@ function _missionNodeForLaunch(m) {
 
 // Ordered list of node ids the mission traverses: launch node, then each MANEUVER destination.
 function _missionNodePath(m) {
+  // The Orbit Map shows the FOCUSED vehicle's path: only its maneuvers (matched by
+  // the selected runtime vehicleId), so selecting a vehicle in the roster scopes the
+  // map to the one you're editing. Falls back to all maneuvers if none is focused.
   const path = [];
+  const vid = m.vehicleId;
   if (m.log.some(e => e.type === 'LAUNCH' || e.type === 'DEPLOY')) path.push(_missionNodeForLaunch(m));
-  for (const e of m.log) if (e.type === 'MANEUVER' && e.toNode) path.push(e.toNode);
+  for (const e of m.log) if (e.type === 'MANEUVER' && e.toNode && (!vid || e.vehicleId === vid)) path.push(e.toNode);
   return path;
 }
 
@@ -2301,48 +2402,229 @@ function _missionDefaultFiringStageId(fv) {
 
 // Apply a MANEUVER during replay: compute ΔV from the node-map physics, expend it
 // from the chosen firing stage, and move the vehicle to the destination orbit.
+// A maneuver is a CONTAINER: a target (from→to → ΔV requirement) fulfilled by an ordered
+// list of sub-steps the user composes. Each step is either a BURN (a stage provides ΔV,
+// either a typed amount or its whole tank) or a SEPARATE (jettison a spent stage so the
+// next burn is lighter). Legacy maneuvers with no steps fall back to one full burn from
+// the chosen / default firing stage.
+function _missionManeuverSteps(active, e, fullDv) {
+  if (Array.isArray(e.steps) && e.steps.length) return e.steps;
+  const sid = e.firingStageId || _missionDefaultFiringStageId(active);
+  return [{ kind: 'burn', stageId: sid, mode: 'dv', dv: fullDv }];
+}
+
 function _missionApplyManeuver(active, e) {
   const r = progNmComputeEdgeDv(e.fromNode, e.toNode);
-  e.dv = r ? Math.round(r.dv) : null;
+  const fullDv = r ? r.dv : 0;
+  e.dvRequired = fullDv ? Math.round(fullDv) : null;
   e.note = r ? r.note : 'No transfer model for this pair';
   e.method = r ? r.method : null;
   if (!active) { e.result = 'FAILED'; return; }
 
-  // pick firing stage: the user's explicit choice (e.firingStageId) if set, else the
-  // heaviest stage with propellant. NEVER overwrite e.firingStageId — that would pin a
-  // defaulted maneuver to a stage and make it (and others) drain the wrong tank on replay.
-  let stage = e.firingStageId ? active.stages.find(s => s.stageDefinitionId === e.firingStageId) : null;
-  if (!stage) stage = active.stages.find(s => s.stageDefinitionId === _missionDefaultFiringStageId(active)) || null;
-  e.firedStageId = stage ? stage.stageDefinitionId : null;   // actual stage used (display only)
-
-  const dv = r ? r.dv : 0;
-  if (dv > 0 && stage && (stage.isp || 0) > 0) {
-    const m_wet = (typeof progVehicleTotalMass === 'function') ? progVehicleTotalMass(active) : active.stages.reduce((s, st) => s + progStageMass(st), 0);
-    const avail = progStageRemainingProp(stage);
-    const need  = progRocketEqPropNeeded(m_wet, dv, stage.isp);
-    if (need > avail) {
-      progBurnPropellant(stage, avail);
-      e.dv_actual = Math.round(progRocketEqDv(m_wet, avail, stage.isp));
-      e.prop_consumed = Math.round(avail);
-      e.result = 'MARGINAL';
-    } else {
-      progBurnPropellant(stage, need);
-      e.dv_actual = Math.round(dv);
-      e.prop_consumed = Math.round(need);
-      e.result = 'SUCCESS';
+  const steps = _missionManeuverSteps(active, e, fullDv);
+  const fired = [];
+  let delivered = 0, propTotal = 0;
+  for (const step of steps) {
+    if (step.kind === 'separate') {
+      // jettison the spent stage (it leaves the active vehicle as debris — its band lane
+      // simply ends). Dropping a stage lightens the stack for the following burns.
+      const si = active.stages.findIndex(s => s.stageDefinitionId === step.stageId);
+      if (si >= 0) active.stages.splice(si, 1);
+      continue;
     }
-  } else {
-    e.dv_actual = e.dv || 0; e.prop_consumed = 0; e.result = r ? 'SUCCESS' : 'NO_MODEL';
+    // burn step
+    let st = step.stageId ? active.stages.find(s => s.stageDefinitionId === step.stageId) : null;
+    if (!st) st = active.stages.find(s => s.stageDefinitionId === _missionDefaultFiringStageId(active)) || null;
+    if (!st || (st.isp || 0) <= 0) continue;
+    const m_wet = _missionVehWetMass(active);
+    const avail = progStageRemainingProp(st);
+    if (avail <= 0) { fired.push(st.stageDefinitionId); continue; }
+    let burnProp, dvGain;
+    if (step.mode === 'deplete') {
+      burnProp = avail; dvGain = progRocketEqDv(m_wet, avail, st.isp);
+    } else {
+      const want = (step.dv != null) ? step.dv : Math.max(0, fullDv - delivered);
+      const need = progRocketEqPropNeeded(m_wet, want, st.isp);
+      if (need > avail) { burnProp = avail; dvGain = progRocketEqDv(m_wet, avail, st.isp); }
+      else { burnProp = need; dvGain = want; }
+    }
+    progBurnPropellant(st, burnProp);
+    delivered += dvGain; propTotal += burnProp; fired.push(st.stageDefinitionId);
   }
+  e.dv = Math.round(delivered);
+  e.dv_actual = Math.round(delivered);
+  e.dvDelivered = Math.round(delivered);
+  e.prop_consumed = Math.round(propTotal);
+  e.firedStageId = fired[0] || null;          // primary, for legacy single-stage display
+  e.firedStageIds = fired;
+  e.result = (fullDv > 0) ? (delivered + 1 >= fullDv ? 'SUCCESS' : 'MARGINAL') : (r ? 'SUCCESS' : 'NO_MODEL');
 
-  // move the vehicle to the destination node's orbit
+  // arrive at the destination orbit (a short/MARGINAL burn still moves the vehicle, but is
+  // flagged). escape / transit destinations put it on a departure trajectory so the band
+  // view jumps UP immediately (TLI → cislunar, TMI / interplanetary → transit).
   const node = _missionNmNodeById(e.toNode);
   if (node && node.orbit) {
     const o = node.orbit;
     if (o.type === 'surface') active.orbitState = { body: o.body, perigee: 0, apogee: 0, inclination: 0, lan: 0, epoch: 0, surface: true };
     else if (o.type === 'circular' || o.type === 'elliptic') active.orbitState = { body: o.body, perigee: o.perigee ?? o.apogee ?? 0, apogee: o.apogee ?? o.perigee ?? 0, inclination: o.inclination ?? 0, lan: 0, epoch: 0, surface: false };
-    // escape/transit: leave the orbit state (vehicle is on a departure trajectory)
+    // escape / transit: put the vehicle on its departure trajectory so the band view
+    // jumps UP immediately (TLI → cislunar, TMI/interplanetary → transit) instead of
+    // appearing stuck in the parking orbit.
+    else if (o.type === 'escape') active.orbitState = { body: o.body || 'Earth', perigee: 200, apogee: 1.0e6, inclination: 0, lan: 0, epoch: 0, surface: false, escape: true };
+    else if (o.type === 'transit') {
+      active.orbitState = (o.body === 'Sun')
+        ? { body: 'Sun', perigee: 0, apogee: 0, inclination: 0, lan: 0, epoch: 0, surface: false, transit: true, destination: o.destination }
+        : { body: o.body || 'Earth', perigee: 185, apogee: 378000, inclination: 0, lan: 0, epoch: 0, surface: false, transit: true, destination: o.destination };
+    }
   }
+}
+
+// Vehicle total mass helper (guarded — progVehicleTotalMass may be absent).
+function _missionVehWetMass(fv) {
+  return (typeof progVehicleTotalMass === 'function')
+    ? progVehicleTotalMass(fv)
+    : fv.stages.reduce((s, st) => s + progStageMass(st), 0);
+}
+
+// ── Composite maneuver — step-program model ─────────────────────────────────
+// A maneuver is built from an ordered list of steps. BURN steps spend a stage (a typed ΔV
+// or its whole tank); SEPARATE steps jettison a spent stage. One builder UI drives both
+// the add-form draft (_missionAddMv.steps) and an existing maneuver card (m.log[idx].steps).
+
+function _replaceArr(arr, vals) { arr.length = 0; (vals || []).forEach(v => arr.push(v)); }
+
+// Materialize an event's steps from a legacy single-burn maneuver the first time it's edited.
+function _missionEvSteps(m, idx) {
+  const e = m.log[idx];
+  if (!Array.isArray(e.steps) || !e.steps.length) {
+    e.steps = [{ kind: 'burn', stageId: e.firingStageId || e.firedStageId || null, mode: 'dv', dv: null }];
+  }
+  return e.steps;
+}
+
+// Simulate a step program on a live vehicle (no mutation) → running ΔV / prop + per-step.
+function _missionSimManeuverSteps(fv, steps, fullDv) {
+  let stages = (fv && fv.stages ? fv.stages : []).map(s => ({ id: s.stageDefinitionId, isp: s.isp || 0, prop: progStageRemainingProp(s), mass: progStageMass(s) }));
+  let total = fv ? _missionVehWetMass(fv) : 0;
+  let delivered = 0, propTotal = 0; const per = [];
+  (steps || []).forEach(step => {
+    if (step.kind === 'separate') {
+      const i = stages.findIndex(s => s.id === step.stageId);
+      if (i >= 0) { total -= stages[i].mass; stages.splice(i, 1); per.push({ kind: 'separate', ok: true }); }
+      else per.push({ kind: 'separate', ok: false });
+      return;
+    }
+    let st = step.stageId ? stages.find(s => s.id === step.stageId) : null;
+    if (!st) st = stages[0];
+    if (!st || st.isp <= 0 || st.prop <= 0) { per.push({ kind: 'burn', dvGain: 0, dry: true }); return; }
+    let burn, gain, short = false;
+    if (step.mode === 'deplete') { burn = st.prop; gain = progRocketEqDv(total, st.prop, st.isp); }
+    else {
+      const want = (step.dv != null) ? step.dv : Math.max(0, fullDv - delivered);
+      const need = progRocketEqPropNeeded(total, want, st.isp);
+      if (need > st.prop) { burn = st.prop; gain = progRocketEqDv(total, st.prop, st.isp); short = true; }
+      else { burn = need; gain = want; }
+    }
+    st.prop -= burn; st.mass -= burn; total -= burn; delivered += gain; propTotal += burn;
+    per.push({ kind: 'burn', dvGain: gain, propBurn: burn, short });
+  });
+  return { delivered, propTotal, per, shortfall: Math.max(0, fullDv - delivered) };
+}
+
+// Greedy auto-build: bottom-up, burn each stage to depletion + drop it, until ΔV closes.
+function _missionMvAutoSteps(fv, fullDv) {
+  const order = (fv.stages || []).filter(s => (s.isp || 0) > 0 && progStageRemainingProp(s) > 0).map(s => s.stageDefinitionId);
+  const steps = []; let mass = _missionVehWetMass(fv), remaining = fullDv;
+  for (let i = 0; i < order.length; i++) {
+    const sid = order[i]; const st = fv.stages.find(s => s.stageDefinitionId === sid);
+    const maxDv = progRocketEqDv(mass, progStageRemainingProp(st), st.isp);
+    if (maxDv + 1 >= remaining || i === order.length - 1) { steps.push({ kind: 'burn', stageId: sid, mode: 'dv', dv: null }); break; }
+    steps.push({ kind: 'burn', stageId: sid, mode: 'deplete' });
+    steps.push({ kind: 'separate', stageId: sid });
+    remaining -= maxDv; mass -= progStageMass(st);
+  }
+  return steps;
+}
+
+// Resolve the builder's working context for a token: 'add' (the draft) or an event index.
+function _missionMvCtx(id, token) {
+  const m = _missionGet(id); if (!m) return null;
+  const stagesOf = fv => fv ? fv.stages.map(s => ({ id: s.stageDefinitionId, name: _missionStageLabelById(s.stageDefinitionId), prop: Math.round(progStageRemainingProp(s)) })) : [];
+  if (token === 'add') {
+    const fv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
+    const fromId = document.getElementById('addev-mvf-' + id)?.value, toId = document.getElementById('addev-mvt-' + id)?.value;
+    const r = (fromId && toId) ? progNmComputeEdgeDv(fromId, toId) : null;
+    if (!Array.isArray(_missionAddMv.steps)) _missionAddMv.steps = [];
+    return { m, isAdd: true, token, steps: _missionAddMv.steps, fv, stages: stagesOf(fv), fullDv: r ? r.dv : 0 };
+  }
+  const idx = +token; const e = m.log[idx]; if (!e) return null;
+  const fv = e.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[e.vehicleId] : null;
+  const pre = _missionPreSnapStages(m, idx, e.activeKey, e.vehicleId);
+  const stages = (pre && pre.length) ? pre.map(s => ({ id: s.id, name: s.name, prop: s.prop })) : stagesOf(fv);
+  const r = progNmComputeEdgeDv(e.fromNode, e.toNode);
+  return { m, isAdd: false, token, idx, e, steps: _missionEvSteps(m, idx), fv, stages, fullDv: r ? r.dv : 0 };
+}
+
+// One dispatcher for every step edit (add / remove / move / set field / auto-build).
+function missionMvStep(id, token, op, a, b, c) {
+  const ctx = _missionMvCtx(id, token); if (!ctx) return;
+  const steps = ctx.steps;
+  const bottom = ctx.stages && ctx.stages[0] ? ctx.stages[0].id : null;
+  if (op === 'add') steps.push(a === 'separate' ? { kind: 'separate', stageId: bottom } : { kind: 'burn', stageId: bottom, mode: 'dv', dv: null });
+  else if (op === 'rm') { if (a >= 0 && a < steps.length) steps.splice(a, 1); }
+  else if (op === 'mv') { const j = a + b; if (a >= 0 && j >= 0 && a < steps.length && j < steps.length) { const t = steps[a]; steps[a] = steps[j]; steps[j] = t; } }
+  else if (op === 'set') { const st = steps[a]; if (st) { if (b === 'dv') st.dv = (c === '' || c == null) ? null : (parseFloat(c) || 0); else st[b] = c; } }
+  else if (op === 'auto') _replaceArr(steps, ctx.fv ? _missionMvAutoSteps(ctx.fv, ctx.fullDv) : []);
+  if (ctx.isAdd) missionMvRefreshSteps(id);
+  else { missionRecompute(ctx.m); _missionRenderPreserveNm(id); }
+}
+function missionMvRefreshSteps(id) { const el = document.getElementById('mv-steps-' + id); if (el) el.innerHTML = _missionMvBuilderHTML(id, 'add'); }
+
+// The step-builder UI (shared by the add form and an expanded maneuver card).
+function _missionMvBuilderHTML(id, token) {
+  const ctx = _missionMvCtx(id, token); if (!ctx) return '';
+  const { fv, stages, fullDv, steps, isAdd, e } = ctx;
+  const sim = (isAdd && fv) ? _missionSimManeuverSteps(fv, steps, fullDv) : null;
+  const sel = 'background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:10px;padding:3px 6px;';
+  const mini = 'style="font-family:var(--mono);font-size:9px;padding:2px 5px;background:var(--input);color:var(--text-bright);border:1px solid var(--border);cursor:pointer;"';
+  const opts = selv => stages.map(s => `<option value="${s.id}"${s.id === selv ? ' selected' : ''}>${s.name} (${(s.prop || 0).toLocaleString()} kg)</option>`).join('');
+  const t = `'${id}','${token}'`;
+  let rows;
+  if (!steps.length) {
+    rows = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);padding:4px 0;">// no steps — one full burn from the default stage is used. Add steps to control staging.</div>`;
+  } else {
+    rows = steps.map((step, k) => {
+      const ctl = `<button ${mini} title="up" onclick="missionMvStep(${t},'mv',${k},-1)">▲</button><button ${mini} title="down" onclick="missionMvStep(${t},'mv',${k},1)">▼</button><button ${mini} title="remove" onclick="missionMvStep(${t},'rm',${k})">✕</button>`;
+      const row = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+      if (step.kind === 'separate') {
+        return `<div style="${row}"><span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--accent2,#e5c07b);min-width:30px;">SEP</span>
+          <select style="${sel};flex:1;" onchange="missionMvStep(${t},'set',${k},'stageId',this.value)">${opts(step.stageId)}</select>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">drop</span>${ctl}</div>`;
+      }
+      const dep = step.mode === 'deplete';
+      const gain = sim && sim.per[k] ? Math.round(sim.per[k].dvGain || 0) : null;
+      return `<div style="${row}"><span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--accent);min-width:30px;">BURN</span>
+        <select style="${sel};flex:1;" onchange="missionMvStep(${t},'set',${k},'stageId',this.value)">${opts(step.stageId)}</select>
+        <select style="${sel};" onchange="missionMvStep(${t},'set',${k},'mode',this.value)"><option value="dv"${!dep ? ' selected' : ''}>ΔV</option><option value="deplete"${dep ? ' selected' : ''}>full</option></select>
+        ${dep ? `<span style="font-family:var(--mono);font-size:9px;color:var(--accent);min-width:54px;text-align:right;">${gain != null ? gain.toLocaleString() : 'full'}</span>`
+              : `<input type="number" value="${step.dv == null ? '' : step.dv}" placeholder="rem" onchange="missionMvStep(${t},'set',${k},'dv',this.value)" style="${sel};width:58px;">`}
+        ${ctl}</div>`;
+    }).join('');
+  }
+  let status = '';
+  if (fullDv > 0) {
+    const delivered = sim ? sim.delivered : (e ? (e.dvDelivered || 0) : 0);
+    const close = delivered + 1 >= fullDv;
+    status = `<div style="font-family:var(--mono);font-size:10px;margin-top:5px;color:${close ? 'var(--accent)' : 'var(--accent2,#e5c07b)'};">ΔV ${Math.round(delivered).toLocaleString()} / ${Math.round(fullDv).toLocaleString()} m/s — ${close ? '✓ closes' : 'short ' + Math.round(Math.max(0, fullDv - delivered)).toLocaleString()}</div>`;
+  }
+  const reqStr = fullDv > 0 ? Math.round(fullDv).toLocaleString() + ' m/s' : '—';
+  return `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin:6px 0 3px;">// requires <b style="color:var(--text-bright)">${reqStr}</b> — steps:</div>
+    ${rows}${status}
+    <div style="display:flex;gap:4px;margin-top:6px;">
+      <button class="act-btn" style="flex:1;font-size:10px;" onclick="missionMvStep(${t},'add','burn')">＋ Burn</button>
+      <button class="act-btn" style="flex:1;font-size:10px;" onclick="missionMvStep(${t},'add','separate')">＋ Separate</button>
+      <button class="act-btn" style="flex:1;font-size:10px;" title="Auto-build a staged burn that closes the ΔV" onclick="missionMvStep(${t},'auto')">⚙ Auto</button>
+    </div>`;
 }
 
 function missionExecManeuver(id, fromId, toId) {
@@ -2351,21 +2633,22 @@ function missionExecManeuver(id, fromId, toId) {
   const res = progNmComputeEdgeDv(fromId, toId);
   const lbl = nid => { const n = _missionNmNodeById(nid); return n ? (n.sub ? n.label + ' (' + n.sub + ')' : n.label) : nid; };
   const actFv = m.vehicleId ? PROG_ACTIVE_PROGRAM.vehicles[m.vehicleId] : null;
-  const fsEl = document.getElementById('addev-mvstage-' + id);
-  const firingStageId = (fsEl && fsEl.value) ? fsEl.value : null;
+  // copy the draft step program (if any) onto the new maneuver; empty → legacy single burn
+  const steps = (_missionAddMv && Array.isArray(_missionAddMv.steps) && _missionAddMv.steps.length)
+    ? _missionAddMv.steps.map(s => ({ ...s })) : undefined;
   m.log.push({
     type: 'MANEUVER',
-    fromNode: fromId, toNode: toId,
-    fromLabel: lbl(fromId), toLabel: lbl(toId),
-    firingStageId,
+    fromNode: fromId, toNode: toId, fromLabel: lbl(fromId), toLabel: lbl(toId),
+    steps,
     activeKey: actFv ? actFv._originKey : null,
     activeName: actFv ? _missionVehicleDisplayName(actFv) : null,
-    note:   res ? res.note : 'No transfer model for this pair',
+    note: res ? res.note : 'No transfer model for this pair',
     method: res ? res.method : null,
   });
   _missionBridgeMode = false;
   _missionBridgeFrom = null;
   _missionAddEvt = null;
+  _missionAddMv = { from: null, to: null, steps: [] };
   _missionExpandLast(m);
   missionRecompute(m);
   _missionRenderPreserveNm(id);
@@ -2418,19 +2701,20 @@ function missionEdgeClick(id, idx) {
   }, 60);
 }
 
-function _missionManeuverLogCardHTML(entry) {
+function _missionManeuverLogCardHTML(entry, id, idx) {
   const stateKV = (k, v) => `<div class="mission-state-kv"><span class="mission-state-key">${k}</span><span class="mission-state-val">${v}</span></div>`;
-  const statusChip = entry.dv != null
+  const statusChip = entry.dvRequired != null
     ? `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid var(--accent3);color:var(--accent3)">computed</span>`
     : `<span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:1px 6px;border:1px solid var(--accent2);color:var(--accent2)">no model</span>`;
-  const dvDisplay = entry.dv != null
-    ? stateKV('ΔV', `<span style="color:var(--accent3)">${entry.dv.toLocaleString()} m/s</span>`)
+  const reqDisplay = entry.dvRequired != null
+    ? stateKV('ΔV required', `<span style="color:var(--accent3)">${entry.dvRequired.toLocaleString()} m/s</span>`)
     : `<div style="color:var(--accent2);font-family:var(--mono);font-size:10px;padding:4px 0;">${entry.note}</div>`;
+  const delDisplay = entry.dvDelivered != null ? stateKV('ΔV delivered', `${entry.dvDelivered.toLocaleString()} m/s`) : '';
   const methodDisplay = entry.method ? stateKV('Method', entry.method) : '';
   const propDisplay = entry.prop_consumed ? stateKV('Prop used', `${Math.round(entry.prop_consumed).toLocaleString()} kg`) : '';
-  const stageDisplay = (entry.firingStageId || entry.firedStageId) ? stateKV('Firing stage', _missionStageLabelById(entry.firingStageId || entry.firedStageId)) : '';
-  const marginal = entry.result === 'MARGINAL' ? `<div style="color:var(--accent2);font-family:var(--mono);font-size:9px;margin-top:3px;">⚠ insufficient propellant — only ${Math.round(entry.dv_actual||0).toLocaleString()} m/s delivered</div>` : '';
-  const noteDisplay = entry.note ? `<div style="color:var(--text-dim);font-family:var(--mono);font-size:9px;margin-top:4px;">${entry.note}</div>` : '';
+  const marginal = entry.result === 'MARGINAL' ? `<div style="color:var(--accent2);font-family:var(--mono);font-size:9px;margin-top:3px;">⚠ short — only ${Math.round(entry.dvDelivered||0).toLocaleString()} of ${Math.round(entry.dvRequired||0).toLocaleString()} m/s delivered</div>` : '';
+  // editable step builder (bound to this event by its index)
+  const builder = (id != null && idx != null) ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${_missionMvBuilderHTML(id, String(idx))}</div>` : '';
   return `<div class="mission-log-card">
     <div class="mission-log-header">
       <span class="mission-log-type">MANEUVER</span>
@@ -2438,13 +2722,13 @@ function _missionManeuverLogCardHTML(entry) {
       <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto">${entry.fromLabel} → ${entry.toLabel}</span>
     </div>
     <div class="mission-state-grid">
-      ${dvDisplay}
+      ${reqDisplay}
+      ${delDisplay}
       ${propDisplay}
-      ${stageDisplay}
       ${methodDisplay}
     </div>
     ${marginal}
-    ${noteDisplay}
+    ${builder}
   </div>`;
 }
 
@@ -2615,9 +2899,10 @@ function _missionOrbitZone(o) {
   }
 }
 
+// Scrub to a band event AND open that event's card in the EVENTS panel.
 function missionBandScrubTo(id, idx) {
   _missionBandScrub = (idx == null ? null : +idx);
-  missionRenderDetail();
+  _missionBandOpenEvent(id, idx);
 }
 
 // Click a band-view dot: select that dot's vehicle as active AND scrub to the event,
@@ -2627,12 +2912,31 @@ function missionBandPickVehicle(id, vid, idx) {
   const fv = vid ? PROG_ACTIVE_PROGRAM.vehicles[vid] : null;
   if (fv && fv.status !== 'EXPENDED' && fv.status !== 'RECOVERED') m.vehicleId = vid;
   _missionBandScrub = (idx == null ? null : +idx);
+  _missionBandOpenEvent(id, idx);
+}
+
+// Selecting a state in the band view opens the matching event card (expanded + scrolled
+// into view). idx is an index into the EXPANDED log; map it back to the authored card.
+function _missionBandOpenEvent(id, idx) {
+  const m = _missionGet(id); if (!m) { missionRenderDetail(); return; }
+  if (idx == null) { missionRenderDetail(); return; }
+  const exp = (m._expanded && m._expanded.length) ? m._expanded : m.log;
+  const src = exp[+idx];
+  const authIdx = src && src._authIdx != null ? src._authIdx : +idx;
+  m.log.forEach(e => { e._expanded = false; });
+  if (m.log[authIdx]) m.log[authIdx]._expanded = true;
   missionRenderDetail();
+  const tid = 'mlog-' + id + '-' + authIdx;
+  setTimeout(() => {
+    const el = document.getElementById(tid);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.outline = '2px solid var(--accent)'; setTimeout(() => { el.style.outline = ''; }, 1500); }
+  }, 60);
 }
 
 // ── Band view SVG renderer ─────────────────────────────────────────────────
 function missionSetAddEvt(id, type) {
   _missionAddEvt = (type === _missionAddEvt) ? null : type;
+  _missionAddMv = { from: null, to: null, steps: [] };   // fresh maneuver step draft each open
   if (_missionAddEvt === 'maneuver') {
     _missionViewMode = 'nodemap';        // node map for drawing maneuvers
     _missionBridgeMode = true;           // auto-enter Draw Maneuver mode
@@ -2646,9 +2950,9 @@ function missionSetAddEvt(id, type) {
 function _missionAddEventHTML(m) {
   const id = m.missionId;
   if (_missionAddEvt == null) {
-    return `<button class="act-btn" style="width:100%;" onclick="missionSetAddEvt('${id}','__menu__')">＋ Add Event</button>`;
+    return `<button class="act-btn mcc-addevt-btn" style="width:100%;background:var(--accent);color:#000;font-weight:700;padding:11px;font-size:12px;letter-spacing:.08em;" onclick="missionSetAddEvt('${id}','__menu__')">＋ ADD EVENT</button>`;
   }
-  const types = [['launch','Launch'],['deploy','Place in Orbit'],['burn','Burn'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend'],['rendezvous','Rendezvous'],['proptransfer','Prop Transfer'],['crewtransfer','Crew Transfer'],['reenter','Reenter'],['recover','Recover']];
+  const types = [['launch','Launch'],['deploy','Place in Orbit'],['maneuver','Maneuver'],['separate','Separate'],['dock','Dock'],['expend','Expend'],['rendezvous','Rendezvous'],['proptransfer','Prop Transfer'],['crewtransfer','Crew Transfer'],['reenter','Reenter'],['recover','Recover']];
   const typeBtns = types.map(([t,label]) =>
     `<button class="act-btn" style="padding:3px 8px;font-size:10px;${_missionAddEvt===t?'background:var(--accent);color:#000;':''}" onclick="missionSetAddEvt('${id}','${t}')">${label}</button>`
   ).join('');
@@ -2718,16 +3022,11 @@ function _missionAddEventHTML(m) {
   } else if (_missionAddEvt === 'maneuver') {
     const nodes = _missionNmNodes();
     const o = nodes.map(n=>`<option value="${n.id}">${n.label}${n.sub?' ('+n.sub+')':''}</option>`).join('');
-    const defStage = fv ? _missionDefaultFiringStageId(fv) : null;
-    const fsOpts = (fv && fv.stages) ? fv.stages.map(s => {
-      const p = Math.round(progStageRemainingProp(s));
-      return `<option value="${s.stageDefinitionId}"${s.stageDefinitionId===defStage?' selected':''}>${_missionStageLabelById(s.stageDefinitionId)} (${p.toLocaleString()} kg)</option>`;
-    }).join('') : '';
-    form = `<label class="cfg-label">From</label><select id="addev-mvf-${id}" class="mcc-field-select" style="margin-bottom:6px;">${o}</select>
-      <label class="cfg-label">To</label><select id="addev-mvt-${id}" class="mcc-field-select" style="margin-bottom:6px;">${o}</select>
-      ${fsOpts ? `<label class="cfg-label">Firing Stage (ΔV from)</label><select id="addev-mvstage-${id}" class="mcc-field-select" style="margin-bottom:6px;">${fsOpts}</select>` : ''}
-      <button class="act-btn" style="width:100%;" onclick="missionExecManeuver('${id}',document.getElementById('addev-mvf-${id}').value,document.getElementById('addev-mvt-${id}').value)">Add Maneuver</button>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;">// or draw a bridge on the Node Map (uses the firing stage selected above)</div>`;
+    form = `<label class="cfg-label">From</label><select id="addev-mvf-${id}" class="mcc-field-select" style="margin-bottom:6px;" onchange="missionMvRefreshSteps('${id}')">${o}</select>
+      <label class="cfg-label">To</label><select id="addev-mvt-${id}" class="mcc-field-select" style="margin-bottom:6px;" onchange="missionMvRefreshSteps('${id}')">${o}</select>
+      <div id="mv-steps-${id}">${_missionMvBuilderHTML(id, 'add')}</div>
+      <button class="act-btn" style="width:100%;margin-top:6px;" onclick="missionExecManeuver('${id}',document.getElementById('addev-mvf-${id}').value,document.getElementById('addev-mvt-${id}').value)">Add Maneuver</button>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;">// pick From/To (or draw a bridge on the Node Map); the steps above define how the ΔV is delivered</div>`;
   } else if (_missionAddEvt === 'rendezvous') {
     const others = live.filter(x => x.id !== m.vehicleId);
     if (others.length) {
@@ -3007,7 +3306,7 @@ function _missionBandViewHTML(m) {
       </div>`;
     }).join('');
     monitorHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">
-      <div style="font-size:9px;letter-spacing:.1em;margin-bottom:4px;">STATE @ ${scrubEvent ? (scrubEvent.type + (model.events[scrub] ? ' — ' + model.events[scrub].label : '')) : ''}</div>
+      <div style="font-size:9px;letter-spacing:.1em;margin-bottom:4px;">CURRENT STATE${scrubEvent ? ' @ ' + scrubEvent.type + (model.events[scrub] ? ' — ' + model.events[scrub].label : '') : ''}</div>
       ${rows}
     </div>`;
   } else {
@@ -3198,7 +3497,6 @@ function _missionNodeMapHTML(m) {
   // ── control bar (Draw Maneuver + custom nodes + zoom) ──
   let ctrlHTML = `<div class="sl" style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <button class="act-btn" style="${_missionBridgeMode ? 'background:var(--accent);color:#000;' : ''}" onclick="missionToggleBridgeMode('${id}')">＋ Draw Maneuver</button>
-    <button class="act-btn" onclick="missionOpenCustomNodeModal('${id}')">＋ Custom Node</button>
     <span style="display:inline-flex;align-items:center;gap:2px;">
       <button class="act-btn" style="padding:1px 8px;" onclick="missionNmZoom('${id}',-1)" title="Zoom out">−</button>
       <button class="act-btn" style="padding:1px 8px;" onclick="missionNmZoom('${id}',0)" title="Reset zoom">⊡</button>
@@ -3222,7 +3520,11 @@ function _missionNodeMapHTML(m) {
     blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR}" fill="${b.col}" fill-opacity="0.04"/>`;
     blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR * 0.72}" fill="${b.col}" fill-opacity="0.05"/>`;
     blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR * 0.44}" fill="${b.col}" fill-opacity="0.07"/>`;
-    blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR}" fill="none" stroke="${b.col}" stroke-width="1" stroke-opacity="0.18" stroke-dasharray="4,5"/>`;
+    // SOI ring — clickable for bodies you can inject toward (TLI / TMI / TVI). Clicking
+    // it adds the mandatory transfer-injection burn from the focused vehicle's orbit.
+    const canInject = !!_MISSION_SOI_INJECT[b.body];
+    blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR}" fill="none" stroke="${b.col}" stroke-width="${canInject ? 1.6 : 1}" stroke-opacity="${canInject ? 0.55 : 0.18}" stroke-dasharray="4,5"/>`;
+    if (canInject) blobsHTML += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.soiR}" fill="none" stroke="transparent" stroke-width="18" style="cursor:pointer" onclick="missionInjectToBody('${id}','${b.body}')"><title>Inject toward ${b.body} — adds the transfer burn (you can't arrive without it)</title></circle>`;
     const inPath    = b.surfId && path.includes(b.surfId);
     const isCurrent = b.surfId && path.length > 0 && path[path.length - 1] === b.surfId;
     const isFrom    = b.surfId && _missionBridgeFrom === b.surfId;
@@ -3337,7 +3639,10 @@ function _missionNmLayout() {
   const bodyCol = { Sun:'#c6a057' };
   ORDER.forEach(b => bodyCol[b] = META[b].col);
 
-  const SLOT = 320, PADX = 200, BASE_Y = 470, WORLD_H = 840;
+  const SLOT = 320, PADX = 200, BASE_Y = 470, WORLD_H = 1040;
+  // vertical scatter so the bodies aren't in one straight line; each body's node
+  // fan + SOI move with it. Earth sits lower since it carries the most orbits.
+  const CY = { Earth:600, Moon:340, Venus:680, Mercury:420, Mars:740, Jupiter:380, Saturn:700, Uranus:450, Neptune:620 };
   const cxOf = si => PADX + si * SLOT;
   const worldW = cxOf(ORDER.length - 1) + PADX;
 
@@ -3368,7 +3673,7 @@ function _missionNmLayout() {
   const pos = {};
   const blobs = [];
   ORDER.forEach((body, si) => {
-    const cx = cxOf(si), cy = BASE_Y, meta = META[body];
+    const cx = cxOf(si), cy = CY[body] ?? BASE_Y, meta = META[body];
     const g = groups[body];
     blobs.push({ body, cx, cy, bodyR: meta.bodyR, soiR: meta.soiR, col: meta.col,
                  surfId: g.surface[0] ? g.surface[0].id : null });
@@ -3393,7 +3698,8 @@ function _missionNmLayout() {
 
 // Footer = scrollable missions list (left) + orbit catalog dock (right).
 function _missionFooterHTML(m) {
-  return `${_missionMissionsPanelHTML(m)}${_missionOrbitPaletteHTML(m)}`;
+  // The orbit catalog now lives in the Orbit Map's left panel (not the footer).
+  return _missionMissionsPanelHTML(m);
 }
 
 // Compact scrollable list of all missions (users rarely make more than ~10).
@@ -3417,27 +3723,44 @@ function _missionMissionsPanelHTML(m) {
   </div>`;
 }
 
-// Orbit catalog dock: draggable chips from ORBIT_CATEGORIES. Drop onto the node
-// map to add a custom node carrying that orbit's parameters.
+// ORBITS panel = the LV-calculator's orbit catalog (ORBIT_CATEGORIES), the same
+// orbits used everywhere else — grouped by body with the catalog's icons + colours
+// and full orbit detail. Click (or drag) one to drop it onto the Orbit Map as a
+// node, so the catalog and the map are integrated. Fills the whole sidebar.
 function _missionOrbitPaletteHTML(m) {
   const id = m.missionId;
   const hdr = `<div class="nm-orbit-dock-hdr">
-    <button class="act-btn" style="padding:1px 7px;font-size:10px;" onclick="missionToggleOrbitPalette('${id}')">${_missionOrbitPaletteOpen ? '▾' : '▸'}</button>
-    <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">ORBIT CATALOG</span>
-    <label class="act-btn" style="padding:1px 8px;font-size:9px;cursor:pointer;margin-left:8px;" title="Upload a .orbit file as a node">Load Orbit<input type="file" accept=".orbit,.json" style="display:none" onchange="missionLoadOrbitFile(this,'${id}')"></label>
-    <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-left:auto;">${_missionOrbitPaletteOpen ? '// drag an orbit onto the node map to add a node' : ''}</span>
+    <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">ORBITS</span>
+    <button class="act-btn" style="padding:1px 8px;font-size:9px;margin-left:auto;" onclick="missionOpenCustomNodeModal('${id}')" title="Add a custom orbit">+ Custom</button>
+    <label class="act-btn" style="padding:1px 8px;font-size:9px;cursor:pointer;" title="Upload a .orbit file">Load<input type="file" accept=".orbit,.json" style="display:none" onchange="missionLoadOrbitFile(this,'${id}')"></label>
   </div>`;
-  if (!_missionOrbitPaletteOpen || typeof ORBIT_CATEGORIES === 'undefined') {
-    return `<div class="nm-orbit-dock collapsed">${hdr}</div>`;
-  }
-  let chips = '';
+  if (typeof ORBIT_CATEGORIES === 'undefined') return `<div class="nm-orbit-dock">${hdr}</div>`;
+  let rows = '';
   ORBIT_CATEGORIES.forEach((cat, pi) => {
-    const items = cat.orbits.map((o, oi) =>
-      `<span class="nm-orbit-chip" draggable="true" ondragstart="missionNmOrbitDragStart(event,${pi},${oi})" title="${(o.note||'').replace(/"/g,'&quot;')}" style="border-left-color:${cat.color};">${o.name}</span>`
-    ).join('');
-    chips += `<div class="nm-orbit-group"><span class="nm-orbit-planet" style="color:${cat.color};">${cat.icon} ${cat.planet}</span>${items}</div>`;
+    rows += `<div class="orbit-body-lbl" style="color:${cat.color};">${cat.icon || ''} ${cat.planet}</div>`;
+    cat.orbits.forEach((o, oi) => {
+      const detail = o.mode === 'escape'
+        ? `C3 ${o.c3} km²/s²`
+        : `${(o.perigee || 0).toLocaleString()}×${(o.apogee || 0).toLocaleString()} km · ${o.inc || 0}°`;
+      rows += `<div class="orbit-row" draggable="true" ondragstart="missionNmOrbitDragStart(event,${pi},${oi})" onclick="missionCatalogAdd('${id}',${pi},${oi})" title="${(o.note || '').replace(/"/g,'&quot;')}" style="border-left:3px solid ${cat.color};">
+        <span class="orbit-row-name">${o.name}</span>
+        <span class="orbit-row-sub">${detail}</span>
+      </div>`;
+    });
   });
-  return `<div class="nm-orbit-dock">${hdr}<div class="nm-orbit-scroll">${chips}</div></div>`;
+  return `<div class="nm-orbit-dock">${hdr}<div class="nm-orbit-scroll">${rows}</div></div>`;
+}
+
+// Click an orbit in the catalog → place it on the Orbit Map as a node.
+function missionCatalogAdd(id, pi, oi) {
+  if (typeof ORBIT_CATEGORIES === 'undefined') return;
+  const cat = ORBIT_CATEGORIES[pi]; if (!cat) return;
+  const o = cat.orbits[oi]; if (!o) return;
+  _missionCreateCustomNode(o.name, _missionOrbitToNodeOrbit(o, cat.planet),
+    550 + Math.round((Math.random() - 0.5) * 140), 300 + Math.round((Math.random() - 0.5) * 90));
+  const m = _missionGet(id);
+  const va = document.querySelector('.mcc-view-area');
+  if (va && m && _missionViewMode === 'nodemap') va.innerHTML = _missionNodeMapHTML(m);
 }
 
 function missionNmNodeDown(e, missionId, nid) {
@@ -3475,16 +3798,22 @@ function missionInit() {
   _missionSel = null;
 }
 
+let _hangarView = 'spacecraft';   // Hangar sub-picker: 'spacecraft' | 'fleet'
+function progSetHangar(v) { _hangarView = v; progShowTab('hangar'); }
+
 function progShowTab(tab) {
-  const PANELS   = { spacecraft: 'prog-panel-sc', fleet: 'prog-panel-fleet', mission: 'prog-panel-mission' };
-  const TOOLBARS = { spacecraft: 'prog-tb-sc',    fleet: 'prog-tb-fleet',    mission: 'prog-tb-mission'    };
-  Object.entries(PANELS).forEach(([t, id]) => {
-    const el = document.getElementById(id); if (el) el.style.display = t === tab ? 'flex' : 'none';
-  });
-  Object.entries(TOOLBARS).forEach(([t, id]) => {
-    const el = document.getElementById(id); if (el) el.style.display = t === tab ? 'flex' : 'none';
-  });
+  // back-compat: Spacecraft & Fleet are now one "Hangar" tab with an inner picker
+  if (tab === 'spacecraft' || tab === 'fleet') { _hangarView = tab === 'fleet' ? 'fleet' : 'spacecraft'; tab = 'hangar'; }
+  const showSc      = tab === 'hangar' && _hangarView === 'spacecraft';
+  const showFleet   = tab === 'hangar' && _hangarView === 'fleet';
+  const showMission = tab === 'mission';
+  const setD = (id, on, disp) => { const el = document.getElementById(id); if (el) el.style.display = on ? (disp || 'flex') : 'none'; };
+  setD('prog-panel-sc', showSc);       setD('prog-tb-sc', showSc);
+  setD('prog-panel-fleet', showFleet); setD('prog-tb-fleet', showFleet);
+  setD('prog-panel-mission', showMission); setD('prog-tb-mission', showMission);
+  setD('hangar-pick', tab === 'hangar', 'inline-flex');
   document.querySelectorAll('#prog-subnav .lv-sub-btn').forEach(b => b.classList.toggle('active', b.dataset.prog === tab));
+  document.querySelectorAll('#hangar-pick button').forEach(b => b.classList.toggle('active', b.dataset.hv === _hangarView));
   if (tab === 'mission') {
     if (!_missions.length) { missionNew(); }            // auto-create the first mission so the command center is never blank
     else {

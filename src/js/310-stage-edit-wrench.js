@@ -51,6 +51,18 @@ function openEditStageModal(stageIdx,isBooster){
   // S1.5 section — only meaningful for real stage slots (not boosters)
   const s15Sec = document.getElementById('stg-s15-section');
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
+
+  // Parallel-staging section — only for the strap-on BOOSTER (crossfeed / center-throttle).
+  // This is the counterpart to S1.5: it describes how the booster group interacts with the core.
+  const pSec = document.getElementById('stg-parallel-section');
+  if (pSec) pSec.style.display = isBooster ? '' : 'none';
+  if (pSec && isBooster) {
+    const pm  = document.getElementById('b_parallel_mode')?.value || 'independent';
+    const thr = document.getElementById('b_core_throttle')?.value || 57;
+    const sel = document.getElementById('stg-parallel-mode'); if (sel) sel.value = pm;
+    const tin = document.getElementById('stg-throttle');      if (tin) tin.value = thr;
+    _stgParallelToggle(pm);
+  }
   // s15 (stage-and-a-half) markup is optional — only populate it when present,
   // otherwise getElementById(...).checked throws and the modal never opens.
   if (s15Sec && !isBooster && stageIdx >= 0) {
@@ -71,6 +83,12 @@ function openEditStageModal(stageIdx,isBooster){
 function toggleS15Fields(on) {
   const fields = document.getElementById('stg-s15-fields');
   if (fields) fields.style.display = on ? '' : 'none';
+}
+
+// Show the center-throttle % field only when 'throttle' mode is picked in the booster editor.
+function _stgParallelToggle(mode) {
+  const w = document.getElementById('stg-throttle-wrap');
+  if (w) w.style.display = (mode === 'throttle') ? '' : 'none';
 }
 
 /** Live BECO split preview shown inside the edit modal. stageIdx is unused but kept for back-compat. */
@@ -116,6 +134,13 @@ function doEditStage(){
       const el=document.getElementById('b_'+k);
       if(el)el.value={dry,prop,thrust,isp,res}[k];
     });
+    // Parallel-staging mode (crossfeed / center-throttle) — write the throttle %, then set the
+    // mode (setBoosterMode keeps the hidden inputs, the config-grid control and visibility in sync).
+    const pm  = document.getElementById('stg-parallel-mode')?.value || 'independent';
+    const pThr = parseFloat(document.getElementById('stg-throttle')?.value);
+    const tEl = document.getElementById('b_core_throttle'); if (tEl && isFinite(pThr)) tEl.value = pThr;
+    if (typeof setBoosterMode === 'function') setBoosterMode(pm);
+    else { const hid = document.getElementById('b_parallel_mode'); if (hid) hid.value = pm; }
     currentBoosterName=name;
     boosterSaved=false;
     // If UGC, update library entry

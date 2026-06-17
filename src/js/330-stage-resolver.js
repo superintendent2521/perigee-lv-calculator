@@ -29,7 +29,11 @@ function resolvePresetBooster(p){
   if(!p.boosterName)return null;
   const s=findStageByName(p.boosterName);
   if(!s)return null;
-  return {dry:s.dry,prop:s.prop,thrust:s.thrust,isp:s.isp,res:s.res??2,count:p.boosterCount||1};
+  const b={dry:s.dry,prop:s.prop,thrust:s.thrust,isp:s.isp,res:s.res??2,count:p.boosterCount||1};
+  // carry parallel-staging mode (crossfeed / center-throttle) from the preset
+  if(p.parallelMode)b.parallelMode=p.parallelMode;
+  if(p.coreThrottle!=null)b.coreThrottle=p.coreThrottle;
+  return b;
 }
 
 // Compute tags for a vehicle from its stages + vehicle-specific tags
