@@ -1,7 +1,0 @@
-﻿<job><script language='JScript'>try {
-  var code = WScript.StdIn.ReadAll();
-  eval(code);
-  WScript.Echo("SYNTAX OK");
-} catch(e) {
-  WScript.Echo("ERROR: " + e.message + " at line " + (e.line||"?") + " col " + (e.column||"?"));
-}</script></job>

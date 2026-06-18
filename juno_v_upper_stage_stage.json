@@ -1,9 +1,0 @@
-{
-  "name": "Juno V Upper Stage",
-  "dry": 6040,
-  "prop": 74850,
-  "thrust": 710,
-  "isp": 300,
-  "res": 2,
-  "_userGenerated": true
-}
