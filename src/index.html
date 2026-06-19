@@ -265,6 +265,8 @@
         <tbody id="stage-tbody"></tbody>
       </table>
     </div>
+    <!-- Additional strap-on booster groups (multiple kinds + air-lit). Group 1 = the column above. -->
+    <div id="extra-booster-groups" style="display:none;margin-top:12px;"></div>
   </div>
   </div><!-- /vehicles-stage-params -->
 
@@ -736,6 +738,24 @@
             <label>First-Stage Throttle % <span style="color:var(--text-dim);font-size:9px;">// first stage throttle during the boost phase</span></label>
             <input type="number" id="stg-throttle" value="57" min="10" max="100" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
           </div>
+        </div>
+        <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:4px;padding-top:10px;display:none;" id="stg-bgroup-section">
+          <label>Booster Group <span style="color:var(--text-dim);font-size:9px;">// count + when this group ignites</span></label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:4px;">
+            <div style="flex:0 0 80px;"><label style="font-size:9px;">Count</label>
+              <input type="number" id="stg-bg-count" min="1" value="2" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></div>
+            <div style="flex:1;min-width:150px;"><label style="font-size:9px;">Ignition</label>
+              <select id="stg-bg-ign" onchange="_stgBgIgnToggle(this.value)" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+                <option value="ground">Ground (T-0)</option>
+                <option value="after">After group burns out</option>
+                <option value="time">T+ time</option>
+              </select></div>
+            <div id="stg-bg-after-wrap" style="display:none;flex:0 0 130px;"><label style="font-size:9px;">After</label>
+              <select id="stg-bg-after" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></select></div>
+            <div id="stg-bg-time-wrap" style="display:none;flex:0 0 100px;"><label style="font-size:9px;">T+ (s)</label>
+              <input type="number" id="stg-bg-time" min="0" value="60" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></div>
+          </div>
+          <button class="modal-btn" style="margin-top:10px;background:rgba(200,80,60,.18);border-color:#c8503c;color:#e07060;" onclick="_stgBgRemove()">Remove this booster group</button>
         </div>
       </div>
       <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>

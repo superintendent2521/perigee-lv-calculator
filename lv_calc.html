@@ -1306,6 +1306,8 @@ button,input,select,textarea{font-family:inherit;}
         <tbody id="stage-tbody"></tbody>
       </table>
     </div>
+    <!-- Additional strap-on booster groups (multiple kinds + air-lit). Group 1 = the column above. -->
+    <div id="extra-booster-groups" style="display:none;margin-top:12px;"></div>
   </div>
   </div><!-- /vehicles-stage-params -->
 
@@ -1778,6 +1780,24 @@ button,input,select,textarea{font-family:inherit;}
             <input type="number" id="stg-throttle" value="57" min="10" max="100" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
           </div>
         </div>
+        <div style="grid-column:1/-1;border-top:1px solid var(--border);margin-top:4px;padding-top:10px;display:none;" id="stg-bgroup-section">
+          <label>Booster Group <span style="color:var(--text-dim);font-size:9px;">// count + when this group ignites</span></label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:4px;">
+            <div style="flex:0 0 80px;"><label style="font-size:9px;">Count</label>
+              <input type="number" id="stg-bg-count" min="1" value="2" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></div>
+            <div style="flex:1;min-width:150px;"><label style="font-size:9px;">Ignition</label>
+              <select id="stg-bg-ign" onchange="_stgBgIgnToggle(this.value)" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+                <option value="ground">Ground (T-0)</option>
+                <option value="after">After group burns out</option>
+                <option value="time">T+ time</option>
+              </select></div>
+            <div id="stg-bg-after-wrap" style="display:none;flex:0 0 130px;"><label style="font-size:9px;">After</label>
+              <select id="stg-bg-after" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></select></div>
+            <div id="stg-bg-time-wrap" style="display:none;flex:0 0 100px;"><label style="font-size:9px;">T+ (s)</label>
+              <input type="number" id="stg-bg-time" min="0" value="60" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;"></div>
+          </div>
+          <button class="modal-btn" style="margin-top:10px;background:rgba(200,80,60,.18);border-color:#c8503c;color:#e07060;" onclick="_stgBgRemove()">Remove this booster group</button>
+        </div>
       </div>
       <div class="save-note" style="margin-top:10px;">Stage is added to the library for this session. Use "Save" to download a .json file you can reload later.</div>
     </div>
@@ -1802,6 +1822,10 @@ let userDefinedLV=false,userDefinedOrbit=false;
 let _suppressUD=false;
 let lastResult=null;
 const stageStore={};
+// Additional strap-on booster groups beyond the primary (Group 1 = the existing booster
+// inputs, always ground-lit). Each: {dry,prop,thrust,isp,res,count,parallelMode,coreThrottle,ignition}
+// ignition: 'ground' | {after:groupIndex} | {atTime:seconds}.  Group indices: 0 = primary, 1.. = these.
+let _extraBoosterGroups=[];
 
 // ─── ROW DEFAULTS ─────────────────────────────
 const ROWS=[
@@ -2842,9 +2866,32 @@ function setBoosters(val){
   // throttle % row only when boosters on AND mode is 'throttle'
   const tw=document.getElementById('booster-throttle-wrap');
   if(tw)tw.style.display=(val&&document.getElementById('b_parallel_mode')?.value==='throttle')?'flex':'none';
+  if(typeof renderExtraBoosterGroups==='function')renderExtraBoosterGroups();
   _suppressUD=true;
   buildTable();
 }
+// ── Additional strap-on booster groups (multiple kinds + air-lit). Group 1 = the primary
+//    booster column; these are Group 2+. Stored in _extraBoosterGroups; lvBoosterGroups()
+//    assembles the full list for the shared math. ──
+function renderExtraBoosterGroups(){
+  const el=document.getElementById('extra-booster-groups'); if(!el) return;
+  if(!useBooster){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  const n=_extraBoosterGroups.length;
+  const hint = n
+    ? `// ${n} additional group${n>1?'s':''} — they appear as cards in Stage Composition; edit with the ✎ wrench, remove with ✕`
+    : `// add another kind of strap-on (optionally air-lit after another group); manage it from the Stage Composition cards`;
+  el.innerHTML=`<button class="act-btn" onclick="boosterGroupAdd()">+ Add Booster Group</button>
+    <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.04em;margin-left:8px;">${hint}</span>`;
+}
+function _bgRefresh(){ renderExtraBoosterGroups(); if(typeof markLVUserDefined==='function')markLVUserDefined(); _suppressUD=true; if(typeof buildStageComposition==='function')buildStageComposition(); }
+function boosterGroupAdd(){ _extraBoosterGroups.push({count:2,dry:4000,prop:40000,thrust:3000,isp:280,res:2,parallelMode:'independent',coreThrottle:0.57,ignition:'ground'}); _bgRefresh(); }
+function boosterGroupRemove(i){ _extraBoosterGroups.splice(i,1);
+  _extraBoosterGroups.forEach((g,k)=>{ const ai=k+1; if(g.ignition&&g.ignition.after!=null&&g.ignition.after>=ai) g.ignition='ground'; });
+  _bgRefresh(); }
+// Drop a library stage onto an extra-group composition card → fill its specs.
+function applyBoosterDataToGroup(i,s){ if(!_extraBoosterGroups[i]||!s)return; const g=_extraBoosterGroups[i];
+  g.dry=parseFloat(s.dry)||0; g.prop=parseFloat(s.prop)||0; g.thrust=parseFloat(s.thrust)||0; g.isp=parseFloat(s.isp)||1; g.res=s.res!=null?s.res:2; g.name=s.name||g.name; _bgRefresh(); }
 // Booster parallel-staging mode: 'independent' | 'crossfeed' | 'throttle'. The throttle %
 // row is only shown for 'throttle'. Triggers a recompute of the composition preview.
 function setBoosterMode(mode){
@@ -3027,6 +3074,9 @@ function loadPreset(p,key){
     document.getElementById('num-boosters').value=bd.count||0;
     if(typeof applyBoosterModeUI==='function')applyBoosterModeUI(bd);
   }
+  _extraBoosterGroups = Array.isArray(p.boosterGroups) ? p.boosterGroups.slice(1).map(g=>({...g})) : [];
+  if(typeof renderExtraBoosterGroups==='function') renderExtraBoosterGroups();
+  if(typeof buildStageComposition==='function') buildStageComposition();
   if(p.payload!==undefined)document.getElementById('payload-mass').value=p.payload;
   if(p.fairingMass!==undefined)document.getElementById('fairing-mass').value=p.fairingMass;
   if(p.site){document.getElementById('site-lat').value=p.site.lat??28.5;document.getElementById('az-min').value=p.site.azMin??37;document.getElementById('az-max').value=p.site.azMax??112;matchSiteFromFields();}
@@ -3243,10 +3293,18 @@ function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
 //    so low-thrust upper stages aren't over-charged for gravity/drag losses.
 function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, onOrbitDV, siteLat, azMin, azMax){
   const n=stages.length;
+  // boosters: accept a single legacy group OR an array of groups (multiple kinds + air-lit).
+  // each group: {dry,prop,thrust,isp,res,count, parallelMode, coreThrottle, ignition}
+  //   ignition: 'ground' (T-0) | {after:i} (light when group i burns out) | {atTime:s}
+  const _groups = Array.isArray(booster) ? booster.filter(Boolean) : (booster ? [booster] : []);
   const Vcirc=circVel(parkingAlt), Vrot=rotVel(siteLat,azMin,azMax), Hp=parkingAlt;
   const K3=429.9+1.602*Hp+1.224e-3*Hp*Hp, K4=2.328-9.687e-4*Hp;
-  let tThr=(stages[0]?stages[0].thrust:0)*1000;
-  if(booster)tThr+=booster.thrust*1000*booster.count;
+  // liftoff throttle: if a ground-lit booster group throttles the first stage from T-0, the
+  // first stage's liftoff thrust is reduced accordingly (so launch T:W reflects the throttle).
+  let liftoffF=1;
+  _groups.forEach(g=>{ if((g.ignition||'ground')==='ground' && g.parallelMode==='throttle'){ const cf=Math.min(1,Math.max(0.1,g.coreThrottle||1)); if(cf<liftoffF) liftoffF=cf; } });
+  let tThr=(stages[0]?stages[0].thrust:0)*1000*liftoffF;
+  _groups.forEach(g=>{ if((g.ignition||'ground')==='ground') tThr+=g.thrust*1000*(g.count||1); });  // ground-lit boosters at full
   const spM=new Array(n).fill(0); let abv=pay;
   for(let s=n-1;s>=0;s--){spM[s]=abv+((fairingJ>0&&s<fairingJ)?fairingMass:0);abv+=stages[s].dry+stages[s].prop;}
   const sDVs=[],sBTs=[]; let tDV=0,tBT=0;
@@ -3257,41 +3315,57 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
     const dv=rocketEq(sd.isp,m0,mf),mflow=(sd.thrust*1000)/(G0*sd.isp),bt=mflow>0?up/mflow:0;
     sDVs.push(dv);sBTs.push(bt);tDV+=dv;tBT+=bt;
   }
-  if(booster){
-    const nB=booster.count,s1=stages[0],pa0=spM[0];
-    // Parallel-staging mode (default 'independent' = legacy behaviour):
-    //  independent — boosters burn their own prop; core burns its own at full thrust.
-    //  throttle    — first stage throttled to fraction f during the boost phase (Falcon-Heavy
-    //                tricore): less first-stage prop spent in parallel, so more remains for phase B.
-    //  crossfeed   — boosters feed the first stage (UR-700 asparagus): boosters drain faster and
-    //                the first stage reaches staging with FULL tanks → much better phase-B mass ratio.
-    const mode=booster.parallelMode||'independent';
-    const f=(mode==='throttle')?Math.min(1,Math.max(0.1,booster.coreThrottle||1)):1;
-    const upB=booster.prop*(1-(booster.res||0)/100)*nB,upS1=s1.prop*(1-(s1.res||0)/100);
-    const mBW=(booster.dry+booster.prop)*nB,m0c=s1.dry+s1.prop+mBW+pa0;
-    const mfB=booster.thrust*1000*nB,mfS1=s1.thrust*1000;
-    const mdotB=mfB/G0/booster.isp, mdotC=mfS1/G0/s1.isp;   // mass flow at full throttle
-    let btB,mfc,ieffA,rs1;   // phase-A (parallel) burn time, end mass, eff. Isp, core prop left
-    if(mode==='crossfeed'){
-      btB=upB/(mdotB+mdotC);              // booster tanks feed booster + core engines
-      mfc=m0c-upB;                        // only booster prop spent; core untouched
-      ieffA=(mfB+mfS1)/((mdotB+mdotC)*G0);
-      rs1=upS1;                           // first stage reaches staging with full tanks
-    } else {
-      const mdotCa=f*mdotC;               // f<1 throttles the first stage during the boost phase
-      btB=upB/mdotB;
-      const pc1=Math.min(mdotCa*btB,upS1);
-      mfc=m0c-upB-pc1;
-      ieffA=(mfB+f*mfS1)/((mdotB+mdotCa)*G0);
-      rs1=upS1-pc1;
+  if(_groups.length){
+    // Event-driven parallel-ascent integrator for the first stage + every booster group.
+    // Generalises the old single-group boost phase: between events the active engine set is
+    // fixed, so ΔV over each interval is one rocket-equation step at the blended Isp. Per-group
+    // parallelMode is honoured — 'crossfeed' feeds the first stage (its tanks preserved),
+    // 'throttle' throttles the first stage while that group burns. Groups ignite at T-0
+    // ('ground'), when a predecessor burns out ({after:i}), or at {atTime:s}. Spent groups drop.
+    // Reduces EXACTLY to the old block for a single ground-lit group (validated).
+    const s1=stages[0], pa0=spM[0];
+    const mfS1=s1.thrust*1000, mdotC0=mfS1/G0/s1.isp;
+    const G=_groups.map((g,i)=>{ const nn=g.count||1; const md=g.parallelMode||'independent';
+      return { i, mode:md, f:(md==='throttle')?Math.min(1,Math.max(0.1,g.coreThrottle||1)):1,
+        thr:g.thrust*1000*nn, mdot:(g.thrust*1000*nn)/G0/g.isp, prop:g.prop*(1-(g.res||0)/100)*nn,
+        dryDrop:g.dry*nn, ign:g.ignition||'ground',
+        status:((g.ignition||'ground')==='ground')?'active':'pending' }; });
+    let coreProp=s1.prop*(1-(s1.res||0)/100);
+    let m=s1.dry+s1.prop+pa0+_groups.reduce((a,g)=>a+(g.dry+g.prop)*(g.count||1),0);
+    let dv0=0,t0=0,guard=0;
+    while(guard++<500){
+      const act=G.filter(g=>g.status==='active'&&g.prop>1e-6);
+      const xf=act.filter(g=>g.mode==='crossfeed'), thg=act.filter(g=>g.mode==='throttle');
+      const f=thg.length?Math.min(...thg.map(g=>g.f)):1;
+      const coreActive=coreProp>1e-6;
+      const coreMdot=coreActive?f*mdotC0:0, coreThr=coreActive?f*mfS1:0;
+      const coreFed=coreActive&&xf.length>0, coreTankDrain=coreFed?0:coreMdot;
+      const per=(coreFed&&xf.length)?coreMdot/xf.length:0;
+      act.forEach(g=>{ g._drain=g.mdot+(g.mode==='crossfeed'?per:0); });
+      const massOut=coreMdot+act.reduce((a,g)=>a+g.mdot,0);   // total propellant leaving the vehicle
+      const totThr=coreThr+act.reduce((a,g)=>a+g.thr,0);
+      if(massOut<=1e-9)break;
+      let dt=Infinity,ev=null;
+      if(!coreFed&&coreActive&&coreTankDrain>0){ const te=coreProp/coreTankDrain; if(te<dt){dt=te;ev=['coreEmpty',null];} }
+      act.forEach(g=>{ const te=g.prop/g._drain; if(te<dt){dt=te;ev=['groupEmpty',g];} });
+      G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.atTime!=null){ const tt=g.ign.atTime-t0; if(tt>1e-9&&tt<dt){dt=tt;ev=['ignite',g];} } });
+      if(!isFinite(dt)||dt<=0)break;
+      const ieff=totThr/(massOut*G0), mEnd=m-massOut*dt;
+      dv0+=ieff*G0*Math.log(m/Math.max(mEnd,1)); m=mEnd; t0+=dt;
+      if(!coreFed&&coreActive)coreProp-=coreTankDrain*dt;
+      act.forEach(g=>g.prop-=g._drain*dt);
+      if(ev&&ev[0]==='groupEmpty'){ ev[1].status='spent'; ev[1].prop=0; m-=ev[1].dryDrop;
+        G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.after===ev[1].i)g.status='active'; }); }
+      else if(ev&&ev[0]==='ignite')ev[1].status='active';
+      else if(ev&&ev[0]==='coreEmpty')coreProp=0;
+      G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.atTime!=null&&t0>=g.ign.atTime-1e-9)g.status='active'; });
+      const anyActive=G.some(g=>g.status==='active'&&g.prop>1e-6);
+      if(coreProp<=1e-6&&!anyActive)break;
     }
-    const dvbp=rocketEq(ieffA,m0c,mfc);
-    const m0s1a=mfc-booster.dry*nB,mfs1a=Math.max(m0s1a-rs1,s1.dry+pa0);
-    const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mdotC,0.001);
-    sDVs[0]=dvbp+dvs1a;sBTs[0]=btB+bts1a;
+    sDVs[0]=dv0;sBTs[0]=t0;
     tDV=sDVs.reduce((a,b)=>a+b,0);tBT=sBTs.reduce((a,b)=>a+b,0);
   }
-  const tMas=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingMass+(booster?(booster.dry+booster.prop)*booster.count:0);
+  const tMas=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingMass+_groups.reduce((a,g)=>a+(g.dry+g.prop)*(g.count||1),0);
   const A0=tThr/Math.max(tMas,1);
   const avgIsp=sBTs.reduce((a,bt,i)=>a+stages[i].isp*bt,0)/Math.max(tBT,1);
   const T3s=3*(1-Math.exp(-0.333*Vcirc/(G0*avgIsp)))*G0*avgIsp/Math.max(A0,0.01);
@@ -3327,6 +3401,18 @@ function boosterModeFromDOM(){
   return {parallelMode:mode, coreThrottle:(isFinite(thr)?thr/100:0.57)};
 }
 
+// The full booster-group list for lvPerformance/lvMaxPayload: the primary group (the booster
+// inputs, always ground-lit) + any additional groups in _extraBoosterGroups. [] when off.
+function lvBoosterGroups(){
+  if(!useBooster) return [];
+  const g0={ dry:gv('b_dry'), prop:gv('b_prop'), thrust:gv('b_thrust'),
+    isp:parseFloat(document.getElementById('b_isp')?.value)||1, res:gv('b_res'),
+    count:parseInt(document.getElementById('num-boosters')?.value)||0, ignition:'ground',
+    ...boosterModeFromDOM() };
+  const extra=(typeof _extraBoosterGroups!=='undefined'&&Array.isArray(_extraBoosterGroups))?_extraBoosterGroups:[];
+  return [g0, ...extra.map(g=>({...g}))];
+}
+
 function collectVehicle(){
   saveStoreFromDOM();
   const stages=[];
@@ -3337,8 +3423,9 @@ function collectVehicle(){
     if(sd.s15){st.s15=true;st.s15_sust_thrust=sd.s15_sust_thrust||0;st.s15_sust_isp=sd.s15_sust_isp||0;st.s15_jet_mass=sd.s15_jet_mass||0;st.s15_beco_twr=sd.s15_beco_twr||1.2;}
     stages.push(st);
   }
-  const booster=useBooster?{dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()}:null;
-  return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
+  const groups=lvBoosterGroups();
+  const booster=groups[0]||null;   // primary group, kept as a single object for back-compat
+  return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,boosterGroups:(groups.length>1?groups:null),payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
 }
 
 // ─── STAGE-AND-A-HALF ─────────────────────────
@@ -3512,6 +3599,8 @@ function calculate(){
       booster={dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()};
       if(booster.count<1){panel.innerHTML='<div class="error-msg">// ERROR: Set booster count > 0.</div>';return;}
     }
+    // full booster-group list (primary + any additional / air-lit groups) for the shared math
+    const boosterArg = useBooster ? lvBoosterGroups() : null;
 
     let parkingAlt,onOrbitDV=0,modeLabel;
 
@@ -3559,26 +3648,25 @@ function calculate(){
     const Vcirc=circVel(parkingAlt),Vrot=rotVel(siteLat,azMin,azMax);
     const Hp=parkingAlt;
     const K3=429.9+1.602*Hp+1.224e-3*Hp*Hp,K4=2.328-9.687e-4*Hp;
-    let tThr=stages[0].thrust*1000;
-    if(useBooster&&booster)tThr+=booster.thrust*1000*booster.count;
 
     // Delegates to the shared lvPerformance() so the LV calculator and the Program
     // section compute launch performance from the SAME math (incl. the corrected Ta).
+    // A0 = liftoff thrust / total mass (ground-lit boosters only) → TWR = A0/G0.
     function evalAtPayload(pay){
-      const r=lvPerformance(stages,(useBooster&&booster)?booster:null,pay,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
-      return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
+      const r=lvPerformance(stages,boosterArg,pay,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
+      return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,A0_:r.A0,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
     }
 
     const r0=evalAtPayload(0);
     // shared max-payload search (same code the Program uses)
-    const maxPay=lvMaxPayload(stages,(useBooster&&booster)?booster:null,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
+    const maxPay=lvMaxPayload(stages,boosterArg,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
 
     const res=evalAtPayload(maxPay);
     const stageDVs=res.sDVs,stageBTs=res.sBTs;
     const totDV=res.tDV,totBT=res.tBT;
     const DVpen=res.DVpen_,DVasc=res.DVasc_,DVtot=res.DVtot_,DVmarg=res.margin_,Tmix=res.Tmix_,tMas=res.tMas_;
     const feasible=r0.margin_>=-50;
-    const TWR=tThr/(tMas*G0);
+    const TWR=res.A0_/G0;   // liftoff T:W from the shared math (all ground-lit boosters + core)
 
     lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime:res.Ta_,Tmix,stageDVs:[...stageDVs],destMode,boosterMode:(useBooster&&booster)?{mode:booster.parallelMode,thr:booster.coreThrottle}:null,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
     const _spb2=document.getElementById('save-case-btn');if(_spb2)_spb2.disabled=false;
@@ -3713,6 +3801,10 @@ function applyLVObject(obj){
     setBoosters(obj.boosters||false);
     if(obj.boosters&&obj.boosterData){const bd=obj.boosterData;['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});document.getElementById('num-boosters').value=bd.count||0;applyBoosterModeUI(bd);}
   }
+  // additional booster groups (Group 2+); boosterGroups[0] is the primary loaded above
+  _extraBoosterGroups = Array.isArray(obj.boosterGroups) ? obj.boosterGroups.slice(1).map(g=>({...g})) : [];
+  if(typeof renderExtraBoosterGroups==='function') renderExtraBoosterGroups();
+  if(typeof buildStageComposition==='function') buildStageComposition();
   if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
   if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;
   if(obj.site){document.getElementById('site-lat').value=obj.site.lat??28.5;document.getElementById('az-min').value=obj.site.azMin??37;document.getElementById('az-max').value=obj.site.azMax??112;matchSiteFromFields();}
@@ -7088,8 +7180,9 @@ function buildStageComposition(){
   const cntEl=document.getElementById('comp-stage-count');
   if(cntEl){const total=numStages+(useBooster?1:0);cntEl.textContent=total===1?'1 stage':total+' stages';}
 
-  function makeCompCard(label,stageName,dry,prop,thrust,isp,stageIdx,isBooster){
-    const saved=isBooster?boosterSaved:(stageIdx>=0?stageSaved[stageIdx]:false);
+  function makeCompCard(label,stageName,dry,prop,thrust,isp,stageIdx,isBooster,extraIdx){
+    const isExtra = extraIdx!=null;   // an additional booster group (Group 2+)
+    const saved=isExtra?false:(isBooster?boosterSaved:(stageIdx>=0?stageSaved[stageIdx]:false));
     const wrap=document.createElement('div');
     wrap.style.cssText='display:flex;flex-direction:column;';
     const lbl=document.createElement('div');
@@ -7107,6 +7200,7 @@ function buildStageComposition(){
       e.preventDefault();card.classList.remove('drop-hover');
       if(!_draggingStage)return;
       if(_draggingStage._isVehicle){loadPreset(_draggingStage._preset,'builtin_'+BUILTIN_PRESETS.indexOf(_draggingStage._preset));}
+      else if(isExtra){if(typeof applyBoosterDataToGroup==='function')applyBoosterDataToGroup(extraIdx,_draggingStage);}
       else if(isBooster){applyBoosterData(_draggingStage);}
       else{applyStageData(stageIdx,_draggingStage);}
     });
@@ -7125,16 +7219,19 @@ function buildStageComposition(){
       badge.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';
       nameEl.appendChild(badge);
     }
-    // Crossfeed / center-throttle badge (booster only)
+    // Crossfeed / center-throttle badge (booster only) + air-lit indicator for extra groups
     if(isBooster){
-      const pm=document.getElementById('b_parallel_mode')?.value||'independent';
+      const grp=isExtra?(_extraBoosterGroups[extraIdx]||{}):null;
+      const pm=isExtra?(grp.parallelMode||'independent'):(document.getElementById('b_parallel_mode')?.value||'independent');
+      const mkBadge=(txt,title)=>{const b=document.createElement('span');b.textContent=txt;b.title=title;b.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';nameEl.appendChild(b);};
       if(pm!=='independent'){
-        const thr=Math.round(parseFloat(document.getElementById('b_core_throttle')?.value)||57);
-        const badge=document.createElement('span');
-        badge.textContent = pm==='crossfeed' ? 'XFEED' : (thr+'%');
-        badge.title = pm==='crossfeed' ? 'Crossfeed — boosters feed first stage' : ('First stage throttled to '+thr+'% during boost');
-        badge.style.cssText='font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(136,198,87,.12);border:1px solid var(--accent);border-radius:2px;padding:1px 4px;flex-shrink:0;letter-spacing:0;';
-        nameEl.appendChild(badge);
+        const thr=Math.round((isExtra?((grp.coreThrottle!=null?grp.coreThrottle:0.57)*100):(parseFloat(document.getElementById('b_core_throttle')?.value)||57)));
+        mkBadge(pm==='crossfeed'?'XFEED':(thr+'%'), pm==='crossfeed'?'Crossfeed — boosters feed first stage':('First stage throttled to '+thr+'% during boost'));
+      }
+      // ignition badge for air-lit extra groups
+      if(isExtra && grp.ignition && grp.ignition!=='ground'){
+        if(grp.ignition.atTime!=null) mkBadge('T+'+grp.ignition.atTime+'s','Air-lit at T+'+grp.ignition.atTime+'s');
+        else if(grp.ignition.after!=null) mkBadge('AIR','Air-lit — ignites after Group '+(grp.ignition.after+1)+' burns out');
       }
     }
     card.appendChild(nameEl);
@@ -7154,8 +7251,19 @@ function buildStageComposition(){
     editBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1a3 3 0 0 0-2.9 3.7L1 8.3A1.1 1.1 0 1 0 2.7 10l3.6-3.6A3 3 0 1 0 7.5 1z"/><circle cx="7.5" cy="4" r="1" fill="currentColor" stroke="none"/></svg>';
     editBtn.addEventListener('mouseenter',()=>editBtn.style.color='var(--accent2)');
     editBtn.addEventListener('mouseleave',()=>editBtn.style.color='');
-    editBtn.addEventListener('click',e=>{e.stopPropagation();openEditStageModal(stageIdx,isBooster);});
+    editBtn.addEventListener('click',e=>{e.stopPropagation();openEditStageModal(stageIdx,isBooster,extraIdx);});
     row.appendChild(editBtn);
+    // Right column: a REMOVE button for extra booster groups, else the Save/saved control
+    if(isExtra){
+      const rm=document.createElement('div');
+      rm.style.cssText='width:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-left:none;cursor:pointer;color:var(--text-dim);flex-shrink:0;transition:color .15s;';
+      rm.innerHTML='<span style="font-size:11px;line-height:1;">&#x2715;</span>';
+      rm.title='Remove this booster group';
+      rm.addEventListener('mouseenter',()=>rm.style.color='var(--error,#e06c75)');
+      rm.addEventListener('mouseleave',()=>rm.style.color='var(--text-dim)');
+      rm.addEventListener('click',e=>{e.stopPropagation();if(typeof boosterGroupRemove==='function')boosterGroupRemove(extraIdx);});
+      row.appendChild(rm); wrap.appendChild(row); return wrap;
+    }
     // Save button / saved dot
     const saveBtn=document.createElement('div');
     saveBtn.style.cssText=`width:32px;display:flex;align-items:center;justify-content:center;
@@ -7188,6 +7296,23 @@ function buildStageComposition(){
       parseFloat(document.getElementById('b_isp')?.value)||0,
       null,true
     ));
+    // additional booster groups (Group 2+) as cards
+    (_extraBoosterGroups||[]).forEach((g,i)=>{
+      body.appendChild(makeCompCard(
+        `Booster Grp ${i+2} ×${g.count||1}`,
+        g.name||('Booster Group '+(i+2)),
+        g.dry||0, g.prop||0, g.thrust||0, g.isp||0,
+        null,true,i
+      ));
+    });
+    // "+ Add booster group" affordance (visible right here in the composition view)
+    const addBg=document.createElement('button');
+    addBg.className='act-btn';
+    addBg.textContent='+ Add Booster Group';
+    addBg.title='Add another kind of strap-on (optionally air-lit after another group)';
+    addBg.style.cssText='margin:2px 0 6px;font-size:10px;align-self:flex-start;';
+    addBg.onclick=()=>{ if(typeof boosterGroupAdd==='function')boosterGroupAdd(); };
+    body.appendChild(addBg);
   }
 
   for(let s=0;s<numStages;s++){
@@ -7494,11 +7619,17 @@ function openVehicleModal(p){
 // ─── STAGE EDIT (WRENCH) ──────────────────────
 let _editSlot=null; // {stageIdx, isBooster}
 
-function openEditStageModal(stageIdx,isBooster){
-  _editSlot={stageIdx,isBooster};
+function openEditStageModal(stageIdx,isBooster,extraIdx){
+  _editSlot={stageIdx,isBooster,extraIdx:(extraIdx!=null?extraIdx:null)};
   // Get current values
   let dry,prop,thrust,isp,res,engines='',note='',tags=[],name='',cat='Upper Stages',isB=false;
-  if(isBooster){
+  if(extraIdx!=null){
+    // editing an additional booster group (Group 2+)
+    const g=_extraBoosterGroups[extraIdx]||{};
+    dry=g.dry||0;prop=g.prop||0;thrust=g.thrust||0;isp=g.isp||0;res=g.res!=null?g.res:2;
+    name=g.name||('Booster Group '+(extraIdx+2));
+    isB=true; cat='Side Boosters';
+  } else if(isBooster){
     dry=document.getElementById('b_dry')?.value||0;
     prop=document.getElementById('b_prop')?.value||0;
     thrust=document.getElementById('b_thrust')?.value||0;
@@ -7538,22 +7669,41 @@ function openEditStageModal(stageIdx,isBooster){
   document.getElementById('add-stage-save-btn').style.display='none';
   document.getElementById('edit-stage-save-btn').style.display='';
   document.getElementById('stg-base').value='';
-  document.querySelector('#modal-add-stage .modal-title').textContent='Edit Stage';
+  document.querySelector('#modal-add-stage .modal-title').textContent = (extraIdx!=null) ? 'Edit Booster Group' : 'Edit Stage';
 
   // S1.5 section — only meaningful for real stage slots (not boosters)
   const s15Sec = document.getElementById('stg-s15-section');
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
 
-  // Parallel-staging section — only for the strap-on BOOSTER (crossfeed / center-throttle).
-  // This is the counterpart to S1.5: it describes how the booster group interacts with the first stage.
+  // Parallel-staging section — for any strap-on BOOSTER (primary or extra group).
   const pSec = document.getElementById('stg-parallel-section');
   if (pSec) pSec.style.display = isBooster ? '' : 'none';
   if (pSec && isBooster) {
-    const pm  = document.getElementById('b_parallel_mode')?.value || 'independent';
-    const thr = document.getElementById('b_core_throttle')?.value || 57;
+    const eg = (extraIdx!=null) ? (_extraBoosterGroups[extraIdx]||{}) : null;
+    const pm  = eg ? (eg.parallelMode || 'independent') : (document.getElementById('b_parallel_mode')?.value || 'independent');
+    const thr = eg ? Math.round((eg.coreThrottle!=null?eg.coreThrottle:0.57)*100) : (document.getElementById('b_core_throttle')?.value || 57);
     const sel = document.getElementById('stg-parallel-mode'); if (sel) sel.value = pm;
     const tin = document.getElementById('stg-throttle');      if (tin) tin.value = thr;
     _stgParallelToggle(pm);
+  }
+
+  // Booster-group section — count + ignition + remove (only for additional groups)
+  const bgSec = document.getElementById('stg-bgroup-section');
+  if (bgSec) bgSec.style.display = (extraIdx!=null) ? '' : 'none';
+  if (bgSec && extraIdx!=null) {
+    const g = _extraBoosterGroups[extraIdx] || {};
+    document.getElementById('stg-bg-count').value = g.count || 2;
+    const ign = g.ignition || 'ground';
+    const kind = (ign==='ground') ? 'ground' : ((ign && ign.atTime!=null) ? 'time' : 'after');
+    document.getElementById('stg-bg-ign').value = kind;
+    // "after" options: groups before this one (Group 1 .. Group extraIdx+1)
+    const afterSel = document.getElementById('stg-bg-after');
+    if (afterSel) {
+      const cur = (ign && ign.after!=null) ? ign.after : 0;
+      afterSel.innerHTML = Array.from({length: extraIdx+1}, (_,k) => `<option value="${k}"${k===cur?' selected':''}>Group ${k+1}</option>`).join('');
+    }
+    document.getElementById('stg-bg-time').value = (ign && ign.atTime!=null) ? ign.atTime : 60;
+    _stgBgIgnToggle(kind);
   }
   // s15 (stage-and-a-half) markup is optional — only populate it when present,
   // otherwise getElementById(...).checked throws and the modal never opens.
@@ -7582,6 +7732,19 @@ function _stgParallelToggle(mode) {
   const w = document.getElementById('stg-throttle-wrap');
   if (w) w.style.display = (mode === 'throttle') ? '' : 'none';
 }
+// Toggle the "after group" / "T+ time" inputs in the booster-group ignition control.
+function _stgBgIgnToggle(kind) {
+  const a = document.getElementById('stg-bg-after-wrap'), t = document.getElementById('stg-bg-time-wrap');
+  if (a) a.style.display = (kind === 'after') ? '' : 'none';
+  if (t) t.style.display = (kind === 'time')  ? '' : 'none';
+}
+// Remove the additional booster group currently open in the editor.
+function _stgBgRemove() {
+  if (!_editSlot || _editSlot.extraIdx == null) return;
+  const i = _editSlot.extraIdx; _editSlot = null;
+  closeModal('modal-add-stage');
+  if (typeof boosterGroupRemove === 'function') boosterGroupRemove(i);
+}
 
 /** Live BECO split preview shown inside the edit modal. stageIdx is unused but kept for back-compat. */
 function _s15UpdatePreview(_stageIdx) {
@@ -7608,7 +7771,7 @@ function _s15UpdatePreview(_stageIdx) {
 
 function doEditStage(){
   if(!_editSlot)return;
-  const {stageIdx,isBooster}=_editSlot;
+  const {stageIdx,isBooster,extraIdx}=_editSlot;
   const name=document.getElementById('stg-name').value.trim();
   const dry=parseFloat(document.getElementById('stg-dry').value)||0;
   const prop=parseFloat(document.getElementById('stg-prop').value)||0;
@@ -7620,6 +7783,24 @@ function doEditStage(){
   const tags=document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const cat=document.getElementById('stg-category').value;
 
+  if(extraIdx!=null){
+    // Update an additional booster group (Group 2+)
+    const g=_extraBoosterGroups[extraIdx]; if(!g){_editSlot=null;closeModal('modal-add-stage');return;}
+    Object.assign(g,{name,dry,prop,thrust,isp,res,count:Math.max(1,parseInt(document.getElementById('stg-bg-count')?.value)||g.count||1)});
+    const pm=document.getElementById('stg-parallel-mode')?.value||'independent';
+    g.parallelMode=pm;
+    if(pm==='throttle'){ const pt=parseFloat(document.getElementById('stg-throttle')?.value); g.coreThrottle=isFinite(pt)?Math.min(1,Math.max(0.1,pt/100)):0.57; }
+    // ignition
+    const kind=document.getElementById('stg-bg-ign')?.value||'ground';
+    if(kind==='ground') g.ignition='ground';
+    else if(kind==='after') g.ignition={after:Math.max(0,parseInt(document.getElementById('stg-bg-after')?.value)||0)};
+    else g.ignition={atTime:Math.max(0,parseFloat(document.getElementById('stg-bg-time')?.value)||0)};
+    _editSlot=null; closeModal('modal-add-stage');
+    if(typeof renderExtraBoosterGroups==='function')renderExtraBoosterGroups();
+    if(typeof markLVUserDefined==='function')markLVUserDefined();
+    buildStageComposition();
+    return;
+  }
   if(isBooster){
     // Update booster fields
     ['dry','prop','thrust','isp','res'].forEach(k=>{
@@ -10005,6 +10186,7 @@ function _fleetClonePreset(p) {
     stageData: p.stageData.map(s => ({ ...s })),
     boosterName: p.boosterName || null,
     boosterData: p.boosterData ? { ...p.boosterData } : null,
+    boosterGroups: Array.isArray(p.boosterGroups) ? p.boosterGroups.map(g => ({ ...g })) : null,
     payloads: [],
   };
 }
@@ -10107,6 +10289,7 @@ function _fleetVehicleSpecFromLib(source, idx) {
     stageData:   stageData.map(_fleetStageCopy),
     boosterName: p.boosterName || null,
     boosterData: boosterData || null,
+    boosterGroups: Array.isArray(p.boosterGroups) ? p.boosterGroups.map(g => ({ ...g })) : null,
   };
 }
 
@@ -10136,6 +10319,7 @@ function fleetSwapVehicle(fleetId, source, idx) {
   e.stageData   = spec.stageData;
   e.boosterName = spec.boosterName;
   e.boosterData = spec.boosterData;
+  e.boosterGroups = spec.boosterGroups || null;
   fleetRender();
 }
 
@@ -10332,6 +10516,7 @@ function fleetSnapshotCurrent() {
       const b = document.getElementById('b_dry');
       return b ? { dry: parseFloat(document.getElementById('b_dry').value)||0, prop: parseFloat(document.getElementById('b_prop').value)||0, isp: parseFloat(document.getElementById('b_isp').value)||1, thrust: parseFloat(document.getElementById('b_thrust').value)||0, res: parseFloat(document.getElementById('b_res').value)||0, count: parseInt(document.getElementById('num-boosters').value)||0, ...(typeof boosterModeFromDOM==='function'?boosterModeFromDOM():{}) } : null;
     })() : null,
+    boosterGroups: (typeof useBooster !== 'undefined' && useBooster && typeof lvBoosterGroups === 'function') ? (() => { const g = lvBoosterGroups(); return g.length > 1 ? g : null; })() : null,
     payloads: [],
   };
   _fleetEntries.push(entry);
@@ -10357,6 +10542,7 @@ function fleetLoadJSON(input) {
         stageData: stages.map(_fleetStageCopy),
         boosterName: obj.boosterName || null,
         boosterData: obj.boosterData || null,
+        boosterGroups: Array.isArray(obj.boosterGroups) ? obj.boosterGroups : null,
         payloads: Array.isArray(obj.payloads) ? obj.payloads : [],
       };
       _fleetEntries.push(entry);
@@ -11127,7 +11313,7 @@ function _missionApplyLaunch(m, e) {
   // ΔV (perf.sDVs, boosters folded into stage 0) + ascent requirement, then map that
   // onto the live vehicle. Other bodies use the simpler circular-velocity estimate.
   const perf = (launchOrbit.body === 'Earth' && typeof lvPerformance === 'function' && entry.stageData && entry.stageData.length)
-    ? lvPerformance(entry.stageData, entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    ? lvPerformance(entry.stageData, entry.boosterGroups || entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
     : null;
   const dvRequired = perf ? perf.DVasc : _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
   let dvRemaining = dvRequired;
@@ -11193,7 +11379,7 @@ function _missionApplyLaunch(m, e) {
   // its ΔV margin, and max payload is its binary search (lvMaxPayload), so the
   // program reports exactly what the calculator would for this vehicle + orbit.
   const maxPayload = perf
-    ? lvMaxPayload(entry.stageData, entry.boosterData || null, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    ? lvMaxPayload(entry.stageData, entry.boosterGroups || entry.boosterData || null, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
     : null;
   const ok = perf ? (perf.margin >= 0) : (dvRemaining <= 0);
   const stagingResult = {

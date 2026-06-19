@@ -2,11 +2,17 @@
 // ─── STAGE EDIT (WRENCH) ──────────────────────
 let _editSlot=null; // {stageIdx, isBooster}
 
-function openEditStageModal(stageIdx,isBooster){
-  _editSlot={stageIdx,isBooster};
+function openEditStageModal(stageIdx,isBooster,extraIdx){
+  _editSlot={stageIdx,isBooster,extraIdx:(extraIdx!=null?extraIdx:null)};
   // Get current values
   let dry,prop,thrust,isp,res,engines='',note='',tags=[],name='',cat='Upper Stages',isB=false;
-  if(isBooster){
+  if(extraIdx!=null){
+    // editing an additional booster group (Group 2+)
+    const g=_extraBoosterGroups[extraIdx]||{};
+    dry=g.dry||0;prop=g.prop||0;thrust=g.thrust||0;isp=g.isp||0;res=g.res!=null?g.res:2;
+    name=g.name||('Booster Group '+(extraIdx+2));
+    isB=true; cat='Side Boosters';
+  } else if(isBooster){
     dry=document.getElementById('b_dry')?.value||0;
     prop=document.getElementById('b_prop')?.value||0;
     thrust=document.getElementById('b_thrust')?.value||0;
@@ -46,22 +52,41 @@ function openEditStageModal(stageIdx,isBooster){
   document.getElementById('add-stage-save-btn').style.display='none';
   document.getElementById('edit-stage-save-btn').style.display='';
   document.getElementById('stg-base').value='';
-  document.querySelector('#modal-add-stage .modal-title').textContent='Edit Stage';
+  document.querySelector('#modal-add-stage .modal-title').textContent = (extraIdx!=null) ? 'Edit Booster Group' : 'Edit Stage';
 
   // S1.5 section — only meaningful for real stage slots (not boosters)
   const s15Sec = document.getElementById('stg-s15-section');
   if (s15Sec) s15Sec.style.display = isBooster ? 'none' : '';
 
-  // Parallel-staging section — only for the strap-on BOOSTER (crossfeed / center-throttle).
-  // This is the counterpart to S1.5: it describes how the booster group interacts with the first stage.
+  // Parallel-staging section — for any strap-on BOOSTER (primary or extra group).
   const pSec = document.getElementById('stg-parallel-section');
   if (pSec) pSec.style.display = isBooster ? '' : 'none';
   if (pSec && isBooster) {
-    const pm  = document.getElementById('b_parallel_mode')?.value || 'independent';
-    const thr = document.getElementById('b_core_throttle')?.value || 57;
+    const eg = (extraIdx!=null) ? (_extraBoosterGroups[extraIdx]||{}) : null;
+    const pm  = eg ? (eg.parallelMode || 'independent') : (document.getElementById('b_parallel_mode')?.value || 'independent');
+    const thr = eg ? Math.round((eg.coreThrottle!=null?eg.coreThrottle:0.57)*100) : (document.getElementById('b_core_throttle')?.value || 57);
     const sel = document.getElementById('stg-parallel-mode'); if (sel) sel.value = pm;
     const tin = document.getElementById('stg-throttle');      if (tin) tin.value = thr;
     _stgParallelToggle(pm);
+  }
+
+  // Booster-group section — count + ignition + remove (only for additional groups)
+  const bgSec = document.getElementById('stg-bgroup-section');
+  if (bgSec) bgSec.style.display = (extraIdx!=null) ? '' : 'none';
+  if (bgSec && extraIdx!=null) {
+    const g = _extraBoosterGroups[extraIdx] || {};
+    document.getElementById('stg-bg-count').value = g.count || 2;
+    const ign = g.ignition || 'ground';
+    const kind = (ign==='ground') ? 'ground' : ((ign && ign.atTime!=null) ? 'time' : 'after');
+    document.getElementById('stg-bg-ign').value = kind;
+    // "after" options: groups before this one (Group 1 .. Group extraIdx+1)
+    const afterSel = document.getElementById('stg-bg-after');
+    if (afterSel) {
+      const cur = (ign && ign.after!=null) ? ign.after : 0;
+      afterSel.innerHTML = Array.from({length: extraIdx+1}, (_,k) => `<option value="${k}"${k===cur?' selected':''}>Group ${k+1}</option>`).join('');
+    }
+    document.getElementById('stg-bg-time').value = (ign && ign.atTime!=null) ? ign.atTime : 60;
+    _stgBgIgnToggle(kind);
   }
   // s15 (stage-and-a-half) markup is optional — only populate it when present,
   // otherwise getElementById(...).checked throws and the modal never opens.
@@ -90,6 +115,19 @@ function _stgParallelToggle(mode) {
   const w = document.getElementById('stg-throttle-wrap');
   if (w) w.style.display = (mode === 'throttle') ? '' : 'none';
 }
+// Toggle the "after group" / "T+ time" inputs in the booster-group ignition control.
+function _stgBgIgnToggle(kind) {
+  const a = document.getElementById('stg-bg-after-wrap'), t = document.getElementById('stg-bg-time-wrap');
+  if (a) a.style.display = (kind === 'after') ? '' : 'none';
+  if (t) t.style.display = (kind === 'time')  ? '' : 'none';
+}
+// Remove the additional booster group currently open in the editor.
+function _stgBgRemove() {
+  if (!_editSlot || _editSlot.extraIdx == null) return;
+  const i = _editSlot.extraIdx; _editSlot = null;
+  closeModal('modal-add-stage');
+  if (typeof boosterGroupRemove === 'function') boosterGroupRemove(i);
+}
 
 /** Live BECO split preview shown inside the edit modal. stageIdx is unused but kept for back-compat. */
 function _s15UpdatePreview(_stageIdx) {
@@ -116,7 +154,7 @@ function _s15UpdatePreview(_stageIdx) {
 
 function doEditStage(){
   if(!_editSlot)return;
-  const {stageIdx,isBooster}=_editSlot;
+  const {stageIdx,isBooster,extraIdx}=_editSlot;
   const name=document.getElementById('stg-name').value.trim();
   const dry=parseFloat(document.getElementById('stg-dry').value)||0;
   const prop=parseFloat(document.getElementById('stg-prop').value)||0;
@@ -128,6 +166,24 @@ function doEditStage(){
   const tags=document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const cat=document.getElementById('stg-category').value;
 
+  if(extraIdx!=null){
+    // Update an additional booster group (Group 2+)
+    const g=_extraBoosterGroups[extraIdx]; if(!g){_editSlot=null;closeModal('modal-add-stage');return;}
+    Object.assign(g,{name,dry,prop,thrust,isp,res,count:Math.max(1,parseInt(document.getElementById('stg-bg-count')?.value)||g.count||1)});
+    const pm=document.getElementById('stg-parallel-mode')?.value||'independent';
+    g.parallelMode=pm;
+    if(pm==='throttle'){ const pt=parseFloat(document.getElementById('stg-throttle')?.value); g.coreThrottle=isFinite(pt)?Math.min(1,Math.max(0.1,pt/100)):0.57; }
+    // ignition
+    const kind=document.getElementById('stg-bg-ign')?.value||'ground';
+    if(kind==='ground') g.ignition='ground';
+    else if(kind==='after') g.ignition={after:Math.max(0,parseInt(document.getElementById('stg-bg-after')?.value)||0)};
+    else g.ignition={atTime:Math.max(0,parseFloat(document.getElementById('stg-bg-time')?.value)||0)};
+    _editSlot=null; closeModal('modal-add-stage');
+    if(typeof renderExtraBoosterGroups==='function')renderExtraBoosterGroups();
+    if(typeof markLVUserDefined==='function')markLVUserDefined();
+    buildStageComposition();
+    return;
+  }
   if(isBooster){
     // Update booster fields
     ['dry','prop','thrust','isp','res'].forEach(k=>{

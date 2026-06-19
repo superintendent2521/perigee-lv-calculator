@@ -145,6 +145,9 @@ function loadPreset(p,key){
     document.getElementById('num-boosters').value=bd.count||0;
     if(typeof applyBoosterModeUI==='function')applyBoosterModeUI(bd);
   }
+  _extraBoosterGroups = Array.isArray(p.boosterGroups) ? p.boosterGroups.slice(1).map(g=>({...g})) : [];
+  if(typeof renderExtraBoosterGroups==='function') renderExtraBoosterGroups();
+  if(typeof buildStageComposition==='function') buildStageComposition();
   if(p.payload!==undefined)document.getElementById('payload-mass').value=p.payload;
   if(p.fairingMass!==undefined)document.getElementById('fairing-mass').value=p.fairingMass;
   if(p.site){document.getElementById('site-lat').value=p.site.lat??28.5;document.getElementById('az-min').value=p.site.azMin??37;document.getElementById('az-max').value=p.site.azMax??112;matchSiteFromFields();}

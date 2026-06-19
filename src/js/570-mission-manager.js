@@ -550,7 +550,7 @@ function _missionApplyLaunch(m, e) {
   // ΔV (perf.sDVs, boosters folded into stage 0) + ascent requirement, then map that
   // onto the live vehicle. Other bodies use the simpler circular-velocity estimate.
   const perf = (launchOrbit.body === 'Earth' && typeof lvPerformance === 'function' && entry.stageData && entry.stageData.length)
-    ? lvPerformance(entry.stageData, entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    ? lvPerformance(entry.stageData, entry.boosterGroups || entry.boosterData || null, payloadMass, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
     : null;
   const dvRequired = perf ? perf.DVasc : _missionDvToOrbit(launchOrbit.body, launchOrbit.alt_km);
   let dvRemaining = dvRequired;
@@ -616,7 +616,7 @@ function _missionApplyLaunch(m, e) {
   // its ΔV margin, and max payload is its binary search (lvMaxPayload), so the
   // program reports exactly what the calculator would for this vehicle + orbit.
   const maxPayload = perf
-    ? lvMaxPayload(entry.stageData, entry.boosterData || null, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
+    ? lvMaxPayload(entry.stageData, entry.boosterGroups || entry.boosterData || null, entry.fairingMass || 0, 0, launchOrbit.alt_km, 0, 28.5, 37, 112)
     : null;
   const ok = perf ? (perf.margin >= 0) : (dvRemaining <= 0);
   const stagingResult = {

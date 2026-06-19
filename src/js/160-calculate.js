@@ -15,6 +15,8 @@ function calculate(){
       booster={dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()};
       if(booster.count<1){panel.innerHTML='<div class="error-msg">// ERROR: Set booster count > 0.</div>';return;}
     }
+    // full booster-group list (primary + any additional / air-lit groups) for the shared math
+    const boosterArg = useBooster ? lvBoosterGroups() : null;
 
     let parkingAlt,onOrbitDV=0,modeLabel;
 
@@ -62,26 +64,25 @@ function calculate(){
     const Vcirc=circVel(parkingAlt),Vrot=rotVel(siteLat,azMin,azMax);
     const Hp=parkingAlt;
     const K3=429.9+1.602*Hp+1.224e-3*Hp*Hp,K4=2.328-9.687e-4*Hp;
-    let tThr=stages[0].thrust*1000;
-    if(useBooster&&booster)tThr+=booster.thrust*1000*booster.count;
 
     // Delegates to the shared lvPerformance() so the LV calculator and the Program
     // section compute launch performance from the SAME math (incl. the corrected Ta).
+    // A0 = liftoff thrust / total mass (ground-lit boosters only) → TWR = A0/G0.
     function evalAtPayload(pay){
-      const r=lvPerformance(stages,(useBooster&&booster)?booster:null,pay,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
-      return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
+      const r=lvPerformance(stages,boosterArg,pay,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
+      return{sDVs:r.sDVs,sBTs:r.sBTs,tDV:r.tDV,tBT:r.tBT,Ta_:r.Ta,tMas_:r.tMas,A0_:r.A0,Tmix_:r.Tmix,DVpen_:r.DVpen,DVasc_:r.DVasc,DVtot_:r.DVtot,margin_:r.margin};
     }
 
     const r0=evalAtPayload(0);
     // shared max-payload search (same code the Program uses)
-    const maxPay=lvMaxPayload(stages,(useBooster&&booster)?booster:null,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
+    const maxPay=lvMaxPayload(stages,boosterArg,fairingM,fairingJ,parkingAlt,onOrbitDV,siteLat,azMin,azMax);
 
     const res=evalAtPayload(maxPay);
     const stageDVs=res.sDVs,stageBTs=res.sBTs;
     const totDV=res.tDV,totBT=res.tBT;
     const DVpen=res.DVpen_,DVasc=res.DVasc_,DVtot=res.DVtot_,DVmarg=res.margin_,Tmix=res.Tmix_,tMas=res.tMas_;
     const feasible=r0.margin_>=-50;
-    const TWR=tThr/(tMas*G0);
+    const TWR=res.A0_/G0;   // liftoff T:W from the shared math (all ground-lit boosters + core)
 
     lastResult={modeLabel,maxPayload:maxPay,feasible,totalDV:totDV,DVasc,onOrbitDV,DVtot,DVmarg,DVpen,Vrot,TWR,totBT,ascentTime:res.Ta_,Tmix,stageDVs:[...stageDVs],destMode,boosterMode:(useBooster&&booster)?{mode:booster.parallelMode,thr:booster.coreThrottle}:null,orbitParams:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination'),parkingAlt}:{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}};
     const _spb2=document.getElementById('save-case-btn');if(_spb2)_spb2.disabled=false;

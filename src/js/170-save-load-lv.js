@@ -85,6 +85,10 @@ function applyLVObject(obj){
     setBoosters(obj.boosters||false);
     if(obj.boosters&&obj.boosterData){const bd=obj.boosterData;['dry','prop','thrust','isp','res'].forEach(k=>{const el=document.getElementById(`b_${k}`);if(el)el.value=bd[k]??0;});document.getElementById('num-boosters').value=bd.count||0;applyBoosterModeUI(bd);}
   }
+  // additional booster groups (Group 2+); boosterGroups[0] is the primary loaded above
+  _extraBoosterGroups = Array.isArray(obj.boosterGroups) ? obj.boosterGroups.slice(1).map(g=>({...g})) : [];
+  if(typeof renderExtraBoosterGroups==='function') renderExtraBoosterGroups();
+  if(typeof buildStageComposition==='function') buildStageComposition();
   if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
   if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;
   if(obj.site){document.getElementById('site-lat').value=obj.site.lat??28.5;document.getElementById('az-min').value=obj.site.azMin??37;document.getElementById('az-max').value=obj.site.azMax??112;matchSiteFromFields();}

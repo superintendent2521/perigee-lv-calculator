@@ -39,6 +39,7 @@ function _fleetClonePreset(p) {
     stageData: p.stageData.map(s => ({ ...s })),
     boosterName: p.boosterName || null,
     boosterData: p.boosterData ? { ...p.boosterData } : null,
+    boosterGroups: Array.isArray(p.boosterGroups) ? p.boosterGroups.map(g => ({ ...g })) : null,
     payloads: [],
   };
 }
@@ -141,6 +142,7 @@ function _fleetVehicleSpecFromLib(source, idx) {
     stageData:   stageData.map(_fleetStageCopy),
     boosterName: p.boosterName || null,
     boosterData: boosterData || null,
+    boosterGroups: Array.isArray(p.boosterGroups) ? p.boosterGroups.map(g => ({ ...g })) : null,
   };
 }
 
@@ -170,6 +172,7 @@ function fleetSwapVehicle(fleetId, source, idx) {
   e.stageData   = spec.stageData;
   e.boosterName = spec.boosterName;
   e.boosterData = spec.boosterData;
+  e.boosterGroups = spec.boosterGroups || null;
   fleetRender();
 }
 
@@ -366,6 +369,7 @@ function fleetSnapshotCurrent() {
       const b = document.getElementById('b_dry');
       return b ? { dry: parseFloat(document.getElementById('b_dry').value)||0, prop: parseFloat(document.getElementById('b_prop').value)||0, isp: parseFloat(document.getElementById('b_isp').value)||1, thrust: parseFloat(document.getElementById('b_thrust').value)||0, res: parseFloat(document.getElementById('b_res').value)||0, count: parseInt(document.getElementById('num-boosters').value)||0, ...(typeof boosterModeFromDOM==='function'?boosterModeFromDOM():{}) } : null;
     })() : null,
+    boosterGroups: (typeof useBooster !== 'undefined' && useBooster && typeof lvBoosterGroups === 'function') ? (() => { const g = lvBoosterGroups(); return g.length > 1 ? g : null; })() : null,
     payloads: [],
   };
   _fleetEntries.push(entry);
@@ -391,6 +395,7 @@ function fleetLoadJSON(input) {
         stageData: stages.map(_fleetStageCopy),
         boosterName: obj.boosterName || null,
         boosterData: obj.boosterData || null,
+        boosterGroups: Array.isArray(obj.boosterGroups) ? obj.boosterGroups : null,
         payloads: Array.isArray(obj.payloads) ? obj.payloads : [],
       };
       _fleetEntries.push(entry);

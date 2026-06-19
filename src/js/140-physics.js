@@ -17,10 +17,18 @@ function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
 //    so low-thrust upper stages aren't over-charged for gravity/drag losses.
 function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, onOrbitDV, siteLat, azMin, azMax){
   const n=stages.length;
+  // boosters: accept a single legacy group OR an array of groups (multiple kinds + air-lit).
+  // each group: {dry,prop,thrust,isp,res,count, parallelMode, coreThrottle, ignition}
+  //   ignition: 'ground' (T-0) | {after:i} (light when group i burns out) | {atTime:s}
+  const _groups = Array.isArray(booster) ? booster.filter(Boolean) : (booster ? [booster] : []);
   const Vcirc=circVel(parkingAlt), Vrot=rotVel(siteLat,azMin,azMax), Hp=parkingAlt;
   const K3=429.9+1.602*Hp+1.224e-3*Hp*Hp, K4=2.328-9.687e-4*Hp;
-  let tThr=(stages[0]?stages[0].thrust:0)*1000;
-  if(booster)tThr+=booster.thrust*1000*booster.count;
+  // liftoff throttle: if a ground-lit booster group throttles the first stage from T-0, the
+  // first stage's liftoff thrust is reduced accordingly (so launch T:W reflects the throttle).
+  let liftoffF=1;
+  _groups.forEach(g=>{ if((g.ignition||'ground')==='ground' && g.parallelMode==='throttle'){ const cf=Math.min(1,Math.max(0.1,g.coreThrottle||1)); if(cf<liftoffF) liftoffF=cf; } });
+  let tThr=(stages[0]?stages[0].thrust:0)*1000*liftoffF;
+  _groups.forEach(g=>{ if((g.ignition||'ground')==='ground') tThr+=g.thrust*1000*(g.count||1); });  // ground-lit boosters at full
   const spM=new Array(n).fill(0); let abv=pay;
   for(let s=n-1;s>=0;s--){spM[s]=abv+((fairingJ>0&&s<fairingJ)?fairingMass:0);abv+=stages[s].dry+stages[s].prop;}
   const sDVs=[],sBTs=[]; let tDV=0,tBT=0;
@@ -31,41 +39,57 @@ function lvPerformance(stages, booster, pay, fairingMass, fairingJ, parkingAlt, 
     const dv=rocketEq(sd.isp,m0,mf),mflow=(sd.thrust*1000)/(G0*sd.isp),bt=mflow>0?up/mflow:0;
     sDVs.push(dv);sBTs.push(bt);tDV+=dv;tBT+=bt;
   }
-  if(booster){
-    const nB=booster.count,s1=stages[0],pa0=spM[0];
-    // Parallel-staging mode (default 'independent' = legacy behaviour):
-    //  independent — boosters burn their own prop; core burns its own at full thrust.
-    //  throttle    — first stage throttled to fraction f during the boost phase (Falcon-Heavy
-    //                tricore): less first-stage prop spent in parallel, so more remains for phase B.
-    //  crossfeed   — boosters feed the first stage (UR-700 asparagus): boosters drain faster and
-    //                the first stage reaches staging with FULL tanks → much better phase-B mass ratio.
-    const mode=booster.parallelMode||'independent';
-    const f=(mode==='throttle')?Math.min(1,Math.max(0.1,booster.coreThrottle||1)):1;
-    const upB=booster.prop*(1-(booster.res||0)/100)*nB,upS1=s1.prop*(1-(s1.res||0)/100);
-    const mBW=(booster.dry+booster.prop)*nB,m0c=s1.dry+s1.prop+mBW+pa0;
-    const mfB=booster.thrust*1000*nB,mfS1=s1.thrust*1000;
-    const mdotB=mfB/G0/booster.isp, mdotC=mfS1/G0/s1.isp;   // mass flow at full throttle
-    let btB,mfc,ieffA,rs1;   // phase-A (parallel) burn time, end mass, eff. Isp, core prop left
-    if(mode==='crossfeed'){
-      btB=upB/(mdotB+mdotC);              // booster tanks feed booster + core engines
-      mfc=m0c-upB;                        // only booster prop spent; core untouched
-      ieffA=(mfB+mfS1)/((mdotB+mdotC)*G0);
-      rs1=upS1;                           // first stage reaches staging with full tanks
-    } else {
-      const mdotCa=f*mdotC;               // f<1 throttles the first stage during the boost phase
-      btB=upB/mdotB;
-      const pc1=Math.min(mdotCa*btB,upS1);
-      mfc=m0c-upB-pc1;
-      ieffA=(mfB+f*mfS1)/((mdotB+mdotCa)*G0);
-      rs1=upS1-pc1;
+  if(_groups.length){
+    // Event-driven parallel-ascent integrator for the first stage + every booster group.
+    // Generalises the old single-group boost phase: between events the active engine set is
+    // fixed, so ΔV over each interval is one rocket-equation step at the blended Isp. Per-group
+    // parallelMode is honoured — 'crossfeed' feeds the first stage (its tanks preserved),
+    // 'throttle' throttles the first stage while that group burns. Groups ignite at T-0
+    // ('ground'), when a predecessor burns out ({after:i}), or at {atTime:s}. Spent groups drop.
+    // Reduces EXACTLY to the old block for a single ground-lit group (validated).
+    const s1=stages[0], pa0=spM[0];
+    const mfS1=s1.thrust*1000, mdotC0=mfS1/G0/s1.isp;
+    const G=_groups.map((g,i)=>{ const nn=g.count||1; const md=g.parallelMode||'independent';
+      return { i, mode:md, f:(md==='throttle')?Math.min(1,Math.max(0.1,g.coreThrottle||1)):1,
+        thr:g.thrust*1000*nn, mdot:(g.thrust*1000*nn)/G0/g.isp, prop:g.prop*(1-(g.res||0)/100)*nn,
+        dryDrop:g.dry*nn, ign:g.ignition||'ground',
+        status:((g.ignition||'ground')==='ground')?'active':'pending' }; });
+    let coreProp=s1.prop*(1-(s1.res||0)/100);
+    let m=s1.dry+s1.prop+pa0+_groups.reduce((a,g)=>a+(g.dry+g.prop)*(g.count||1),0);
+    let dv0=0,t0=0,guard=0;
+    while(guard++<500){
+      const act=G.filter(g=>g.status==='active'&&g.prop>1e-6);
+      const xf=act.filter(g=>g.mode==='crossfeed'), thg=act.filter(g=>g.mode==='throttle');
+      const f=thg.length?Math.min(...thg.map(g=>g.f)):1;
+      const coreActive=coreProp>1e-6;
+      const coreMdot=coreActive?f*mdotC0:0, coreThr=coreActive?f*mfS1:0;
+      const coreFed=coreActive&&xf.length>0, coreTankDrain=coreFed?0:coreMdot;
+      const per=(coreFed&&xf.length)?coreMdot/xf.length:0;
+      act.forEach(g=>{ g._drain=g.mdot+(g.mode==='crossfeed'?per:0); });
+      const massOut=coreMdot+act.reduce((a,g)=>a+g.mdot,0);   // total propellant leaving the vehicle
+      const totThr=coreThr+act.reduce((a,g)=>a+g.thr,0);
+      if(massOut<=1e-9)break;
+      let dt=Infinity,ev=null;
+      if(!coreFed&&coreActive&&coreTankDrain>0){ const te=coreProp/coreTankDrain; if(te<dt){dt=te;ev=['coreEmpty',null];} }
+      act.forEach(g=>{ const te=g.prop/g._drain; if(te<dt){dt=te;ev=['groupEmpty',g];} });
+      G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.atTime!=null){ const tt=g.ign.atTime-t0; if(tt>1e-9&&tt<dt){dt=tt;ev=['ignite',g];} } });
+      if(!isFinite(dt)||dt<=0)break;
+      const ieff=totThr/(massOut*G0), mEnd=m-massOut*dt;
+      dv0+=ieff*G0*Math.log(m/Math.max(mEnd,1)); m=mEnd; t0+=dt;
+      if(!coreFed&&coreActive)coreProp-=coreTankDrain*dt;
+      act.forEach(g=>g.prop-=g._drain*dt);
+      if(ev&&ev[0]==='groupEmpty'){ ev[1].status='spent'; ev[1].prop=0; m-=ev[1].dryDrop;
+        G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.after===ev[1].i)g.status='active'; }); }
+      else if(ev&&ev[0]==='ignite')ev[1].status='active';
+      else if(ev&&ev[0]==='coreEmpty')coreProp=0;
+      G.forEach(g=>{ if(g.status==='pending'&&g.ign&&g.ign.atTime!=null&&t0>=g.ign.atTime-1e-9)g.status='active'; });
+      const anyActive=G.some(g=>g.status==='active'&&g.prop>1e-6);
+      if(coreProp<=1e-6&&!anyActive)break;
     }
-    const dvbp=rocketEq(ieffA,m0c,mfc);
-    const m0s1a=mfc-booster.dry*nB,mfs1a=Math.max(m0s1a-rs1,s1.dry+pa0);
-    const dvs1a=rocketEq(s1.isp,m0s1a,mfs1a),bts1a=rs1/Math.max(mdotC,0.001);
-    sDVs[0]=dvbp+dvs1a;sBTs[0]=btB+bts1a;
+    sDVs[0]=dv0;sBTs[0]=t0;
     tDV=sDVs.reduce((a,b)=>a+b,0);tBT=sBTs.reduce((a,b)=>a+b,0);
   }
-  const tMas=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingMass+(booster?(booster.dry+booster.prop)*booster.count:0);
+  const tMas=stages.reduce((a,s)=>a+s.dry+s.prop,0)+pay+fairingMass+_groups.reduce((a,g)=>a+(g.dry+g.prop)*(g.count||1),0);
   const A0=tThr/Math.max(tMas,1);
   const avgIsp=sBTs.reduce((a,bt,i)=>a+stages[i].isp*bt,0)/Math.max(tBT,1);
   const T3s=3*(1-Math.exp(-0.333*Vcirc/(G0*avgIsp)))*G0*avgIsp/Math.max(A0,0.01);
@@ -101,6 +125,18 @@ function boosterModeFromDOM(){
   return {parallelMode:mode, coreThrottle:(isFinite(thr)?thr/100:0.57)};
 }
 
+// The full booster-group list for lvPerformance/lvMaxPayload: the primary group (the booster
+// inputs, always ground-lit) + any additional groups in _extraBoosterGroups. [] when off.
+function lvBoosterGroups(){
+  if(!useBooster) return [];
+  const g0={ dry:gv('b_dry'), prop:gv('b_prop'), thrust:gv('b_thrust'),
+    isp:parseFloat(document.getElementById('b_isp')?.value)||1, res:gv('b_res'),
+    count:parseInt(document.getElementById('num-boosters')?.value)||0, ignition:'ground',
+    ...boosterModeFromDOM() };
+  const extra=(typeof _extraBoosterGroups!=='undefined'&&Array.isArray(_extraBoosterGroups))?_extraBoosterGroups:[];
+  return [g0, ...extra.map(g=>({...g}))];
+}
+
 function collectVehicle(){
   saveStoreFromDOM();
   const stages=[];
@@ -111,6 +147,7 @@ function collectVehicle(){
     if(sd.s15){st.s15=true;st.s15_sust_thrust=sd.s15_sust_thrust||0;st.s15_sust_isp=sd.s15_sust_isp||0;st.s15_jet_mass=sd.s15_jet_mass||0;st.s15_beco_twr=sd.s15_beco_twr||1.2;}
     stages.push(st);
   }
-  const booster=useBooster?{dry:gv('b_dry'),prop:gv('b_prop'),thrust:gv('b_thrust'),isp:parseFloat(document.getElementById('b_isp').value)||1,res:gv('b_res'),count:parseInt(document.getElementById('num-boosters').value)||0,...boosterModeFromDOM()}:null;
-  return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
+  const groups=lvBoosterGroups();
+  const booster=groups[0]||null;   // primary group, kept as a single object for back-compat
+  return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,boosterGroups:(groups.length>1?groups:null),payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
 }
