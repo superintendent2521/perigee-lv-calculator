@@ -215,8 +215,10 @@ function libViewHome(){
     tiles.appendChild(t);
   });
   frag.appendChild(tiles);
-  const sl=document.createElement('div'); sl.className='sl'; sl.style.marginTop='4px'; sl.textContent='Recently added'; frag.appendChild(sl);
-  list.slice(-3).reverse().forEach(r=>frag.appendChild(libCardNode(r)));
+  // Full scrollable list of every vehicle — available up front, not tucked behind the tiles.
+  const sl=document.createElement('div'); sl.className='sl'; sl.style.marginTop='4px'; sl.textContent='All Vehicles'; frag.appendChild(sl);
+  frag.appendChild(libCountLine(list.length));
+  list.forEach(r=>frag.appendChild(libCardNode(r)));
   return frag;
 }
 function libViewDrill(){
