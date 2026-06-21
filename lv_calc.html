@@ -1046,6 +1046,64 @@ button,input,select,textarea{font-family:inherit;}
 .perigee-plug{font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--text-dim);text-decoration:none;white-space:nowrap;}
 .perigee-plug:hover{color:var(--accent);text-decoration:underline;}
 
+/* ── Library browser (220-library-browser.js, v2 merged redesign) ── */
+.lib-crumb{font-family:var(--mono);font-size:10px;color:var(--text-dim);display:flex;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.lib-crumb a{color:var(--accent);cursor:pointer;}
+.lib-crumb a:hover{text-decoration:underline;}
+.lib-crumb .here{color:var(--text-bright);}
+.lib-fchip{font-family:var(--mono);font-size:9px;border:1px solid var(--accent);color:var(--accent);background:rgba(0,200,255,.1);padding:2px 6px;display:inline-flex;gap:5px;align-items:center;}
+.lib-fchip .x{cursor:pointer;opacity:.7;}
+.lib-fchip .x:hover{opacity:1;}
+.lib-refine{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:6px 8px;border:1px solid var(--border);background:rgba(0,0,0,.18);}
+.lib-refine .lbl{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;}
+.lib-refine-opt{font-family:var(--mono);font-size:9px;color:var(--text-dim);border:1px solid var(--border-bright);padding:3px 9px;cursor:pointer;transition:all .12s;}
+.lib-refine-opt:hover{border-color:var(--accent);color:var(--accent);}
+.lib-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.lib-tile{border:1px solid var(--border-bright);padding:12px;cursor:pointer;transition:all .15s;background:rgba(255,255,255,.012);}
+.lib-tile:hover{border-color:var(--accent);background:rgba(0,200,255,.06);}
+.lib-tile-lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-bright);}
+.lib-tile-cnt{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:4px;}
+.lib-tile-ex{font-family:var(--mono);font-size:8px;color:var(--text-dim);margin-top:6px;line-height:1.5;opacity:.8;}
+.lib-vrow{border:1px solid var(--border);border-left:2px solid var(--border-bright);padding:9px 11px;margin-bottom:5px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:space-between;}
+.lib-vrow:hover{border-left-color:var(--accent);background:rgba(0,200,255,.05);}
+.lib-vrow-lbl{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--text-bright);}
+.lib-vrow-cnt{font-family:var(--mono);font-size:9px;color:var(--text-dim);border:1px solid var(--border);padding:1px 7px;}
+.lib-spotlight{border:1px solid var(--accent);background:linear-gradient(135deg,rgba(0,200,255,.10),rgba(0,200,255,.02));padding:10px 12px;margin-bottom:10px;position:relative;cursor:pointer;}
+.lib-spotlight-lbl{font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);}
+.lib-spotlight-name{font-family:var(--mono);font-weight:600;font-size:14px;letter-spacing:.02em;color:var(--text-bright);margin:4px 0;}
+.lib-spotlight-sub{font-family:var(--mono);font-size:9px;color:var(--text);}
+.lib-spotlight-reroll{position:absolute;top:9px;right:10px;font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border-bright);background:transparent;padding:3px 7px;cursor:pointer;letter-spacing:.08em;}
+.lib-spotlight-reroll:hover{color:var(--accent);border-color:var(--accent);}
+.lib-tagrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.lib-tagchip{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:1px 5px;cursor:pointer;transition:all .12s;}
+.lib-tagchip:hover{border-color:var(--accent);color:var(--accent);}
+.lib-count{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin:2px 0 8px;letter-spacing:.05em;}
+.lib-vcard{margin-bottom:6px;}
+.lib-vcard.active .stage-card-name{color:var(--accent);}
+.lib-vcard.user .stage-card-name,.stage-card.user .stage-card-name{color:var(--accent3);}
+/* stages mode: class tabs + propellant chips + side Filters panel */
+.lib-ctabs{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
+.lib-ctab{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border-bright);padding:5px 9px;cursor:pointer;transition:all .12s;}
+.lib-ctab:hover{color:var(--text-bright);}
+.lib-ctab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+.lib-ctab .n{opacity:.6;margin-left:4px;}
+.lib-filterbtn.on{border-color:var(--accent);color:var(--accent);}
+.lib-filterbtn.active{background:var(--border-bright);color:var(--text-bright);}
+.lib-pchips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
+.lib-pchip{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:2px 7px;cursor:pointer;transition:all .12s;}
+.lib-pchip:hover{border-color:var(--text-dim);color:var(--text-bright);}
+.lib-pchip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.08);}
+.lib-pchip.lib-clear{border-color:var(--accent2);color:var(--accent2);}
+.lib-filterpanel{border:1px solid var(--border);background:rgba(0,0,0,.18);padding:8px;margin-bottom:8px;}
+.lib-filtergrp{margin-bottom:8px;}
+.lib-filtergrp:last-child{margin-bottom:0;}
+.lib-filtergrp-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+/* cap the browser height → scrollable list (≈ the vehicle menu size) */
+#lib-browser-body{max-height:460px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
+#lib-browser-body::-webkit-scrollbar{width:8px;}
+#lib-browser-body::-webkit-scrollbar-thumb{background:var(--border-bright);}
+#lib-browser-body::-webkit-scrollbar-track{background:transparent;}
+
 </style>
 </head>
 <body>
@@ -1188,34 +1246,31 @@ button,input,select,textarea{font-family:inherit;}
     <!-- RIGHT: Stage Library, same height cap -->
     <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
       <div class="lib-toggle" onclick="toggleLibrary()">
-        <span class="sl" style="margin-bottom:0;flex:1;">Stage Library
+        <span class="sl" style="margin-bottom:0;flex:1;">Library
           <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
             <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
-              <b>Click</b> any stage card for full specifications.<br>
-              <b>Drag</b> a stage to the Stage Composition area or a column header in the Stage Parameters table to add it to your rocket.<br>
-              <b>Dragging a Preset Vehicle</b> replaces all stages at once.
+              Toggle <b>Vehicles ⇄ Stages</b>. Browse by Era / Origin / Propellant / Class, drill in, then refine. Search composes with your filters.<br>
+              <b>Click</b> a card for details · <b>Drag</b> a stage to the composition area, or a vehicle to load all stages at once.
             </span>
           </span>
         </span>
         <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
       </div>
       <div class="lib-body" id="lib-body">
-        <div style="display:flex;gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
-          <input class="lib-search" type="text" id="lib-search" placeholder="Search stages..." oninput="buildStageLibrary()" style="flex:1;min-width:120px;margin-bottom:0;">
-          <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="white-space:nowrap;">⊟ Filters</button>
-          <button class="act-btn green" onclick="openAddStageModal()" style="white-space:nowrap;">Make Stage</button>
-          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load Stage<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
+        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;">
+          <button class="active" onclick="libSetMode('veh')">▮ Vehicles</button>
+          <button onclick="libSetMode('stg')">▤ Stages</button>
         </div>
-        <div class="filter-bar" style="margin-bottom:4px;min-height:0;">
-          <div id="active-filter-chips"></div>
-          <button class="filter-toggle-btn" id="clear-filters-btn" onclick="clearAllFilters()" style="display:none;border-color:var(--accent2);color:var(--accent2);">Clear All</button>
-          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;margin-left:auto;">
-            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;buildStageLibrary();">
-            My Stages Only
+        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+          <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
+          <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
+          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
+          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;libRender();">
+            My Stuff
           </label>
         </div>
-        <div id="filter-panel" style="display:none;"></div>
-        <div id="lib-content"></div>
+        <div id="lib-browser-body"></div>
       </div>
     </div>
 
@@ -4015,6 +4070,92 @@ function saveTheme(){const t=getTheme(activeThemeKey);downloadJSON(t,(t.name||ac
 function loadThemeFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const t=JSON.parse(e.target.result);const key='custom_'+(t.name||'theme').replace(/\s+/g,'_').toLowerCase();customThemes[key]=t;rebuildThemeSelect();applyTheme(key);}catch(err){showAlert('Invalid theme JSON: '+err.message,'Invalid File');}};reader.readAsText(file);input.value='';}
 
 
+// ─── LIBRARY TAG SCHEMA ───────────────────────
+// Single source of truth for the 4 structured browse dimensions used by the
+// redesigned Vehicles-page library (see 220-library-browser.js).
+//   era · origin · prop · cls   (cls vocab differs vehicle vs stage)
+// LENIENT by design: nothing is forced. Values are resolved from any explicit
+// structured field (lib_era / lib_origin / lib_prop / lib_cls) first, then by
+// parsing the item's existing flat tags[] against the controlled vocab below
+// (which intentionally REUSES the legacy FILTER_TREE / VEHICLE_FILTER_TREE
+// strings so no data rewrite is needed), and finally falls back to 'Unspecified'.
+// All dimensions resolve to an ARRAY of values (an item can be e.g. both 1990s
+// and 2000s) — facet matching is includes() semantics.
+
+const LIB_DIMS = ['era','origin','prop','cls'];
+const LIB_DIMLBL = {era:'Era', origin:'Origin', prop:'Propellant', cls:'Class'};
+
+const LIB_VOCAB = {
+  era:    ['1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s+'],
+  origin: ['American','Soviet / Russian','European','Chinese','Other'],
+  prop:   [
+    'Liquid Oxygen / Liquid Hydrogen','Liquid Oxygen / Kerosene','Liquid Oxygen / Methane',
+    'Liquid Oxygen / Ethanol','Nitrogen Tetroxide / Aerozine-50','Nitrogen Tetroxide / UDMH',
+    'Inhibited Red Fuming Nitric Acid / UDMH','Liquid Fluorine / Hydrazine',
+    'Nitrogen Tetroxide / Aniline','Solid Propellant',
+  ],
+  // stage class = the legacy "Application" tag values (+ Sustainer for stage-and-a-half)
+  cls_stage:   ['Strap-on Booster','First Stage','Sustainer','Upper Stage','Kick Stage'],
+  // vehicle class = payload class (computeVehicleTags already emits one of these)
+  cls_vehicle: ['Nano (<50 kg)','Small (<1 t)','Medium (1–10 t)','Heavy (10–50 t)','Super Heavy (>50 t)'],
+};
+
+function libVocabFor(dim, mode){
+  if(dim==='cls') return mode==='veh' ? LIB_VOCAB.cls_vehicle : LIB_VOCAB.cls_stage;
+  return LIB_VOCAB[dim] || [];
+}
+
+// Resolve a dimension to its array of vocab values for one item.
+//   mode: 'veh' (BUILTIN_PRESETS / userLVs) | 'stg' (STAGE_LIBRARY / user stages)
+function libResolveTags(item, dim, mode){
+  if(!item) return ['Unspecified'];
+  const vocab = libVocabFor(dim, mode);
+  const out = new Set();
+  // 1 — explicit structured field (set by the editors, Phase 3)
+  const f = item['lib_'+dim];
+  if(Array.isArray(f)) f.forEach(v=>{ if(v) out.add(v); });
+  else if(typeof f==='string' && f) out.add(f);
+  // 2 — parse the flat tag list against the controlled vocab
+  const raw = (mode==='veh' && typeof computeVehicleTags==='function')
+    ? computeVehicleTags(item) : (item.tags || []);
+  raw.forEach(t=>{
+    if(t==='1990s-2000s'){ if(dim==='era'){ out.add('1990s'); out.add('2000s'); } return; }
+    if(vocab.includes(t)) out.add(t);
+  });
+  if(!out.size) return ['Unspecified'];
+  // sort by vocab order (chronological for era, etc.); unknowns last
+  return [...out].sort((a,b)=>{
+    const ia=vocab.indexOf(a), ib=vocab.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+}
+
+// All four dims for an item at once → {era:[],origin:[],prop:[],cls:[]}
+function libItemTags(item, mode){
+  const o={}; LIB_DIMS.forEach(d=>o[d]=libResolveTags(item,d,mode)); return o;
+}
+
+// ── Phase 1 verification: how cleanly do the built-ins resolve? ──
+// Call libTagCoverageReport() from the console; logs Unspecified counts per dim
+// so we can tune parsing (vocab strings) WITHOUT rewriting the library data.
+function libTagCoverageReport(){
+  const report=(label, list, mode)=>{
+    const tot=list.length, miss={era:0,origin:0,prop:0,cls:0}, missNames={era:[],origin:[],prop:[],cls:[]};
+    list.forEach(it=>LIB_DIMS.forEach(d=>{
+      if(libResolveTags(it,d,mode)[0]==='Unspecified'){ miss[d]++; if(missNames[d].length<8)missNames[d].push(it.name); }
+    }));
+    console.log(`%c${label} — ${tot} items`, 'color:#00c8ff;font-weight:bold');
+    LIB_DIMS.forEach(d=>console.log(
+      `  ${d.padEnd(7)}: ${tot-miss[d]}/${tot} tagged` + (miss[d]?`  · Unspecified: ${missNames[d].join(', ')}${miss[d]>missNames[d].length?'…':''}`:'')));
+  };
+  if(typeof BUILTIN_PRESETS!=='undefined') report('VEHICLES', BUILTIN_PRESETS, 'veh');
+  if(typeof STAGE_LIBRARY!=='undefined'){
+    const stg=[]; Object.values(STAGE_LIBRARY).forEach(a=>stg.push(...a));
+    report('STAGES', stg, 'stg');
+  }
+  return 'done';
+}
+
 // ─── STAGE LIBRARY ────────────────────────────
 const STAGE_LIBRARY={
   'Booster Stages':[
@@ -6330,6 +6471,301 @@ function initSiteMap(){
 }
 
 
+// ─── LIBRARY BROWSER (v2 merged design) ───────
+// Replaces the old flat buildStageLibrary / buildPresets rendering inside
+// #lib-body on the Vehicles page. Browse by taxonomy (205-tag-schema dims) →
+// drill into a value → refine with stacked facets → search composes with the
+// current scope. A "Spotlight" surfaces a random item on the home view.
+// Vehicles ⇄ Stages is the spine. Renders into #lib-browser-body; the toggle +
+// search box live in the static HTML and call libSetMode / libSearch.
+//
+// Reuses existing card factories & behaviors: stages → makeCard() (drag/click
+// already wired), vehicles → libMakeVehicleCard(). buildStageLibrary and
+// buildPresets are reassigned to libRender at the bottom so every existing
+// refresh call-site keeps working.
+
+let _libMode='veh', _libQ='', _libFacets={}, _libBrowseDim=null, _libSpot=null;
+// Stages use a class-first layout (S-C): class tabs + propellant chips + a side
+// Filters button (era/origin) — NOT the vehicle taxonomy tiles.
+let _libStageCat='all', _libStageProp='all', _libStageEra=null, _libStageOrigin=null, _libStageFilterOpen=false;
+const LIB_PROP_SHORT={
+  'Liquid Oxygen / Liquid Hydrogen':'LOX/LH2','Liquid Oxygen / Kerosene':'LOX/RP-1',
+  'Liquid Oxygen / Methane':'LOX/CH4','Liquid Oxygen / Ethanol':'LOX/Eth',
+  'Nitrogen Tetroxide / Aerozine-50':'N2O4/A-50','Nitrogen Tetroxide / UDMH':'N2O4/UDMH',
+  'Inhibited Red Fuming Nitric Acid / UDMH':'IRFNA/UDMH','Liquid Fluorine / Hydrazine':'LF2/N2H4',
+  'Nitrogen Tetroxide / Aniline':'N2O4/Aniline','Solid Propellant':'Solid',
+};
+function libPropShort(p){return LIB_PROP_SHORT[p]||p;}
+function libStageShort(c){return {'Booster Stages':'Booster','Side Boosters':'Side','Upper Stages':'Upper','Kick Stages':'Kick'}[c]||c;}
+
+// ── data accessors ──
+function libList(){
+  if(_libMode==='veh'){
+    let a=BUILTIN_PRESETS.map((p,i)=>({item:p,key:'builtin_'+i,user:false}));
+    if(typeof userLVs!=='undefined') a=a.concat(userLVs.map((p,i)=>({item:p,key:'user_'+i,user:true})));
+    return a;
+  }
+  const a=[];
+  Object.entries(STAGE_LIBRARY).forEach(([cat,arr])=>arr.forEach(s=>a.push({item:s,cat,user:false})));
+  if(typeof userStagesByCategory!=='undefined')
+    Object.entries(userStagesByCategory).forEach(([cat,arr])=>arr.forEach(s=>a.push({item:s,cat,user:true})));
+  return a;
+}
+function libMatchFacets(rec){
+  return Object.entries(_libFacets).every(([dim,val])=>libResolveTags(rec.item,dim,_libMode).includes(val));
+}
+function libSubset(){
+  let l=libList();
+  if(typeof showUserOnly!=='undefined' && showUserOnly) l=l.filter(r=>r.user);
+  return l.filter(libMatchFacets);
+}
+function libSearchStr(rec){
+  const it=rec.item;
+  return ((it.name||'')+' '+(it.note||'')+' '+((it.stageNames||[]).join(' '))+' '+
+    (it.vehicle||'')+' '+(it.engines||'')+' '+((it.tags||[]).join(' '))).toLowerCase();
+}
+
+// ── card nodes (reuse existing factories, append a clickable tag row) ──
+function libMakeVehicleCard(p,key,isUser){
+  const card=document.createElement('div');
+  card.className='stage-card lib-vcard'+(isUser?' user':'')+(activePresetKey===key?' active':'');
+  card.draggable=true; card.style.width='100%';
+  const sub=(p.stageNames||[]).join(' + ') || (p.note? p.note.slice(0,70)+(p.note.length>70?'…':'') : '');
+  card.innerHTML=`<div class="stage-card-name" title="${(p.name||'').replace(/"/g,'&quot;')}">${p.name||'Unnamed LV'}</div>`+
+    (sub?`<div class="stage-card-mini" style="white-space:normal;line-height:1.4;">${sub}</div>`:'');
+  card.addEventListener('dragstart',e=>{
+    _didDrag=true; _draggingStage={_isVehicle:true,_preset:p,name:p.name};
+    e.dataTransfer.setData('text/plain',JSON.stringify({_isVehicle:true,name:p.name}));
+    e.dataTransfer.effectAllowed='copy'; setTimeout(()=>card.classList.add('dragging'),0);
+  });
+  card.addEventListener('dragend',()=>{card.classList.remove('dragging');_draggingStage=null;setTimeout(()=>{_didDrag=false;},80);});
+  card.addEventListener('click',e=>{
+    e.stopPropagation(); if(_didDrag)return;
+    // user LVs load directly (same as old preset list); built-ins open the detail modal
+    if(isUser) loadPreset(p,key); else if(typeof openVehicleModal==='function') openVehicleModal(p); else loadPreset(p,key);
+  });
+  return card;
+}
+function libTagRow(item){
+  const row=document.createElement('div'); row.className='lib-tagrow';
+  ['era','origin','cls'].forEach(dim=>{               // prop omitted (already in card subtitle)
+    libResolveTags(item,dim,_libMode).forEach(v=>{
+      if(v==='Unspecified')return;
+      const t=document.createElement('span'); t.className='lib-tagchip'; t.textContent=v; t.title='Refine by '+v;
+      t.onclick=e=>{e.stopPropagation();libAddFacet(dim,v);};
+      row.appendChild(t);
+    });
+  });
+  return row;
+}
+function libCardNode(rec){
+  let card;
+  if(_libMode==='veh'){ card=libMakeVehicleCard(rec.item,rec.key,rec.user); }
+  else {
+    const onDel = rec.user ? ()=>{
+      const arr=userStagesByCategory[rec.cat]; if(arr){ const i=arr.indexOf(rec.item); if(i>=0)arr.splice(i,1); if(!arr.length)delete userStagesByCategory[rec.cat]; }
+      libRender();
+    } : null;
+    card=makeCard(rec.item,rec.cat,onDel); card.style.width='100%';
+  }
+  card.appendChild(libTagRow(rec.item));
+  return card;
+}
+
+// ── chrome builders ──
+function libCrumb(){
+  const c=document.createElement('div'); c.className='lib-crumb';
+  const sep=()=>{const s=document.createElement('span');s.textContent='›';s.style.cssText='opacity:.5;margin:0 4px;';return s;};
+  const home=document.createElement('a'); home.textContent='All '+(_libMode==='veh'?'Vehicles':'Stages'); home.onclick=libHome; c.appendChild(home);
+  Object.entries(_libFacets).forEach(([dim,val])=>{
+    c.appendChild(sep());
+    const chip=document.createElement('span'); chip.className='lib-fchip'; chip.textContent=val;
+    const x=document.createElement('span'); x.className='x'; x.textContent='✕'; x.onclick=()=>libDelFacet(dim); chip.appendChild(x);
+    c.appendChild(chip);
+  });
+  if(_libBrowseDim){ c.appendChild(sep()); const h=document.createElement('span'); h.className='here'; h.textContent=LIB_DIMLBL[_libBrowseDim]+'?'; c.appendChild(h); }
+  return c;
+}
+function libRefineBar(){
+  const remaining=LIB_DIMS.filter(d=>!(d in _libFacets));
+  if(!remaining.length) return document.createTextNode('');
+  const bar=document.createElement('div'); bar.className='lib-refine';
+  const lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent='REFINE'; bar.appendChild(lbl);
+  remaining.forEach(d=>{const b=document.createElement('span'); b.className='lib-refine-opt'; b.textContent=LIB_DIMLBL[d]+' ▾'; b.onclick=()=>libOpenDim(d); bar.appendChild(b);});
+  return bar;
+}
+function libCountLine(n){const d=document.createElement('div'); d.className='lib-count'; d.textContent=`// ${n} ${_libMode==='veh'?'vehicles':'stages'}`; return d;}
+
+// ── views ──
+// Reusable spotlight (shown on the vehicle home AND the stage view).
+function libSpotlightNode(){
+  if(!_libSpot) libReroll(true);
+  if(!_libSpot) return null;
+  const it=_libSpot.item;
+  const sub=_libMode==='veh' ? ((it.stageNames||[]).join(' + ')||it.note||'') : `from ${it.vehicle||'—'} · ${it.thrust||'?'} kN · ${it.isp||'?'} s`;
+  const cls=_libMode==='stg' ? (libResolveTags(it,'cls','stg').filter(v=>v!=='Unspecified')[0]||'') : '';
+  const sp=document.createElement('div'); sp.className='lib-spotlight';
+  sp.innerHTML=`<div class="lib-spotlight-lbl">Spotlight${cls?' · '+cls:''}</div><div class="lib-spotlight-name">${it.name||''}</div><div class="lib-spotlight-sub">${sub}</div>`;
+  const rr=document.createElement('button'); rr.className='lib-spotlight-reroll'; rr.textContent='⟳ discover'; rr.onclick=e=>{e.stopPropagation();libReroll();}; sp.appendChild(rr);
+  sp.onclick=()=>{ if(_libMode==='veh'){ _libSpot.user?loadPreset(it,_libSpot.key):(openVehicleModal&&openVehicleModal(it)); } else if(typeof openStageModal==='function'){ openStageModal(it); } };
+  return sp;
+}
+
+// ── STAGES view (class-first: class tabs + propellant chips + side Filters) ──
+function libStageCats(){
+  const cats=Object.keys(STAGE_LIBRARY);
+  if(typeof userStagesByCategory!=='undefined') Object.keys(userStagesByCategory).forEach(c=>{ if(!cats.includes(c))cats.push(c); });
+  return cats;
+}
+function libStageItems(){
+  let l=libList();
+  if(typeof showUserOnly!=='undefined'&&showUserOnly) l=l.filter(r=>r.user);
+  if(_libStageCat!=='all') l=l.filter(r=>r.cat===_libStageCat);
+  if(_libStageProp!=='all') l=l.filter(r=>libResolveTags(r.item,'prop','stg').includes(_libStageProp));
+  if(_libStageEra) l=l.filter(r=>libResolveTags(r.item,'era','stg').includes(_libStageEra));
+  if(_libStageOrigin) l=l.filter(r=>libResolveTags(r.item,'origin','stg').includes(_libStageOrigin));
+  if(_libQ) l=l.filter(r=>libSearchStr(r).includes(_libQ));
+  return l;
+}
+function libViewStages(){
+  const frag=document.createDocumentFragment();
+  if(!_libQ){ const sp=libSpotlightNode(); if(sp)frag.appendChild(sp); }
+  const all=libList();
+  // class tabs + side Filters button
+  const tabs=document.createElement('div'); tabs.className='lib-ctabs';
+  const mkTab=(c,label,n)=>{const t=document.createElement('span'); t.className='lib-ctab'+(_libStageCat===c?' active':''); t.innerHTML=label+(n!=null?` <span class="n">${n}</span>`:''); t.onclick=()=>libStageSetCat(c); return t;};
+  tabs.appendChild(mkTab('all','All',all.length));
+  libStageCats().forEach(c=>{ const n=all.filter(r=>r.cat===c).length; tabs.appendChild(mkTab(c,libStageShort(c),n)); });
+  const nf=(_libStageEra?1:0)+(_libStageOrigin?1:0);
+  const fbtn=document.createElement('span'); fbtn.className='lib-ctab lib-filterbtn'+(nf?' on':'')+(_libStageFilterOpen?' active':''); fbtn.style.marginLeft='auto';
+  fbtn.textContent='⊟ Filters'+(nf?` (${nf})`:''); fbtn.onclick=libStageToggleFilters; tabs.appendChild(fbtn);
+  frag.appendChild(tabs);
+  // propellant chips (within current class)
+  const propVals=new Set();
+  all.filter(r=>_libStageCat==='all'||r.cat===_libStageCat).forEach(r=>libResolveTags(r.item,'prop','stg').forEach(v=>{if(v!=='Unspecified')propVals.add(v);}));
+  const pc=document.createElement('div'); pc.className='lib-pchips';
+  const mkP=(p,label)=>{const c=document.createElement('span'); c.className='lib-pchip'+(_libStageProp===p?' active':''); c.textContent=label; c.onclick=()=>libStageSetProp(p); return c;};
+  pc.appendChild(mkP('all','all propellants')); [...propVals].forEach(p=>pc.appendChild(mkP(p,libPropShort(p))));
+  frag.appendChild(pc);
+  // expandable Filters panel (era + origin — "filter through everything")
+  if(_libStageFilterOpen){
+    const panel=document.createElement('div'); panel.className='lib-filterpanel';
+    ['era','origin'].forEach(dim=>{
+      const vals=new Set();
+      all.filter(r=>_libStageCat==='all'||r.cat===_libStageCat).forEach(r=>libResolveTags(r.item,dim,'stg').forEach(v=>{if(v!=='Unspecified')vals.add(v);}));
+      if(!vals.size)return;
+      const grp=document.createElement('div'); grp.className='lib-filtergrp';
+      const lbl=document.createElement('div'); lbl.className='lib-filtergrp-lbl'; lbl.textContent=LIB_DIMLBL[dim]; grp.appendChild(lbl);
+      const wrap=document.createElement('div'); wrap.className='lib-pchips';
+      const cur=dim==='era'?_libStageEra:_libStageOrigin;
+      [...vals].forEach(v=>{const c=document.createElement('span'); c.className='lib-pchip'+(cur===v?' active':''); c.textContent=v; c.onclick=()=>libStageSetDim(dim,v); wrap.appendChild(c);});
+      grp.appendChild(wrap); panel.appendChild(grp);
+    });
+    if(nf){ const clr=document.createElement('span'); clr.className='lib-pchip lib-clear'; clr.textContent='✕ clear filters'; clr.onclick=()=>{_libStageEra=null;_libStageOrigin=null;libRender();}; panel.appendChild(clr); }
+    frag.appendChild(panel);
+  }
+  const items=libStageItems();
+  frag.appendChild(libCountLine(items.length));
+  items.forEach(r=>frag.appendChild(libCardNode(r)));
+  return frag;
+}
+function libStageSetCat(c){_libStageCat=c;_libStageProp='all';libRender();}
+function libStageSetProp(p){_libStageProp=p;libRender();}
+function libStageToggleFilters(){_libStageFilterOpen=!_libStageFilterOpen;libRender();}
+function libStageSetDim(dim,v){ if(dim==='era')_libStageEra=_libStageEra===v?null:v; else _libStageOrigin=_libStageOrigin===v?null:v; libRender(); }
+
+function libViewHome(){
+  const frag=document.createDocumentFragment();
+  const list=libList();
+  const sp=libSpotlightNode(); if(sp)frag.appendChild(sp);
+  const tiles=document.createElement('div'); tiles.className='lib-tiles';
+  LIB_DIMS.forEach(dim=>{
+    const vals=new Set(); list.forEach(r=>libResolveTags(r.item,dim,_libMode).forEach(v=>vals.add(v)));
+    const arr=[...vals].filter(v=>v!=='Unspecified');
+    const t=document.createElement('div'); t.className='lib-tile'; t.onclick=()=>libOpenDim(dim);
+    t.innerHTML=`<div class="lib-tile-lbl">By ${LIB_DIMLBL[dim]}</div><div class="lib-tile-cnt">${arr.length} groups · ${list.length} total</div><div class="lib-tile-ex">${arr.slice(0,3).join(' · ')}${arr.length>3?'…':''}</div>`;
+    tiles.appendChild(t);
+  });
+  frag.appendChild(tiles);
+  const sl=document.createElement('div'); sl.className='sl'; sl.style.marginTop='4px'; sl.textContent='Recently added'; frag.appendChild(sl);
+  list.slice(-3).reverse().forEach(r=>frag.appendChild(libCardNode(r)));
+  return frag;
+}
+function libViewDrill(){
+  const frag=document.createDocumentFragment(); frag.appendChild(libCrumb());
+  const sub=libSubset();
+  const vals=new Set(); sub.forEach(r=>libResolveTags(r.item,_libBrowseDim,_libMode).forEach(v=>vals.add(v)));
+  const vocab=libVocabFor(_libBrowseDim,_libMode);
+  const arr=[...vals].sort((a,b)=>{const ia=vocab.indexOf(a),ib=vocab.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  arr.forEach(v=>{
+    const n=sub.filter(r=>libResolveTags(r.item,_libBrowseDim,_libMode).includes(v)).length;
+    const row=document.createElement('div'); row.className='lib-vrow'; row.onclick=()=>libAddFacet(_libBrowseDim,v);
+    row.innerHTML=`<span class="lib-vrow-lbl">${v}</span><span class="lib-vrow-cnt">${n}</span>`;
+    frag.appendChild(row);
+  });
+  return frag;
+}
+function libViewSubset(){
+  const frag=document.createDocumentFragment();
+  frag.appendChild(libCrumb()); frag.appendChild(libRefineBar());
+  const items=libSubset(); frag.appendChild(libCountLine(items.length));
+  items.forEach(r=>frag.appendChild(libCardNode(r)));
+  return frag;
+}
+function libViewSearch(){
+  const frag=document.createDocumentFragment(); frag.appendChild(libCrumb());
+  const items=libSubset().filter(r=>libSearchStr(r).includes(_libQ));
+  const cl=document.createElement('div'); cl.className='lib-count';
+  cl.textContent=`// ${items.length} match "${_libQ}"${Object.keys(_libFacets).length?' within filters':''}`;
+  frag.appendChild(cl);
+  if(!items.length){const e=document.createElement('div'); e.className='lib-count'; e.textContent='no matches'; frag.appendChild(e);}
+  items.forEach(r=>frag.appendChild(libCardNode(r)));
+  return frag;
+}
+
+// ── action slot (mode-aware Make/Load) ──
+function libRenderActions(){
+  const slot=document.getElementById('lib-action-slot'); if(!slot)return;
+  slot.innerHTML='';
+  if(_libMode==='stg'){
+    const mk=document.createElement('button'); mk.className='act-btn green'; mk.textContent='Make Stage';
+    mk.onclick=()=>{ if(typeof openAddStageModal==='function')openAddStageModal(); };
+    slot.appendChild(mk);
+  } else {
+    const sv=document.createElement('button'); sv.className='act-btn green'; sv.textContent='Save LV';
+    sv.onclick=()=>{ if(typeof openSaveLVModal==='function')openSaveLVModal(); };
+    slot.appendChild(sv);
+  }
+}
+
+// ── master render + state transitions ──
+function libRender(){
+  const root=document.getElementById('lib-browser-body'); if(!root)return;
+  const seg=document.getElementById('lib-mode-seg');
+  if(seg)[...seg.querySelectorAll('button')].forEach((b,i)=>b.classList.toggle('active',(i===0)===(_libMode==='veh')));
+  libRenderActions();
+  const sb=document.getElementById('lib-search'); if(sb&&document.activeElement!==sb)sb.placeholder=_libMode==='veh'?'Search vehicles…':'Search stages…';
+  root.innerHTML='';
+  if(_libMode==='stg'){ root.appendChild(libViewStages()); return; }   // stages: class-first layout
+  if(_libQ){ root.appendChild(libViewSearch()); return; }
+  if(_libBrowseDim){ root.appendChild(libViewDrill()); return; }
+  if(Object.keys(_libFacets).length){ root.appendChild(libViewSubset()); return; }
+  root.appendChild(libViewHome());
+}
+function libSetMode(m){ if(_libMode===m)return; _libMode=m; _libFacets={}; _libBrowseDim=null; _libQ=''; _libSpot=null;
+  _libStageCat='all'; _libStageProp='all'; _libStageEra=null; _libStageOrigin=null; _libStageFilterOpen=false;
+  const sb=document.getElementById('lib-search'); if(sb)sb.value=''; libRender(); }
+function libSearch(v){ _libQ=(v||'').toLowerCase(); libRender(); }
+function libOpenDim(d){ _libBrowseDim=d; libRender(); }
+function libAddFacet(dim,val){ _libFacets[dim]=val; _libBrowseDim=null; libRender(); }
+function libDelFacet(dim){ delete _libFacets[dim]; libRender(); }
+function libHome(){ _libFacets={}; _libBrowseDim=null; _libQ=''; const sb=document.getElementById('lib-search'); if(sb)sb.value=''; libRender(); }
+function libReroll(silent){ const l=libList(); _libSpot=l.length?l[Math.floor(Math.random()*l.length)]:null; if(!silent)libRender(); }
+
+// Redirect the legacy render entry points so every existing refresh call works.
+buildStageLibrary = libRender;
+buildPresets = libRender;
+
 // ─── ORBIT DIAGRAM ────────────────────────────
 function initOrbitDiagram(){
   const canvas=document.getElementById('orbit-diagram');
@@ -7988,6 +8424,7 @@ function computeVehicleTags(p){
 // ─── FILTER SYSTEM ─────────────────────────────
 function buildFilterPanel(){
   const panel=document.getElementById('filter-panel');
+  if(!panel)return;   // legacy stage-filter UI removed by the library-browser redesign
   panel.innerHTML='';
   Object.entries(FILTER_TREE).forEach(([cat,opts])=>{
     const collapsed=collapsedFilterCats.has(cat);
@@ -8026,6 +8463,7 @@ function buildFilterPanel(){
 
 function updateFilterChips(){
   const chips=document.getElementById('active-filter-chips');
+  if(!chips)return;   // legacy stage-filter UI removed by the library-browser redesign
   chips.innerHTML='';
   let any=false;
   Object.entries(activeFilters).forEach(([cat,tags])=>{

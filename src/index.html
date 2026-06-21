@@ -147,34 +147,31 @@
     <!-- RIGHT: Stage Library, same height cap -->
     <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
       <div class="lib-toggle" onclick="toggleLibrary()">
-        <span class="sl" style="margin-bottom:0;flex:1;">Stage Library
+        <span class="sl" style="margin-bottom:0;flex:1;">Library
           <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
             <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
-              <b>Click</b> any stage card for full specifications.<br>
-              <b>Drag</b> a stage to the Stage Composition area or a column header in the Stage Parameters table to add it to your rocket.<br>
-              <b>Dragging a Preset Vehicle</b> replaces all stages at once.
+              Toggle <b>Vehicles ⇄ Stages</b>. Browse by Era / Origin / Propellant / Class, drill in, then refine. Search composes with your filters.<br>
+              <b>Click</b> a card for details · <b>Drag</b> a stage to the composition area, or a vehicle to load all stages at once.
             </span>
           </span>
         </span>
         <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
       </div>
       <div class="lib-body" id="lib-body">
-        <div style="display:flex;gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
-          <input class="lib-search" type="text" id="lib-search" placeholder="Search stages..." oninput="buildStageLibrary()" style="flex:1;min-width:120px;margin-bottom:0;">
-          <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()" style="white-space:nowrap;">⊟ Filters</button>
-          <button class="act-btn green" onclick="openAddStageModal()" style="white-space:nowrap;">Make Stage</button>
-          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load Stage<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
+        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;">
+          <button class="active" onclick="libSetMode('veh')">▮ Vehicles</button>
+          <button onclick="libSetMode('stg')">▤ Stages</button>
         </div>
-        <div class="filter-bar" style="margin-bottom:4px;min-height:0;">
-          <div id="active-filter-chips"></div>
-          <button class="filter-toggle-btn" id="clear-filters-btn" onclick="clearAllFilters()" style="display:none;border-color:var(--accent2);color:var(--accent2);">Clear All</button>
-          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;margin-left:auto;">
-            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;buildStageLibrary();">
-            My Stages Only
+        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+          <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
+          <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
+          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
+          <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;libRender();">
+            My Stuff
           </label>
         </div>
-        <div id="filter-panel" style="display:none;"></div>
-        <div id="lib-content"></div>
+        <div id="lib-browser-body"></div>
       </div>
     </div>
 

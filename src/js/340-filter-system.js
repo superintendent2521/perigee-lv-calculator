@@ -2,6 +2,7 @@
 // ─── FILTER SYSTEM ─────────────────────────────
 function buildFilterPanel(){
   const panel=document.getElementById('filter-panel');
+  if(!panel)return;   // legacy stage-filter UI removed by the library-browser redesign
   panel.innerHTML='';
   Object.entries(FILTER_TREE).forEach(([cat,opts])=>{
     const collapsed=collapsedFilterCats.has(cat);
@@ -40,6 +41,7 @@ function buildFilterPanel(){
 
 function updateFilterChips(){
   const chips=document.getElementById('active-filter-chips');
+  if(!chips)return;   // legacy stage-filter UI removed by the library-browser redesign
   chips.innerHTML='';
   let any=false;
   Object.entries(activeFilters).forEach(([cat,tags])=>{
