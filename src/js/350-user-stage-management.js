@@ -37,6 +37,9 @@ function openAddStageModal(){
   document.getElementById('add-stage-save-btn').style.display='';
   document.getElementById('edit-stage-save-btn').style.display='none';
   document.querySelector('#modal-add-stage .modal-title').textContent='Add Stage to Library';
+  _stgTagHolder.tags=[];
+  if(typeof libBuildTagEditor==='function')
+    libBuildTagEditor(document.getElementById('stg-tags-editor'), _stgTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false},{dim:'prop',multi:true}], 'stg');
   openModal('modal-add-stage');
   setTimeout(()=>document.getElementById('stg-name').focus(),100);
 }
@@ -60,7 +63,17 @@ function onBaseStageChange(val){
   document.getElementById('stg-res').value=found.res??2;
   document.getElementById('stg-engines').value=found.engines||'';
   document.getElementById('stg-note').value=found.note||'';
-  document.getElementById('stg-tags').value=(found.tags||[]).join(', ');
+  // split the base stage's tags into structured (era/origin/prop chips) + leftover freetext
+  const _stgDims=[{dim:'era',multi:true},{dim:'origin',multi:false},{dim:'prop',multi:true}];
+  if(typeof libSeedTagHolder==='function'){
+    libSeedTagHolder(_stgTagHolder, found.tags, _stgDims, 'stg');
+    const structured=new Set();
+    _stgDims.forEach(({dim})=>libVocabFor(dim,'stg').forEach(v=>structured.add(v)));
+    document.getElementById('stg-tags').value=(found.tags||[]).filter(t=>!structured.has(t)&&t!=='1990s-2000s').join(', ');
+    libBuildTagEditor(document.getElementById('stg-tags-editor'), _stgTagHolder, _stgDims, 'stg');
+  } else {
+    document.getElementById('stg-tags').value=(found.tags||[]).join(', ');
+  }
   document.getElementById('stg-is-booster').checked=!!found.isBooster;
   // Set category to match base stage
   const cat=found._category||(found.isBooster?'Side Boosters':'Upper Stages');
@@ -89,7 +102,7 @@ function doAddStage(andSave){
     res:    parseFloat(document.getElementById('stg-res').value)||2,
     engines:document.getElementById('stg-engines').value.trim()||'—',
     note:   document.getElementById('stg-note').value.trim(),
-    tags:   document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    tags:   [...new Set([...document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean), ...((typeof _stgTagHolder!=='undefined'&&_stgTagHolder.tags)||[])])],
     isBooster:document.getElementById('stg-is-booster').checked,
     _category:cat,
   };

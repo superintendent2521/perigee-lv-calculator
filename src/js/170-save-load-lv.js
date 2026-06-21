@@ -5,11 +5,19 @@ function buildLVObject(name,note){
   // Save stage names alongside data for composition view on load
   v.stageNames=currentStageNames.slice(0,numStages).map((n,i)=>n||null);
   if(currentBoosterName)v.boosterName=currentBoosterName;
+  // Structured library tags (era/origin) chosen in the Save LV modal — travel with
+  // the vehicle into the program / fleet so it browses correctly there too.
+  if(typeof _lvTagHolder!=='undefined' && _lvTagHolder.tags && _lvTagHolder.tags.length) v.tags=[..._lvTagHolder.tags];
   v.performanceCases=[...performanceCases];
   return v;
 }
 function downloadJSON(obj,filename){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
-function openSaveLVModal(){document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);}
+function openSaveLVModal(){
+  document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';
+  if(typeof libBuildTagEditor==='function')
+    libBuildTagEditor(document.getElementById('lv-save-tags'), _lvTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false}], 'veh');
+  openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);
+}
 
 /**
  * "Use in Program" button handler.
@@ -112,6 +120,7 @@ function applyLVObject(obj){
   if(lastResult){renderResults(lastResult);}
   else{const panel=document.getElementById('results-panel');if(panel)panel.innerHTML=`<div class="placeholder-msg">// ${obj.name||'LV'} loaded — no performance cases yet. Calculate to add one.</div>`;}
   loadedVehicleName=obj.name||'';
+  if(typeof libSeedTagHolder==='function') libSeedTagHolder(_lvTagHolder, obj.tags, [{dim:'era'},{dim:'origin'}], 'veh');
 }
 function openJSONModal(){const obj=collectVehicle();if(lastResult)obj.performanceResults=lastResult;document.getElementById('json-editor').value=JSON.stringify(obj,null,2);document.getElementById('json-error').style.display='none';openModal('modal-json');}
 function applyJSON(){const txt=document.getElementById('json-editor').value;try{const obj=JSON.parse(txt);applyLVObject(obj);closeModal('modal-json');}catch(e){const err=document.getElementById('json-error');err.textContent='// JSON parse error: '+e.message;err.style.display='block';}}

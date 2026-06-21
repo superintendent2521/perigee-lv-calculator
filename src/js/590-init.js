@@ -11,6 +11,7 @@ loadPersistedUserSpaceports();
 initSiteMap();
 initOrbitDiagram();
 applyTheme('perigee');
+_initVersionUI();
 scEdInit();
 fleetInit();
 missionInit();

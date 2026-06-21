@@ -161,6 +161,7 @@ function loadPreset(p,key){
   const _spb=document.getElementById('save-case-btn');if(_spb)_spb.disabled=!lastResult;
     const scBtn=document.getElementById('save-case-btn');if(scBtn)scBtn.disabled=!lastResult;
   document.getElementById('results-panel').innerHTML=`<div class="placeholder-msg">// ${p.name||'LV'} loaded — click Performance to calculate</div>${p.note?`<div class="note" style="margin:12px 0 0">${p.note}</div>`:''}`;
+  if(typeof libSeedTagHolder==='function') libSeedTagHolder(_lvTagHolder, p.tags, [{dim:'era'},{dim:'origin'}], 'veh');
   buildPresets();
   buildStageComposition();
 }

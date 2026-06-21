@@ -33,6 +33,8 @@
   </div>
   <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
     <div class="theme-wrap" style="margin-left:0;">
+      <a class="th-btn" href="https://github.com/rp1-lox/perigee-lv-calculator" target="_blank" rel="noopener" title="View source &amp; releases on GitHub">GitHub &#x2197;</a>
+      <button class="th-btn" onclick="openPatchNotes()" title="What's new in this version"><span id="patch-notes-ver">v1.1.0A</span> · Patch Notes</button>
       <button class="th-btn" onclick="openTutorials()" title="How to use Rocket Playground">? Tutorials</button>
       <label>Theme</label>
       <select id="theme-select" onchange="applyTheme(this.value)">
@@ -530,11 +532,25 @@
       <input type="text" id="lv-save-name" placeholder="e.g. My Rocket Mk1" maxlength="60">
       <label>Notes (optional)</label>
       <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
+      <label style="margin-top:10px;">Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing &amp; the program (propellant &amp; class auto-derive from stages)</span></label>
+      <div id="lv-save-tags"></div>
       <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
       <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Patch Notes ── -->
+<div class="modal-overlay" id="modal-patch-notes" style="display:none">
+  <div class="modal" style="max-width:560px;display:flex;flex-direction:column;max-height:82vh;">
+    <div class="modal-header"><span class="modal-title">Patch Notes</span><button class="modal-close" onclick="closeModal('modal-patch-notes')">✕</button></div>
+    <div class="modal-body" id="patch-notes-body" style="overflow-y:auto;"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+      <a class="modal-btn" href="https://github.com/rp1-lox/perigee-lv-calculator/releases" target="_blank" rel="noopener">All Releases on GitHub &#x2197;</a>
+      <button class="modal-btn primary" onclick="closeModal('modal-patch-notes')">Close</button>
     </div>
   </div>
 </div>
@@ -686,8 +702,12 @@
           <input type="text" id="stg-note" placeholder="Propellants, mission context, etc." maxlength="120" style="margin-bottom:0;">
         </div>
         <div style="grid-column:1/-1;">
-          <label>Tags (comma-separated)</label>
-          <input type="text" id="stg-tags" placeholder="e.g. Liquid Oxygen / Kerosene, Restartable, 1970s" style="margin-bottom:0;">
+          <label>Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing (Class = Category above)</span></label>
+          <div id="stg-tags-editor"></div>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Other Tags (comma-separated, optional)</label>
+          <input type="text" id="stg-tags" placeholder="e.g. Restartable, Hypergolic, crew-rated" style="margin-bottom:0;">
         </div>
         <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="stg-is-booster" style="accent-color:var(--accent2);">

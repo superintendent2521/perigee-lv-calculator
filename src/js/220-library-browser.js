@@ -264,6 +264,12 @@ function libRenderActions(){
     sv.onclick=()=>{ if(typeof openSaveLVModal==='function')openSaveLVModal(); };
     slot.appendChild(sv);
   }
+  // Export / import the whole user library (vehicles + stages) in one file
+  const exp=document.createElement('button'); exp.className='act-btn'; exp.textContent='⇡ Export'; exp.title='Export all your saved vehicles + stages to one file';
+  exp.onclick=()=>{ if(typeof libExportMine==='function')libExportMine(); }; slot.appendChild(exp);
+  const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a Perigee library file'; imp.textContent='⇣ Import';
+  const fin=document.createElement('input'); fin.type='file'; fin.accept='.json'; fin.style.display='none';
+  fin.onchange=function(){ if(typeof libImportMine==='function')libImportMine(this); }; imp.appendChild(fin); slot.appendChild(imp);
 }
 
 // ── master render + state transitions ──

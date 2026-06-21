@@ -1132,6 +1132,8 @@ button,input,select,textarea{font-family:inherit;}
   </div>
   <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
     <div class="theme-wrap" style="margin-left:0;">
+      <a class="th-btn" href="https://github.com/rp1-lox/perigee-lv-calculator" target="_blank" rel="noopener" title="View source &amp; releases on GitHub">GitHub &#x2197;</a>
+      <button class="th-btn" onclick="openPatchNotes()" title="What's new in this version"><span id="patch-notes-ver">v1.1.0A</span> · Patch Notes</button>
       <button class="th-btn" onclick="openTutorials()" title="How to use Rocket Playground">? Tutorials</button>
       <label>Theme</label>
       <select id="theme-select" onchange="applyTheme(this.value)">
@@ -1629,11 +1631,25 @@ button,input,select,textarea{font-family:inherit;}
       <input type="text" id="lv-save-name" placeholder="e.g. My Rocket Mk1" maxlength="60">
       <label>Notes (optional)</label>
       <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
+      <label style="margin-top:10px;">Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing &amp; the program (propellant &amp; class auto-derive from stages)</span></label>
+      <div id="lv-save-tags"></div>
       <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
       <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Patch Notes ── -->
+<div class="modal-overlay" id="modal-patch-notes" style="display:none">
+  <div class="modal" style="max-width:560px;display:flex;flex-direction:column;max-height:82vh;">
+    <div class="modal-header"><span class="modal-title">Patch Notes</span><button class="modal-close" onclick="closeModal('modal-patch-notes')">✕</button></div>
+    <div class="modal-body" id="patch-notes-body" style="overflow-y:auto;"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+      <a class="modal-btn" href="https://github.com/rp1-lox/perigee-lv-calculator/releases" target="_blank" rel="noopener">All Releases on GitHub &#x2197;</a>
+      <button class="modal-btn primary" onclick="closeModal('modal-patch-notes')">Close</button>
     </div>
   </div>
 </div>
@@ -1785,8 +1801,12 @@ button,input,select,textarea{font-family:inherit;}
           <input type="text" id="stg-note" placeholder="Propellants, mission context, etc." maxlength="120" style="margin-bottom:0;">
         </div>
         <div style="grid-column:1/-1;">
-          <label>Tags (comma-separated)</label>
-          <input type="text" id="stg-tags" placeholder="e.g. Liquid Oxygen / Kerosene, Restartable, 1970s" style="margin-bottom:0;">
+          <label>Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing (Class = Category above)</span></label>
+          <div id="stg-tags-editor"></div>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label>Other Tags (comma-separated, optional)</label>
+          <input type="text" id="stg-tags" placeholder="e.g. Restartable, Hypergolic, crew-rated" style="margin-bottom:0;">
         </div>
         <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="stg-is-booster" style="accent-color:var(--accent2);">
@@ -1869,6 +1889,50 @@ button,input,select,textarea{font-family:inherit;}
 // ─── CONSTANTS ────────────────────────────────
 const G0=9.80665,RE=6371.0,MU=398600.4418,OMEGA_E=7.2921150e-5;
 const MAX_STAGES=15;
+
+// ─── VERSION & CHANGELOG ──────────────────────
+// Single source of truth for the displayed version + patch notes (header button
+// opens #modal-patch-notes). Bump APP_VERSION and prepend an entry on release.
+const APP_VERSION='1.1.0A';
+const APP_REPO_URL='https://github.com/rp1-lox/perigee-lv-calculator';
+const APP_CHANGELOG=[
+  {v:'1.1.0A', title:'Unified Library', date:'2026-06-21', notes:[
+    'An all-new unified stages & vehicles panel across both Program and Calculator mode — designed to increase UI cohesion and discoverability. Vehicles and stages are now sorted directly by their characteristics, while keeping the earlier search capability.',
+    'Tags are now simpler. (This mostly makes my life easier.)',
+    'The website now fetches from GitHub Pages instead of static HTML — which makes my life really nice.',
+    'Bulk downloads: grab ALL of your user-created vehicles and stages in one convenient button.',
+    'The “A” at the end is because I pushed too early. Enjoy!',
+  ]},
+  {v:'1.1.0', title:'Spotlights', date:'2026-06-21', notes:[
+    'New Vehicles & Stages library — browse by Era / Origin / Propellant / Class.',
+    'Vehicles use a taxonomy browse (tiles → drill → stacked refine); stages use a class-first layout with a side Filters panel.',
+    'A "Spotlight" surfaces a random vehicle or stage to discover.',
+    'Search composes with whatever filters are active.',
+  ]},
+  {v:'1.0.3', title:'Added Release Tracking', date:'2026-06-20', notes:[
+    'Began tracking releases on GitHub with downloadable builds.',
+  ]},
+];
+
+function _renderPatchNotes(){
+  const el=document.getElementById('patch-notes-body'); if(!el)return;
+  el.innerHTML=APP_CHANGELOG.map(c=>`
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+        <span style="font-family:var(--mono);color:var(--accent);font-size:13px;">v${c.v}</span>
+        <span style="font-weight:600;color:var(--text-bright);">${c.title}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto;">${c.date}</span>
+      </div>
+      <ul style="margin:6px 0 0;padding-left:18px;color:var(--text);font-size:12px;line-height:1.6;">
+        ${c.notes.map(n=>`<li>${n}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+function openPatchNotes(){ _renderPatchNotes(); openModal('modal-patch-notes'); }
+function _initVersionUI(){
+  const v=document.getElementById('patch-notes-ver'); if(v)v.textContent='v'+APP_VERSION;
+  _renderPatchNotes();
+}
 
 // ─── STATE ────────────────────────────────────
 let numStages=1,useBooster=false,restartable=false,trajectory='two-burn',destMode='orbit';
@@ -3145,6 +3209,7 @@ function loadPreset(p,key){
   const _spb=document.getElementById('save-case-btn');if(_spb)_spb.disabled=!lastResult;
     const scBtn=document.getElementById('save-case-btn');if(scBtn)scBtn.disabled=!lastResult;
   document.getElementById('results-panel').innerHTML=`<div class="placeholder-msg">// ${p.name||'LV'} loaded — click Performance to calculate</div>${p.note?`<div class="note" style="margin:12px 0 0">${p.note}</div>`:''}`;
+  if(typeof libSeedTagHolder==='function') libSeedTagHolder(_lvTagHolder, p.tags, [{dim:'era'},{dim:'origin'}], 'veh');
   buildPresets();
   buildStageComposition();
 }
@@ -3776,11 +3841,19 @@ function buildLVObject(name,note){
   // Save stage names alongside data for composition view on load
   v.stageNames=currentStageNames.slice(0,numStages).map((n,i)=>n||null);
   if(currentBoosterName)v.boosterName=currentBoosterName;
+  // Structured library tags (era/origin) chosen in the Save LV modal — travel with
+  // the vehicle into the program / fleet so it browses correctly there too.
+  if(typeof _lvTagHolder!=='undefined' && _lvTagHolder.tags && _lvTagHolder.tags.length) v.tags=[..._lvTagHolder.tags];
   v.performanceCases=[...performanceCases];
   return v;
 }
 function downloadJSON(obj,filename){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
-function openSaveLVModal(){document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);}
+function openSaveLVModal(){
+  document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';
+  if(typeof libBuildTagEditor==='function')
+    libBuildTagEditor(document.getElementById('lv-save-tags'), _lvTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false}], 'veh');
+  openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);
+}
 
 /**
  * "Use in Program" button handler.
@@ -3883,6 +3956,7 @@ function applyLVObject(obj){
   if(lastResult){renderResults(lastResult);}
   else{const panel=document.getElementById('results-panel');if(panel)panel.innerHTML=`<div class="placeholder-msg">// ${obj.name||'LV'} loaded — no performance cases yet. Calculate to add one.</div>`;}
   loadedVehicleName=obj.name||'';
+  if(typeof libSeedTagHolder==='function') libSeedTagHolder(_lvTagHolder, obj.tags, [{dim:'era'},{dim:'origin'}], 'veh');
 }
 function openJSONModal(){const obj=collectVehicle();if(lastResult)obj.performanceResults=lastResult;document.getElementById('json-editor').value=JSON.stringify(obj,null,2);document.getElementById('json-error').style.display='none';openModal('modal-json');}
 function applyJSON(){const txt=document.getElementById('json-editor').value;try{const obj=JSON.parse(txt);applyLVObject(obj);closeModal('modal-json');}catch(e){const err=document.getElementById('json-error');err.textContent='// JSON parse error: '+e.message;err.style.display='block';}}
@@ -6736,6 +6810,12 @@ function libRenderActions(){
     sv.onclick=()=>{ if(typeof openSaveLVModal==='function')openSaveLVModal(); };
     slot.appendChild(sv);
   }
+  // Export / import the whole user library (vehicles + stages) in one file
+  const exp=document.createElement('button'); exp.className='act-btn'; exp.textContent='⇡ Export'; exp.title='Export all your saved vehicles + stages to one file';
+  exp.onclick=()=>{ if(typeof libExportMine==='function')libExportMine(); }; slot.appendChild(exp);
+  const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a Perigee library file'; imp.textContent='⇣ Import';
+  const fin=document.createElement('input'); fin.type='file'; fin.accept='.json'; fin.style.display='none';
+  fin.onchange=function(){ if(typeof libImportMine==='function')libImportMine(this); }; imp.appendChild(fin); slot.appendChild(imp);
 }
 
 // ── master render + state transitions ──
@@ -6765,6 +6845,80 @@ function libReroll(silent){ const l=libList(); _libSpot=l.length?l[Math.floor(Ma
 // Redirect the legacy render entry points so every existing refresh call works.
 buildStageLibrary = libRender;
 buildPresets = libRender;
+
+// ─── STRUCTURED TAG EDITOR ────────────────────
+// Reusable chip editor for the controlled browse dimensions. Edits a holder
+// object's `tags[]` array IN PLACE, managing only the dimensions passed in and
+// preserving any other (freetext) tags. Writing into tags[] keeps user items in
+// the exact same shape as the built-ins — libResolveTags (205) parses them, so
+// nothing else changes. LENIENT: selecting nothing just leaves the item
+// untagged for that dimension (it lands in no facet, never blocks a save).
+//   holder : { tags: [...] }   (mutated in place)
+//   dims   : [{dim:'era',multi:true}, {dim:'origin',multi:false}, ...]
+//   mode   : 'veh' | 'stg'  (only affects the 'cls' vocab, rarely edited here)
+let _lvTagHolder = {tags:[]};    // working vehicle tags (era/origin) for Save LV + program
+let _stgTagHolder = {tags:[]};   // working stage tags (era/origin/prop) for Make Stage
+
+function libBuildTagEditor(container, holder, dims, mode){
+  if(!container) return;
+  if(!Array.isArray(holder.tags)) holder.tags=[];
+  container.innerHTML='';
+  dims.forEach(({dim,multi})=>{
+    const vocab=libVocabFor(dim,mode);
+    const grp=document.createElement('div'); grp.className='lib-filtergrp';
+    const lbl=document.createElement('div'); lbl.className='lib-filtergrp-lbl';
+    lbl.textContent=LIB_DIMLBL[dim]+(multi?'  (pick any)':'');
+    grp.appendChild(lbl);
+    const wrap=document.createElement('div'); wrap.className='lib-pchips';
+    vocab.forEach(v=>{
+      const active=holder.tags.includes(v);
+      const chip=document.createElement('span'); chip.className='lib-pchip'+(active?' active':'');
+      chip.textContent=(dim==='prop')?libPropShort(v):v;
+      chip.title=v;
+      chip.onclick=()=>{
+        const has=holder.tags.includes(v);
+        if(!multi){ holder.tags=holder.tags.filter(t=>!vocab.includes(t)); if(!has)holder.tags.push(v); }
+        else { holder.tags = has ? holder.tags.filter(t=>t!==v) : holder.tags.concat(v); }
+        libBuildTagEditor(container, holder, dims, mode);
+      };
+      wrap.appendChild(chip);
+    });
+    grp.appendChild(wrap); container.appendChild(grp);
+  });
+}
+
+// Seed a holder's tags from an existing item's tags, keeping only values that
+// belong to the given dims' vocab (so the editor shows the right chips active).
+function libSeedTagHolder(holder, sourceTags, dims, mode){
+  const allowed=new Set();
+  dims.forEach(({dim})=>libVocabFor(dim,mode).forEach(v=>allowed.add(v)));
+  holder.tags=(sourceTags||[]).flatMap(t=>t==='1990s-2000s'?['1990s','2000s']:[t]).filter(t=>allowed.has(t));
+}
+
+// Export / import the user's whole library (vehicles + stages) as one file.
+function libExportMine(){
+  const vehicles=(typeof userLVs!=='undefined'?userLVs:[]).map(v=>({...v}));
+  const stages={};
+  if(typeof userStagesByCategory!=='undefined')
+    Object.entries(userStagesByCategory).forEach(([c,a])=>{ if(a&&a.length)stages[c]=a.map(s=>({...s})); });
+  if(!vehicles.length && !Object.keys(stages).length){ showAlert('No saved vehicles or stages to export yet. Save some first.','Nothing to Export'); return; }
+  downloadJSON({schema:'perigee-lib-v1', exported:new Date().toISOString(), vehicles, stages}, 'my-library.json');
+}
+function libImportMine(input){
+  const f=input.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{ try{
+    const o=JSON.parse(e.target.result);
+    if(o.schema!=='perigee-lib-v1'){ showAlert('Not a Perigee library export (.json with schema "perigee-lib-v1").','Invalid File'); return; }
+    let nv=0, ns=0;
+    (o.vehicles||[]).forEach(v=>{ if(!userLVs.find(x=>x.name===v.name)){ v._sessionId=v._sessionId||Date.now(); userLVs.push(v); nv++; } });
+    Object.entries(o.stages||{}).forEach(([c,arr])=>{ if(!userStagesByCategory[c])userStagesByCategory[c]=[];
+      (arr||[]).forEach(s=>{ if(!userStagesByCategory[c].find(x=>x.name===s.name)){ s._userGenerated=true; userStagesByCategory[c].unshift(s); ns++; } }); });
+    if(typeof libRender==='function')libRender();
+    showAlert(`Imported ${nv} vehicle(s) and ${ns} stage(s).`,'Library Imported');
+  }catch(err){ showAlert('Invalid library JSON: '+err.message,'Invalid File'); } };
+  r.readAsText(f); input.value='';
+}
 
 // ─── ORBIT DIAGRAM ────────────────────────────
 function initOrbitDiagram(){
@@ -8542,6 +8696,9 @@ function openAddStageModal(){
   document.getElementById('add-stage-save-btn').style.display='';
   document.getElementById('edit-stage-save-btn').style.display='none';
   document.querySelector('#modal-add-stage .modal-title').textContent='Add Stage to Library';
+  _stgTagHolder.tags=[];
+  if(typeof libBuildTagEditor==='function')
+    libBuildTagEditor(document.getElementById('stg-tags-editor'), _stgTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false},{dim:'prop',multi:true}], 'stg');
   openModal('modal-add-stage');
   setTimeout(()=>document.getElementById('stg-name').focus(),100);
 }
@@ -8565,7 +8722,17 @@ function onBaseStageChange(val){
   document.getElementById('stg-res').value=found.res??2;
   document.getElementById('stg-engines').value=found.engines||'';
   document.getElementById('stg-note').value=found.note||'';
-  document.getElementById('stg-tags').value=(found.tags||[]).join(', ');
+  // split the base stage's tags into structured (era/origin/prop chips) + leftover freetext
+  const _stgDims=[{dim:'era',multi:true},{dim:'origin',multi:false},{dim:'prop',multi:true}];
+  if(typeof libSeedTagHolder==='function'){
+    libSeedTagHolder(_stgTagHolder, found.tags, _stgDims, 'stg');
+    const structured=new Set();
+    _stgDims.forEach(({dim})=>libVocabFor(dim,'stg').forEach(v=>structured.add(v)));
+    document.getElementById('stg-tags').value=(found.tags||[]).filter(t=>!structured.has(t)&&t!=='1990s-2000s').join(', ');
+    libBuildTagEditor(document.getElementById('stg-tags-editor'), _stgTagHolder, _stgDims, 'stg');
+  } else {
+    document.getElementById('stg-tags').value=(found.tags||[]).join(', ');
+  }
   document.getElementById('stg-is-booster').checked=!!found.isBooster;
   // Set category to match base stage
   const cat=found._category||(found.isBooster?'Side Boosters':'Upper Stages');
@@ -8594,7 +8761,7 @@ function doAddStage(andSave){
     res:    parseFloat(document.getElementById('stg-res').value)||2,
     engines:document.getElementById('stg-engines').value.trim()||'—',
     note:   document.getElementById('stg-note').value.trim(),
-    tags:   document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    tags:   [...new Set([...document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean), ...((typeof _stgTagHolder!=='undefined'&&_stgTagHolder.tags)||[])])],
     isBooster:document.getElementById('stg-is-booster').checked,
     _category:cat,
   };
@@ -15543,6 +15710,7 @@ loadPersistedUserSpaceports();
 initSiteMap();
 initOrbitDiagram();
 applyTheme('perigee');
+_initVersionUI();
 scEdInit();
 fleetInit();
 missionInit();
