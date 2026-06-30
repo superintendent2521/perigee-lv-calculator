@@ -70,15 +70,17 @@ function buildTable(){
   tbody.innerHTML='';
   ROWS.forEach(row=>{
     const tr=document.createElement('tr');
+    const allowsMath=['dry','prop','thrust','res'].includes(row.key);
+    const inputAttrs=allowsMath?'type="text" inputmode="decimal" class="math-input" title="Calculations supported: +, -, *, /, and parentheses"':'type="number" min="0" step="any"';
     let html=`<td class="rl">${row.label}</td>`;
     // Booster cell (before Stage 1)
     if(useBooster){
-      html+=`<td class="s-active booster-cell"><input type="number" id="b_${row.key}" value="${bVals[row.key]??bDefaults[row.key]}" min="0" step="any" oninput="buildStageComposition();markLVUserDefined()"></td>`;
+      html+=`<td class="s-active booster-cell"><input ${inputAttrs} id="b_${row.key}" value="${bVals[row.key]??bDefaults[row.key]}" oninput="buildStageComposition();markLVUserDefined()"></td>`;
     }
     for(let s=0;s<numStages;s++){
       const id=`s${s+1}_${row.key}`;
       const val=(stageStore[s]&&stageStore[s][row.key]!==undefined)?stageStore[s][row.key]:row.def[s];
-      html+=`<td class="s-active"><input type="number" id="${id}" value="${val}" min="0" step="any"></td>`;
+      html+=`<td class="s-active"><input ${inputAttrs} id="${id}" value="${val}"></td>`;
     }
     // Ghost cells
     for(let g=0;g<numGhost;g++){

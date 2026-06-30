@@ -40,6 +40,8 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   }
   markLVUserDefined();
 });
+document.addEventListener('focusout',e=>{if(e.target.matches?.('.math-input'))commitMathInput(e.target);});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches?.('.math-input'))e.target.blur();});
 ['fairing-mass','fairing-jettison','b_dry','b_prop','b_thrust','b_isp','b_res','num-boosters'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('change',()=>markLVUserDefined());

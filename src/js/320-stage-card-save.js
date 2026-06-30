@@ -17,11 +17,11 @@ function saveStageCardAsFile(stageIdx,isBooster){
     const store=stageStore[stageIdx]||{};
     stage={
       name:currentStageNames[stageIdx]||`Stage ${stageIdx+1}`,
-      dry:parseFloat(store.dry)||0,
-      prop:parseFloat(store.prop)||0,
-      thrust:parseFloat(store.thrust)||0,
+      dry:mathValue(store.dry,0),
+      prop:mathValue(store.prop,0),
+      thrust:mathValue(store.thrust,0),
       isp:parseFloat(store.isp)||0,
-      res:parseFloat(store.res)||2,
+      res:mathValue(store.res,2),
       _userGenerated:true,
     };
     stageSaved[stageIdx]=true;

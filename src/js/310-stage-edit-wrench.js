@@ -133,10 +133,10 @@ function _stgBgRemove() {
 function _s15UpdatePreview(_stageIdx) {
   const pre = document.getElementById('stg-s15-preview');
   if (!pre || !document.getElementById('stg-s15')?.checked) return;
-  const dry    = parseFloat(document.getElementById('stg-dry')?.value)    || 0;
-  const prop   = parseFloat(document.getElementById('stg-prop')?.value)   || 0;
+  const dry    = mathValue(document.getElementById('stg-dry')?.value,0);
+  const prop   = mathValue(document.getElementById('stg-prop')?.value,0);
   const isp    = parseFloat(document.getElementById('stg-isp')?.value)    || 1;
-  const thrust = parseFloat(document.getElementById('stg-thrust')?.value) || 0;
+  const thrust = mathValue(document.getElementById('stg-thrust')?.value,0);
   const sThrust = parseFloat(document.getElementById('stg-s15-thrust')?.value) || 0;
   const sIsp    = parseFloat(document.getElementById('stg-s15-isp')?.value)    || isp;
   const jetM    = parseFloat(document.getElementById('stg-s15-jet')?.value)    || 0;
@@ -154,13 +154,16 @@ function _s15UpdatePreview(_stageIdx) {
 
 function doEditStage(){
   if(!_editSlot)return;
+  const invalidMath=['stg-dry','stg-prop','stg-thrust','stg-res']
+    .map(id=>document.getElementById(id)).find(input=>!commitMathInput(input));
+  if(invalidMath){invalidMath.reportValidity();return;}
   const {stageIdx,isBooster,extraIdx}=_editSlot;
   const name=document.getElementById('stg-name').value.trim();
-  const dry=parseFloat(document.getElementById('stg-dry').value)||0;
-  const prop=parseFloat(document.getElementById('stg-prop').value)||0;
-  const thrust=parseFloat(document.getElementById('stg-thrust').value)||0;
+  const dry=mathValue(document.getElementById('stg-dry').value,0);
+  const prop=mathValue(document.getElementById('stg-prop').value,0);
+  const thrust=mathValue(document.getElementById('stg-thrust').value,0);
   const isp=parseFloat(document.getElementById('stg-isp').value)||1;
-  const res=parseFloat(document.getElementById('stg-res').value)||2;
+  const res=mathValue(document.getElementById('stg-res').value,2);
   const engines=document.getElementById('stg-engines').value.trim();
   const note=document.getElementById('stg-note').value.trim();
   const tags=document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean);

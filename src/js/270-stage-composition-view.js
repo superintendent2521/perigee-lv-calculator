@@ -14,7 +14,7 @@ function updatePerfPanel() {
   if (!dvBody || !statsBody || !tblBody) return;
 
   // ── Collect stage data ────────────────────────────────────────
-  const pF = v => parseFloat(v) || 0;
+  const pF = v => mathValue(v,0);
   const segments = []; // {label, shortLabel, dry, prop, thrust, isp, res, color, isBooster}
 
   if (useBooster) {
@@ -327,9 +327,9 @@ function buildStageComposition(){
     body.appendChild(makeCompCard(
       `Stage ${s+1}`,
       currentStageNames[s]||null,
-      parseFloat(store.dry)||0,
-      parseFloat(store.prop)||0,
-      parseFloat(store.thrust)||0,
+      mathValue(store.dry,0),
+      mathValue(store.prop,0),
+      mathValue(store.thrust,0),
       parseFloat(store.isp)||0,
       s,false
     ));
