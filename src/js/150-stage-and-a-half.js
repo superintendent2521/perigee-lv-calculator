@@ -78,12 +78,12 @@ function calculateWithS15() {
           `<div class="error-msg">// Stage ${i+1} (Stage-and-a-Half) CONFIG ERROR: ${sp.error}</div>`;
         return;
       }
-      virtualStages.push({ dry: parseFloat(sd.dry)||0, prop: sp.prop_ph1, thrust: parseFloat(sd.thrust)||0, isp: sp.isp_ph1, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: mathValue(sd.dry,0), prop: sp.prop_ph1, thrust: mathValue(sd.thrust,0), isp: sp.isp_ph1, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1} Ph.1`);
-      virtualStages.push({ dry: sp.dry_ph2, prop: sp.prop_ph2, thrust: sd.s15_sust_thrust||0, isp: sp.isp_ph2, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: sp.dry_ph2, prop: sp.prop_ph2, thrust: sd.s15_sust_thrust||0, isp: sp.isp_ph2, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1} Ph.2`);
     } else {
-      virtualStages.push({ dry: parseFloat(sd.dry)||0, prop: parseFloat(sd.prop)||0, thrust: parseFloat(sd.thrust)||0, isp: parseFloat(sd.isp)||1, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: mathValue(sd.dry,0), prop: mathValue(sd.prop,0), thrust: mathValue(sd.thrust,0), isp: parseFloat(sd.isp)||1, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1}`);
     }
   }

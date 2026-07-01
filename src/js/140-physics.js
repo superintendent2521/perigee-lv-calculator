@@ -7,7 +7,61 @@ function rotVel(lat,azMin,azMax){
   return Math.max(0,Math.min(best,Vm));
 }
 function rocketEq(isp,m0,mf){return(mf<=0||m0<=mf)?0:G0*isp*Math.log(m0/mf);}
-function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
+
+// Parse editable stage quantities without eval. Supports decimal numbers,
+// scientific notation, parentheses, unary signs, and + - * /.
+function parseMathExpression(value){
+  const src=String(value??'').trim();
+  if(!src)return NaN;
+  let pos=0;
+  const ws=()=>{while(/\s/.test(src[pos]||''))pos++;};
+  const expression=()=>{
+    let value=term();ws();
+    while(src[pos]==='+'||src[pos]==='-'){
+      const op=src[pos++],right=term();
+      value=op==='+'?value+right:value-right;ws();
+    }
+    return value;
+  };
+  const term=()=>{
+    let value=unary();ws();
+    while(src[pos]==='*'||src[pos]==='/'){
+      const op=src[pos++],right=unary();
+      value=op==='*'?value*right:value/right;ws();
+    }
+    return value;
+  };
+  const unary=()=>{
+    ws();
+    if(src[pos]==='+'){pos++;return unary();}
+    if(src[pos]==='-'){pos++;return -unary();}
+    return primary();
+  };
+  const primary=()=>{
+    ws();
+    if(src[pos]==='('){
+      pos++;const value=expression();ws();
+      if(src[pos]!==')')throw new Error('Missing closing parenthesis');
+      pos++;return value;
+    }
+    const match=src.slice(pos).match(/^(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?/);
+    if(!match)throw new Error('Expected a number');
+    pos+=match[0].length;return Number(match[0]);
+  };
+  try{
+    const result=expression();ws();
+    return pos===src.length&&Number.isFinite(result)?result:NaN;
+  }catch(_){return NaN;}
+}
+function mathValue(value,fallback=0){const result=parseMathExpression(value);return Number.isFinite(result)?result:fallback;}
+function commitMathInput(input){
+  const result=input.value.trim()===''?0:parseMathExpression(input.value);
+  const valid=Number.isFinite(result)&&result>=0;
+  input.setCustomValidity(valid?'':'Enter a non-negative calculation using +, -, *, /, and parentheses.');
+  if(valid)input.value=String(result);
+  return valid;
+}
+function gv(id){return mathValue(document.getElementById(id)?.value,0);}
 
 // ── Shared launch performance (Townsend-Schilling) — single source of truth for
 //    BOTH the LV calculator (evalAtPayload) and the Program/mission launch. Pure: no
@@ -142,7 +196,7 @@ function collectVehicle(){
   const stages=[];
   for(let s=0;s<numStages;s++){
     const sd=stageStore[s]||{};
-    const st={dry:parseFloat(sd.dry)||0,prop:parseFloat(sd.prop)||0,thrust:parseFloat(sd.thrust)||0,isp:parseFloat(sd.isp)||1,res:parseFloat(sd.res)||0};
+    const st={dry:mathValue(sd.dry,0),prop:mathValue(sd.prop,0),thrust:mathValue(sd.thrust,0),isp:parseFloat(sd.isp)||1,res:mathValue(sd.res,0)};
     // Persist S1.5 fields so they survive save/load
     if(sd.s15){st.s15=true;st.s15_sust_thrust=sd.s15_sust_thrust||0;st.s15_sust_isp=sd.s15_sust_isp||0;st.s15_jet_mass=sd.s15_jet_mass||0;st.s15_beco_twr=sd.s15_beco_twr||1.2;}
     stages.push(st);

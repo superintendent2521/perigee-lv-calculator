@@ -1774,15 +1774,15 @@ button,input,select,textarea{font-family:inherit;}
         </div>
         <div>
           <label>Dry Mass (kg)</label>
-          <input type="number" id="stg-dry" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-dry" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Propellant (kg)</label>
-          <input type="number" id="stg-prop" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-prop" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Thrust (kN)</label>
-          <input type="number" id="stg-thrust" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-thrust" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Isp (s)</label>
@@ -1790,7 +1790,7 @@ button,input,select,textarea{font-family:inherit;}
         </div>
         <div>
           <label>Residuals (%)</label>
-          <input type="number" id="stg-res" value="2" min="0" max="20" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-res" value="2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Engine(s)</label>
@@ -2926,15 +2926,17 @@ function buildTable(){
   tbody.innerHTML='';
   ROWS.forEach(row=>{
     const tr=document.createElement('tr');
+    const allowsMath=['dry','prop','thrust','res'].includes(row.key);
+    const inputAttrs=allowsMath?'type="text" inputmode="decimal" class="math-input" title="Calculations supported: +, -, *, /, and parentheses"':'type="number" min="0" step="any"';
     let html=`<td class="rl">${row.label}</td>`;
     // Booster cell (before Stage 1)
     if(useBooster){
-      html+=`<td class="s-active booster-cell"><input type="number" id="b_${row.key}" value="${bVals[row.key]??bDefaults[row.key]}" min="0" step="any" oninput="buildStageComposition();markLVUserDefined()"></td>`;
+      html+=`<td class="s-active booster-cell"><input ${inputAttrs} id="b_${row.key}" value="${bVals[row.key]??bDefaults[row.key]}" oninput="buildStageComposition();markLVUserDefined()"></td>`;
     }
     for(let s=0;s<numStages;s++){
       const id=`s${s+1}_${row.key}`;
       const val=(stageStore[s]&&stageStore[s][row.key]!==undefined)?stageStore[s][row.key]:row.def[s];
-      html+=`<td class="s-active"><input type="number" id="${id}" value="${val}" min="0" step="any"></td>`;
+      html+=`<td class="s-active"><input ${inputAttrs} id="${id}" value="${val}"></td>`;
     }
     // Ghost cells
     for(let g=0;g<numGhost;g++){
@@ -3403,7 +3405,61 @@ function rotVel(lat,azMin,azMax){
   return Math.max(0,Math.min(best,Vm));
 }
 function rocketEq(isp,m0,mf){return(mf<=0||m0<=mf)?0:G0*isp*Math.log(m0/mf);}
-function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
+
+// Parse editable stage quantities without eval. Supports decimal numbers,
+// scientific notation, parentheses, unary signs, and + - * /.
+function parseMathExpression(value){
+  const src=String(value??'').trim();
+  if(!src)return NaN;
+  let pos=0;
+  const ws=()=>{while(/\s/.test(src[pos]||''))pos++;};
+  const expression=()=>{
+    let value=term();ws();
+    while(src[pos]==='+'||src[pos]==='-'){
+      const op=src[pos++],right=term();
+      value=op==='+'?value+right:value-right;ws();
+    }
+    return value;
+  };
+  const term=()=>{
+    let value=unary();ws();
+    while(src[pos]==='*'||src[pos]==='/'){
+      const op=src[pos++],right=unary();
+      value=op==='*'?value*right:value/right;ws();
+    }
+    return value;
+  };
+  const unary=()=>{
+    ws();
+    if(src[pos]==='+'){pos++;return unary();}
+    if(src[pos]==='-'){pos++;return -unary();}
+    return primary();
+  };
+  const primary=()=>{
+    ws();
+    if(src[pos]==='('){
+      pos++;const value=expression();ws();
+      if(src[pos]!==')')throw new Error('Missing closing parenthesis');
+      pos++;return value;
+    }
+    const match=src.slice(pos).match(/^(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?/);
+    if(!match)throw new Error('Expected a number');
+    pos+=match[0].length;return Number(match[0]);
+  };
+  try{
+    const result=expression();ws();
+    return pos===src.length&&Number.isFinite(result)?result:NaN;
+  }catch(_){return NaN;}
+}
+function mathValue(value,fallback=0){const result=parseMathExpression(value);return Number.isFinite(result)?result:fallback;}
+function commitMathInput(input){
+  const result=input.value.trim()===''?0:parseMathExpression(input.value);
+  const valid=Number.isFinite(result)&&result>=0;
+  input.setCustomValidity(valid?'':'Enter a non-negative calculation using +, -, *, /, and parentheses.');
+  if(valid)input.value=String(result);
+  return valid;
+}
+function gv(id){return mathValue(document.getElementById(id)?.value,0);}
 
 // ── Shared launch performance (Townsend-Schilling) — single source of truth for
 //    BOTH the LV calculator (evalAtPayload) and the Program/mission launch. Pure: no
@@ -3538,7 +3594,7 @@ function collectVehicle(){
   const stages=[];
   for(let s=0;s<numStages;s++){
     const sd=stageStore[s]||{};
-    const st={dry:parseFloat(sd.dry)||0,prop:parseFloat(sd.prop)||0,thrust:parseFloat(sd.thrust)||0,isp:parseFloat(sd.isp)||1,res:parseFloat(sd.res)||0};
+    const st={dry:mathValue(sd.dry,0),prop:mathValue(sd.prop,0),thrust:mathValue(sd.thrust,0),isp:parseFloat(sd.isp)||1,res:mathValue(sd.res,0)};
     // Persist S1.5 fields so they survive save/load
     if(sd.s15){st.s15=true;st.s15_sust_thrust=sd.s15_sust_thrust||0;st.s15_sust_isp=sd.s15_sust_isp||0;st.s15_jet_mass=sd.s15_jet_mass||0;st.s15_beco_twr=sd.s15_beco_twr||1.2;}
     stages.push(st);
@@ -3627,12 +3683,12 @@ function calculateWithS15() {
           `<div class="error-msg">// Stage ${i+1} (Stage-and-a-Half) CONFIG ERROR: ${sp.error}</div>`;
         return;
       }
-      virtualStages.push({ dry: parseFloat(sd.dry)||0, prop: sp.prop_ph1, thrust: parseFloat(sd.thrust)||0, isp: sp.isp_ph1, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: mathValue(sd.dry,0), prop: sp.prop_ph1, thrust: mathValue(sd.thrust,0), isp: sp.isp_ph1, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1} Ph.1`);
-      virtualStages.push({ dry: sp.dry_ph2, prop: sp.prop_ph2, thrust: sd.s15_sust_thrust||0, isp: sp.isp_ph2, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: sp.dry_ph2, prop: sp.prop_ph2, thrust: sd.s15_sust_thrust||0, isp: sp.isp_ph2, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1} Ph.2`);
     } else {
-      virtualStages.push({ dry: parseFloat(sd.dry)||0, prop: parseFloat(sd.prop)||0, thrust: parseFloat(sd.thrust)||0, isp: parseFloat(sd.isp)||1, res: parseFloat(sd.res)||0 });
+      virtualStages.push({ dry: mathValue(sd.dry,0), prop: mathValue(sd.prop,0), thrust: mathValue(sd.thrust,0), isp: parseFloat(sd.isp)||1, res: mathValue(sd.res,0) });
       stageLabels.push(`Stage ${i+1}`);
     }
   }
@@ -3705,6 +3761,8 @@ function calculateWithS15() {
 
 // ─── CALCULATE ────────────────────────────────
 function calculate(){
+  const invalidMath=[...document.querySelectorAll('#stage-tbody .math-input')].find(input=>!commitMathInput(input));
+  if(invalidMath){invalidMath.reportValidity();return;}
   saveStoreFromDOM();
   const panel=document.getElementById('results-panel');
   showPage('results');
@@ -7599,7 +7657,7 @@ function updatePerfPanel() {
   if (!dvBody || !statsBody || !tblBody) return;
 
   // ── Collect stage data ────────────────────────────────────────
-  const pF = v => parseFloat(v) || 0;
+  const pF = v => mathValue(v,0);
   const segments = []; // {label, shortLabel, dry, prop, thrust, isp, res, color, isBooster}
 
   if (useBooster) {
@@ -7912,9 +7970,9 @@ function buildStageComposition(){
     body.appendChild(makeCompCard(
       `Stage ${s+1}`,
       currentStageNames[s]||null,
-      parseFloat(store.dry)||0,
-      parseFloat(store.prop)||0,
-      parseFloat(store.thrust)||0,
+      mathValue(store.dry,0),
+      mathValue(store.prop,0),
+      mathValue(store.thrust,0),
       parseFloat(store.isp)||0,
       s,false
     ));
@@ -8342,10 +8400,10 @@ function _stgBgRemove() {
 function _s15UpdatePreview(_stageIdx) {
   const pre = document.getElementById('stg-s15-preview');
   if (!pre || !document.getElementById('stg-s15')?.checked) return;
-  const dry    = parseFloat(document.getElementById('stg-dry')?.value)    || 0;
-  const prop   = parseFloat(document.getElementById('stg-prop')?.value)   || 0;
+  const dry    = mathValue(document.getElementById('stg-dry')?.value,0);
+  const prop   = mathValue(document.getElementById('stg-prop')?.value,0);
   const isp    = parseFloat(document.getElementById('stg-isp')?.value)    || 1;
-  const thrust = parseFloat(document.getElementById('stg-thrust')?.value) || 0;
+  const thrust = mathValue(document.getElementById('stg-thrust')?.value,0);
   const sThrust = parseFloat(document.getElementById('stg-s15-thrust')?.value) || 0;
   const sIsp    = parseFloat(document.getElementById('stg-s15-isp')?.value)    || isp;
   const jetM    = parseFloat(document.getElementById('stg-s15-jet')?.value)    || 0;
@@ -8363,13 +8421,16 @@ function _s15UpdatePreview(_stageIdx) {
 
 function doEditStage(){
   if(!_editSlot)return;
+  const invalidMath=['stg-dry','stg-prop','stg-thrust','stg-res']
+    .map(id=>document.getElementById(id)).find(input=>!commitMathInput(input));
+  if(invalidMath){invalidMath.reportValidity();return;}
   const {stageIdx,isBooster,extraIdx}=_editSlot;
   const name=document.getElementById('stg-name').value.trim();
-  const dry=parseFloat(document.getElementById('stg-dry').value)||0;
-  const prop=parseFloat(document.getElementById('stg-prop').value)||0;
-  const thrust=parseFloat(document.getElementById('stg-thrust').value)||0;
+  const dry=mathValue(document.getElementById('stg-dry').value,0);
+  const prop=mathValue(document.getElementById('stg-prop').value,0);
+  const thrust=mathValue(document.getElementById('stg-thrust').value,0);
   const isp=parseFloat(document.getElementById('stg-isp').value)||1;
-  const res=parseFloat(document.getElementById('stg-res').value)||2;
+  const res=mathValue(document.getElementById('stg-res').value,2);
   const engines=document.getElementById('stg-engines').value.trim();
   const note=document.getElementById('stg-note').value.trim();
   const tags=document.getElementById('stg-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
@@ -8503,11 +8564,11 @@ function saveStageCardAsFile(stageIdx,isBooster){
     const store=stageStore[stageIdx]||{};
     stage={
       name:currentStageNames[stageIdx]||`Stage ${stageIdx+1}`,
-      dry:parseFloat(store.dry)||0,
-      prop:parseFloat(store.prop)||0,
-      thrust:parseFloat(store.thrust)||0,
+      dry:mathValue(store.dry,0),
+      prop:mathValue(store.prop,0),
+      thrust:mathValue(store.thrust,0),
       isp:parseFloat(store.isp)||0,
-      res:parseFloat(store.res)||2,
+      res:mathValue(store.res,2),
       _userGenerated:true,
     };
     stageSaved[stageIdx]=true;
@@ -15741,6 +15802,8 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   }
   markLVUserDefined();
 });
+document.addEventListener('focusout',e=>{if(e.target.matches?.('.math-input'))commitMathInput(e.target);});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches?.('.math-input'))e.target.blur();});
 ['fairing-mass','fairing-jettison','b_dry','b_prop','b_thrust','b_isp','b_res','num-boosters'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('change',()=>markLVUserDefined());

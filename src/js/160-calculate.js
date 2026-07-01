@@ -1,6 +1,8 @@
 
 // ─── CALCULATE ────────────────────────────────
 function calculate(){
+  const invalidMath=[...document.querySelectorAll('#stage-tbody .math-input')].find(input=>!commitMathInput(input));
+  if(invalidMath){invalidMath.reportValidity();return;}
   saveStoreFromDOM();
   const panel=document.getElementById('results-panel');
   showPage('results');

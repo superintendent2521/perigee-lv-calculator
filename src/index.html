@@ -675,15 +675,15 @@
         </div>
         <div>
           <label>Dry Mass (kg)</label>
-          <input type="number" id="stg-dry" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-dry" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Propellant (kg)</label>
-          <input type="number" id="stg-prop" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-prop" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Thrust (kN)</label>
-          <input type="number" id="stg-thrust" placeholder="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-thrust" placeholder="0 or 1000/2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Isp (s)</label>
@@ -691,7 +691,7 @@
         </div>
         <div>
           <label>Residuals (%)</label>
-          <input type="number" id="stg-res" value="2" min="0" max="20" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
+          <input type="text" inputmode="decimal" class="math-input" id="stg-res" value="2" title="Calculations supported: +, -, *, /, and parentheses" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;margin-bottom:0;">
         </div>
         <div>
           <label>Engine(s)</label>
