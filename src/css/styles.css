@@ -677,13 +677,13 @@ select.field:focus{outline:none;border-color:var(--accent);}
 #vehicles-perf>.vp-top-row{flex-shrink:0;}
 #vp-dv{display:flex;flex-direction:column;}
 #vp-dv-body{flex:1;overflow-y:auto;}
-#vp-stats{display:flex;flex-direction:column;}
-#vp-stats-body{flex:1;overflow-y:auto;}
 #vp-table{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
 #vp-table-body{flex:1;overflow:auto;min-height:0;}
 #vehicles-perf .lib-panel{margin-top:0;}
 .vp-header{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
 .vp-header-sub{font-size:7px;letter-spacing:.08em;opacity:.6;}
+/* Trade Studies page */
+.ts-chart-card{border:1px solid var(--border);padding:10px;background:rgba(0,0,0,.12);}
 /* ΔV bar rows */
 .vp-dv-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
 .vp-dv-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);flex-shrink:0;white-space:nowrap;max-width:160px;}
@@ -695,11 +695,8 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-dv-total-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);flex:1;}
 .vp-dv-total-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
 .vp-dv-empty{font-family:var(--mono);font-size:10px;color:var(--text-dim);opacity:.5;padding:16px 0;text-align:center;}
-/* Stats card */
-.vp-stat{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border);}
-.vp-stat:last-child{border-bottom:none;}
-.vp-stat-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
-.vp-stat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text-bright);}
+/* T/W status coloring (used in the spec table's Vehicle column) */
+.vp-stat-val{font-family:var(--mono);font-weight:600;color:var(--text-bright);}
 .vp-stat-val.warn{color:#f4a;}
 .vp-stat-val.ok{color:var(--accent3);}
 /* Spec table */
@@ -711,6 +708,8 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-spec-tbl tr:last-child td{border-bottom:none;}
 .vp-spec-tbl .vp-dv-accent{color:var(--accent);}
 .vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.vp-spec-tbl th.vp-col-veh,.vp-spec-tbl td.vp-col-veh{border-left:1px solid var(--border);color:var(--text-bright);font-weight:600;}
+.vp-dv-cellbar{display:block;padding:1px 4px;border-radius:1px;}
 /* ── Web Lookup modal ── */
 #modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
 #lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
@@ -1096,4 +1095,12 @@ button,input,select,textarea{font-family:inherit;}
 #lib-browser-body::-webkit-scrollbar{width:8px;}
 #lib-browser-body::-webkit-scrollbar-thumb{background:var(--border-bright);}
 #lib-browser-body::-webkit-scrollbar-track{background:transparent;}
+
+/* ── AUTOSAVE RESTORE BANNER ── */
+.autosave-banner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--panel);border:1px solid var(--accent);box-shadow:0 4px 18px rgba(0,0,0,.4);padding:9px 14px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--text-bright);}
+.autosave-banner-msg{white-space:nowrap;}
+.autosave-banner-btn{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;cursor:pointer;border:1px solid var(--border-bright);background:transparent;color:var(--text);transition:all .12s;}
+.autosave-banner-restore{border-color:var(--accent);color:var(--accent);}
+.autosave-banner-restore:hover{background:var(--accent);color:#000;}
+.autosave-banner-discard:hover{border-color:var(--text-dim);color:var(--text-bright);}
 

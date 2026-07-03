@@ -684,13 +684,13 @@ select.field:focus{outline:none;border-color:var(--accent);}
 #vehicles-perf>.vp-top-row{flex-shrink:0;}
 #vp-dv{display:flex;flex-direction:column;}
 #vp-dv-body{flex:1;overflow-y:auto;}
-#vp-stats{display:flex;flex-direction:column;}
-#vp-stats-body{flex:1;overflow-y:auto;}
 #vp-table{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
 #vp-table-body{flex:1;overflow:auto;min-height:0;}
 #vehicles-perf .lib-panel{margin-top:0;}
 .vp-header{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
 .vp-header-sub{font-size:7px;letter-spacing:.08em;opacity:.6;}
+/* Trade Studies page */
+.ts-chart-card{border:1px solid var(--border);padding:10px;background:rgba(0,0,0,.12);}
 /* ΔV bar rows */
 .vp-dv-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
 .vp-dv-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);flex-shrink:0;white-space:nowrap;max-width:160px;}
@@ -702,11 +702,8 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-dv-total-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);flex:1;}
 .vp-dv-total-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
 .vp-dv-empty{font-family:var(--mono);font-size:10px;color:var(--text-dim);opacity:.5;padding:16px 0;text-align:center;}
-/* Stats card */
-.vp-stat{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border);}
-.vp-stat:last-child{border-bottom:none;}
-.vp-stat-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
-.vp-stat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text-bright);}
+/* T/W status coloring (used in the spec table's Vehicle column) */
+.vp-stat-val{font-family:var(--mono);font-weight:600;color:var(--text-bright);}
 .vp-stat-val.warn{color:#f4a;}
 .vp-stat-val.ok{color:var(--accent3);}
 /* Spec table */
@@ -718,6 +715,8 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-spec-tbl tr:last-child td{border-bottom:none;}
 .vp-spec-tbl .vp-dv-accent{color:var(--accent);}
 .vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.vp-spec-tbl th.vp-col-veh,.vp-spec-tbl td.vp-col-veh{border-left:1px solid var(--border);color:var(--text-bright);font-weight:600;}
+.vp-dv-cellbar{display:block;padding:1px 4px;border-radius:1px;}
 /* ── Web Lookup modal ── */
 #modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
 #lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
@@ -1104,6 +1103,14 @@ button,input,select,textarea{font-family:inherit;}
 #lib-browser-body::-webkit-scrollbar-thumb{background:var(--border-bright);}
 #lib-browser-body::-webkit-scrollbar-track{background:transparent;}
 
+/* ── AUTOSAVE RESTORE BANNER ── */
+.autosave-banner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--panel);border:1px solid var(--accent);box-shadow:0 4px 18px rgba(0,0,0,.4);padding:9px 14px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--text-bright);}
+.autosave-banner-msg{white-space:nowrap;}
+.autosave-banner-btn{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;cursor:pointer;border:1px solid var(--border-bright);background:transparent;color:var(--text);transition:all .12s;}
+.autosave-banner-restore{border-color:var(--accent);color:var(--accent);}
+.autosave-banner-restore:hover{background:var(--accent);color:#000;}
+.autosave-banner-discard:hover{border-color:var(--text-dim);color:var(--text-bright);}
+
 </style>
 </head>
 <body>
@@ -1112,13 +1119,10 @@ button,input,select,textarea{font-family:inherit;}
 <header>
   <h1>Rocket Playground</h1>
   <nav class="page-nav">
-    <button class="nav-btn active" id="nav-lv" onclick="showLvSection()">LV Calculator</button>
-    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program Manager</button>
-  </nav>
-  <nav class="lv-subnav" id="lv-subnav">
-    <button class="lv-sub-btn active" data-lv="vehicles" onclick="showPage('vehicles')">Vehicles</button>
-    <button class="lv-sub-btn" data-lv="orbits" onclick="showPage('orbits')">Orbits</button>
-    <button class="lv-sub-btn" data-lv="results" onclick="showPage('results')">Results</button>
+    <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
+    <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
+    <button class="nav-btn" id="nav-trades" onclick="showPage('trades')">Trade Studies</button>
+    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
   </nav>
   <nav class="lv-subnav" id="prog-subnav" style="display:none;">
     <button class="lv-sub-btn active" data-prog="hangar" onclick="progShowTab('hangar')">Hangar</button>
@@ -1182,8 +1186,6 @@ button,input,select,textarea{font-family:inherit;}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div class="sl" style="margin-bottom:0;flex:1;">Stage Composition</div>
         <button class="act-btn green" onclick="openSaveLVModal()">SAVE LV</button>
-        <button class="act-btn" onclick="openJSONModal()">{ } JSON</button>
-        <label class="act-btn" style="cursor:pointer;">LOAD<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
       </div>
 
       <!-- Config controls: stage count, boosters, restartable, fairing jettison -->
@@ -1266,7 +1268,6 @@ button,input,select,textarea{font-family:inherit;}
         <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
           <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
           <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
-          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
           <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
             <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;libRender();">
             My Stuff
@@ -1280,21 +1281,9 @@ button,input,select,textarea{font-family:inherit;}
 
   <!-- PERFORMANCE SUMMARY PANEL (beginner mode) -->
   <div id="vehicles-perf">
-    <div class="vp-top-row" style="display:grid;grid-template-columns:1fr 210px;gap:14px;margin-bottom:14px;align-items:stretch;">
-      <!-- ΔV Budget -->
-      <div class="lib-panel" style="padding:12px 14px;" id="vp-dv">
-        <div class="vp-header">ΔV Budget <span class="vp-header-sub">stage-isolation basis · payload not included</span></div>
-        <div id="vp-dv-body"><div class="vp-dv-empty">// No stages loaded</div></div>
-      </div>
-      <!-- Vehicle Stats -->
-      <div class="lib-panel" style="padding:12px 14px;" id="vp-stats">
-        <div class="vp-header">Vehicle Summary</div>
-        <div id="vp-stats-body"><div class="vp-dv-empty">// —</div></div>
-      </div>
-    </div>
     <!-- Stage Spec Comparison -->
     <div class="lib-panel" style="padding:12px 14px;" id="vp-table">
-      <div class="vp-header">Stage Specifications</div>
+      <div class="vp-header">Stage Specifications <span class="vp-header-sub">stage-isolation ΔV basis · payload not included</span></div>
       <div id="vp-table-body"><div class="vp-dv-empty">// No stages loaded</div></div>
     </div>
   </div><!-- /vehicles-perf -->
@@ -1303,8 +1292,7 @@ button,input,select,textarea{font-family:inherit;}
   <div id="vehicles-advanced" style="display:none;">
     <div style="display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
       <button class="act-btn green" onclick="openSaveLVModal()">Save LV</button>
-      <button class="act-btn" onclick="openJSONModal()">JSON</button>
-      <label class="act-btn" style="cursor:pointer;">Load LV<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
+      <label class="act-btn" style="cursor:pointer;" title="Load a saved vehicle or a Perigee library export">⇣ Load<input type="file" accept=".vehicle,.json" style="display:none" onchange="libLoadVehicleFile(this)"></label>
       <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
       <label class="act-btn" style="cursor:pointer;">Load Stage → Slot<input type="file" accept=".stage,.json" style="display:none" onchange="advLoadStage(this)"></label>
       <button class="act-btn" onclick="openAdvSaveSlotModal()">Save Stage from Slot</button>
@@ -1368,38 +1356,42 @@ button,input,select,textarea{font-family:inherit;}
   </div>
   </div><!-- /vehicles-stage-params -->
 
+  <!-- LAUNCH SITE (moved from the former Orbits page, 2026-07-02 IA restructure) -->
+  <div class="lib-panel" style="margin-top:14px;">
+  <div class="left-section" id="sec-launch">
+  <div class="sl">Launch Site</div>
+  <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+      <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
+        <div id="site-selector-grid"></div>
+        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+        </div>
+        <div class="site-note" id="site-note"></div>
+        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+        <div class="site-desc" id="site-desc"></div>
+        <div class="act-row" style="margin-top:10px;">
+          <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
+          <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
+        </div>
+      </div>
+      <canvas id="site-map"></canvas>
+    </div>
+  </div>
+  </div><!-- /left-section launch-site -->
+  </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
 <div id="page-orbits" class="page">
+  <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
   <div class="two-col">
 
     <!-- LEFT: Destination config -->
     <div class="left-col">
-      <div class="left-section" id="sec-launch">
-      <div class="sl">Launch Site</div>
-      <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
-        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
-          <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
-            <div id="site-selector-grid"></div>
-            <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
-              <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
-              <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-              <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-            </div>
-            <div class="site-note" id="site-note"></div>
-            <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
-            <div class="site-desc" id="site-desc"></div>
-            <div class="act-row" style="margin-top:10px;">
-              <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
-              <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
-            </div>
-          </div>
-          <canvas id="site-map"></canvas>
-        </div>
-      </div>
-
-      </div><!-- /left-section launch-site -->
       <div class="left-section" id="sec-orbit">
       <div class="sl">Define an Orbit</div>
       <div class="panel" id="panel-define-orbit">
@@ -1452,31 +1444,31 @@ button,input,select,textarea{font-family:inherit;}
     </div>
 
   </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════ PAGE: RESULTS -->
-<div id="page-results" class="page">
-  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+  <!-- RESULTS (moved from the former page-results) -->
+  <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:18px 0 10px;"></div>
+  <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
     <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-    <button onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+    <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
       style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
   </div>
   <div class="results-layout">
 
-    <!-- LEFT: Cases panel -->
+    <!-- LEFT: Cases panel (collapsed by default, toggled) -->
     <div class="cases-panel">
-      <div class="cases-header">
-        <span>Performance Cases</span>
+      <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+        <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
       </div>
-      <div class="act-row" style="margin-bottom:8px;">
-        <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-      </div>
-      <div id="case-list">
-        <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-      </div>
-      <div class="case-actions">
-        <label class="act-btn" style="cursor:pointer;text-align:center;width:100%;box-sizing:border-box;">Load Vehicle File<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
-        <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled>Download All Cases</button>
+      <div id="cases-panel-body" style="display:none;">
+        <div class="act-row" style="margin-bottom:8px;">
+          <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+        </div>
+        <div id="case-list">
+          <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+        </div>
+        <div class="case-actions">
+          <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+        </div>
       </div>
     </div>
 
@@ -1484,12 +1476,19 @@ button,input,select,textarea{font-family:inherit;}
     <div>
       <div class="sl">Results</div>
       <div class="results-panel" id="results-panel">
-        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target on the Launch page, then calculate.</div>
+        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
       </div>
     </div>
 
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: TRADE STUDIES -->
+<div id="page-trades" class="page">
+  <div class="vp-header">Trade Studies <span class="vp-header-sub">Compare vehicles across payloads, orbits, and design variables</span></div>
+  <div id="ts-panel"></div>
+</div>
+
 <div id="page-program" class="page">
   <div class="sc-ed-toolbar">
     <div class="seg" id="hangar-pick" style="margin-right:6px;">
@@ -1633,11 +1632,19 @@ button,input,select,textarea{font-family:inherit;}
       <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
       <label style="margin-top:10px;">Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing &amp; the program (propellant &amp; class auto-derive from stages)</span></label>
       <div id="lv-save-tags"></div>
-      <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
+      <div class="save-note">Saves this vehicle into your library (My Stuff) so it's browsable in the Vehicles list.</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">
+        <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;">Other options</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="act-btn" onclick="downloadLVAsJSON()" title="Download this vehicle as a standalone .vehicle file">⇣ Download as JSON</button>
+          <button class="act-btn" onclick="openJSONModal()" title="View, copy, or paste-edit the raw vehicle JSON">{ } View / Paste JSON</button>
+          <button class="act-btn" onclick="libExportMine()" title="Download your entire saved library (vehicles + stages) as one file">⇣ Download entire library</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
-      <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+      <button class="modal-btn primary" onclick="doSaveLV()">Save to Library</button>
     </div>
   </div>
 </div>
@@ -1893,9 +1900,12 @@ const MAX_STAGES=15;
 // ─── VERSION & CHANGELOG ──────────────────────
 // Single source of truth for the displayed version + patch notes (header button
 // opens #modal-patch-notes). Bump APP_VERSION and prepend an entry on release.
-const APP_VERSION='1.1.0A';
+const APP_VERSION='1.1.1';
 const APP_REPO_URL='https://github.com/rp1-lox/perigee-lv-calculator';
 const APP_CHANGELOG=[
+  {v:'1.1.1', title:'Extended Math', date:'2026-07-01', notes:[
+    'Added ability to do use equations in stage and vehicle information boxes.',
+  ]},
   {v:'1.1.0A', title:'Unified Library', date:'2026-06-21', notes:[
     'An all-new unified stages & vehicles panel across both Program and Calculator mode — designed to increase UI cohesion and discoverability. Vehicles and stages are now sorted directly by their characteristics, while keeping the earlier search capability.',
     'Tags are now simpler. (This mostly makes my life easier.)',
@@ -2814,46 +2824,48 @@ function renderTutorials() {
 }
 
 // ─── PAGE NAVIGATION ──────────────────────────
-// Two top-level sections: "LV Calculator" (Vehicles / Orbits / Results sub-tabs)
-// and "Program Manager" (page-program, with its own Spacecraft/Fleet/Missions tabs).
-const _LV_PAGES = ['vehicles', 'orbits', 'results'];
-let _lvSubPage = 'vehicles';   // remembers the last LV sub-tab
+// Flat, single-row top nav: Vehicles | Orbits | Trade Studies | Program.
+// 'results' is a legacy alias (calculate() calls showPage('results') and that
+// function is untouchable) — it resolves to the Orbits page, since the Results
+// content now lives there, and scrolls #results-panel into view.
+const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'program'];
 
 function showPage(p){
+  let target = p;
+  if(target === 'results') target = 'orbits';
+
   document.querySelectorAll('.page').forEach(el=>{
     el.classList.remove('active');
     el.style.display='none';
   });
-  const pg=document.getElementById('page-'+p);
+  const pg=document.getElementById('page-'+target);
   if(!pg) return;
   pg.classList.add('active');
-  pg.style.display=(p==='program'||p==='art')?'flex':'block';
+  pg.style.display=(target==='program'||target==='art')?'flex':'block';
 
-  const isLv=_LV_PAGES.includes(p);
-  // top-level nav highlight (LV section folds vehicles/orbits/results under nav-lv)
+  // top-level nav highlight
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
-  const topBtn=document.getElementById(isLv?'nav-lv':'nav-'+p);
+  const topBtn=document.getElementById('nav-'+target);
   if(topBtn) topBtn.classList.add('active');
-  // LV sub-tab bar: only visible inside the LV section
-  const sub=document.getElementById('lv-subnav');
-  if(sub) sub.style.display=isLv?'flex':'none';
-  if(isLv){
-    _lvSubPage=p;
-    document.querySelectorAll('#lv-subnav .lv-sub-btn').forEach(b=>b.classList.toggle('active', b.dataset.lv===p));
-  }
+
   // Program sub-tab bar + header Save/Load: only visible inside Program Manager
   const psub=document.getElementById('prog-subnav');
-  if(psub) psub.style.display=(p==='program')?'flex':'none';
+  if(psub) psub.style.display=(target==='program')?'flex':'none';
   const pha=document.getElementById('prog-header-actions');
-  if(pha) pha.style.display=(p==='program')?'flex':'none';
+  if(pha) pha.style.display=(target==='program')?'flex':'none';
 
   const vvw=document.getElementById('veh-view-wrap');
-  if(vvw){vvw.style.display=(p==='vehicles')?'flex':'none';}
-  if(p==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
-}
+  if(vvw){vvw.style.display=(target==='vehicles')?'flex':'none';}
+  if(target==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
+  if(target==='trades'){ tsEnsureRendered(); }
+  if(target==='orbits' && typeof orbVehRenderSelectorBar==='function'){ orbVehRenderSelectorBar(); }
 
-// "LV Calculator" top-nav button → return to the last-used LV sub-tab.
-function showLvSection(){ showPage(_lvSubPage || 'vehicles'); }
+  // Legacy 'results' alias: scroll the results panel into view once rendered.
+  if(p==='results'){
+    const rp=document.getElementById('results-panel');
+    if(rp) setTimeout(()=>rp.scrollIntoView({behavior:'smooth',block:'start'}), 0);
+  }
+}
 
 // ─── BUILD TABLE ──────────────────────────────
 function saveStoreFromDOM(){
@@ -3047,6 +3059,7 @@ function markOrbitUserDefined(){
 }
 function markLVUserDefined(){
   if(!_suppressUD&&activePresetKey!=='user_defined'){activePresetKey='user_defined';userDefinedLV=true;buildPresets();}
+  if(typeof autosaveScheduleSave==='function')autosaveScheduleSave();
 }
 
 // ─── VEHICLES PANEL ───────────────────────────
@@ -3604,6 +3617,60 @@ function collectVehicle(){
   return{name:'',note:'',stages:numStages,boosters:useBooster,restartable,stageData:stages,boosterData:booster,boosterGroups:(groups.length>1?groups:null),payload:gv('payload-mass'),fairingMass:gv('fairing-mass'),fairingJettison:parseInt(document.getElementById('fairing-jettison').value),site:{lat:gv('site-lat'),azMin:gv('az-min'),azMax:gv('az-max')},mode:destMode,orbit:destMode==='orbit'?{apogee:gv('apogee'),perigee:gv('perigee'),inc:gv('inclination')}:null,escape:destMode==='escape'?{c3:gv('c3'),decl:gv('decl'),perigee:gv('escape-perigee')}:null,trajectory,parkingAlt:destMode==='orbit'?gv('parking-alt'):gv('escape-perigee')};
 }
 
+// ─── DESTINATION ΔV (pure) ────────────────────
+// Pure re-implementation of the on-orbit ΔV computation that lives inside
+// calculate() (160-calculate.js). calculate() is frozen by project invariant,
+// so this function EXACTLY mirrors its logic for use by DOM-independent
+// callers (Orbits-page vehicle selector, Trade Study destination sweeps).
+// tests/math.test.js pins this against golden values from calculate() —
+// if 160's logic ever changes, change this + the goldens together.
+//
+// dest (orbit mode):  {mode:'orbit',  apogee, perigee, inc, parkingAlt}
+// dest (escape mode): {mode:'escape', c3, decl, perigee}   // perigee = parking perigee
+// siteLat in degrees. Returns {onOrbitDV (m/s), parkingAlt (km), error?}.
+function destOnOrbitDV(dest, siteLat){
+  if(!dest) return {onOrbitDV:0, parkingAlt:185, error:'no destination'};
+  if(dest.mode==='escape'){
+    const c3=dest.c3||0, decl=(dest.decl!=null?dest.decl:siteLat), parkingAlt=dest.perigee!=null?dest.perigee:185;
+    const Vesc2=2*MU/(RE+parkingAlt);
+    if(c3<-Vesc2) return {onOrbitDV:0, parkingAlt, error:`C3=${c3} below minimum (${(-Vesc2).toFixed(1)}) for ${parkingAlt} km orbit`};
+    const Vh=Math.sqrt(Vesc2+c3);
+    let onOrbitDV=(Vh-Math.sqrt(MU/(RE+parkingAlt)))*1000;
+    const ds=Math.max(0,Math.abs(siteLat)-Math.abs(decl)-0.5);
+    if(ds>0) onOrbitDV+=2*circVel(parkingAlt)*Math.sin(ds*Math.PI/360);
+    return {onOrbitDV, parkingAlt};
+  }
+  const apogee=dest.apogee||0, perigee=dest.perigee||0, inc=(dest.inc!=null?dest.inc:siteLat);
+  const parkingAlt=dest.parkingAlt!=null?dest.parkingAlt:185;
+  const rPk=RE+parkingAlt, rAp=RE+apogee, rPe=RE+perigee;
+  const Vc_park=Math.sqrt(MU/rPk);
+  const vPeri=(rp,ra)=>Math.sqrt(2*MU*ra/(rp*(rp+ra)));
+  const vApo=(rp,ra)=>Math.sqrt(2*MU*rp/(ra*(rp+ra)));
+  const destIsCirc=Math.abs(apogee-perigee)<5;
+  const destIsPark=Math.abs(apogee-parkingAlt)<5&&Math.abs(perigee-parkingAlt)<5;
+  const needsPlane=inc<Math.abs(siteLat)-0.5;
+  const planeAngle=needsPlane?(Math.abs(siteLat)-inc)*Math.PI/180:0;
+  let onOrbitDV=0;
+  if(destIsPark){
+    onOrbitDV=0;
+  }else if(destIsCirc){
+    const dv1=Math.abs(vPeri(rPk,rAp)-Vc_park)*1000;
+    if(needsPlane&&apogee>10000){
+      const va=vApo(rPk,rAp)*1000,vc=Math.sqrt(MU/rAp)*1000;
+      onOrbitDV=dv1+Math.sqrt(va*va+vc*vc-2*va*vc*Math.cos(planeAngle));
+    }else{
+      onOrbitDV=dv1+Math.abs(Math.sqrt(MU/rAp)-vApo(rPk,rAp))*1000;
+      if(needsPlane)onOrbitDV+=2*Vc_park*1000*Math.sin(planeAngle/2);
+    }
+  }else{
+    const dv1=Math.abs(vPeri(rPk,rAp)-Vc_park)*1000;
+    const dv2=Math.abs(perigee-parkingAlt)<50?0:Math.abs(vApo(rPe,rAp)-vApo(rPk,rAp))*1000;
+    onOrbitDV=dv1+dv2;
+    if(needsPlane)onOrbitDV+=2*Vc_park*1000*Math.sin(planeAngle/2);
+  }
+  return {onOrbitDV, parkingAlt};
+}
+
 // ─── STAGE-AND-A-HALF ─────────────────────────
 /**
  * Compute the Phase-1 / Phase-2 propellant split for a stage-and-a-half.
@@ -3659,13 +3726,17 @@ function _s15BecoSplit(s) {
  * without any modification to those functions.
  */
 function calculateWithS15() {
+  // Orbits-page vehicle selector: if a library vehicle (not "Worksheet") is
+  // selected, delegate to the pure path and skip the DOM-reading worksheet
+  // flow entirely. calculate() itself is never touched.
+  if (typeof _orbVehSel !== 'undefined' && _orbVehSel) { orbCalcSelectedVehicle(); return; }
   // Check whether any stage uses S1.5
   saveStoreFromDOM();
   const s15Indices = [];
   for (let i = 0; i < numStages; i++) {
     if (stageStore[i]?.s15) s15Indices.push(i);
   }
-  if (!s15Indices.length) { calculate(); return; }
+  if (!s15Indices.length) { calculate(); condenseResultsPanel(); return; }
 
   // ── 1. Build virtual stage sequence ──────────────────────────────────────────
   const virtualStages = [];   // [{dry,prop,thrust,isp,res, label}]
@@ -3757,6 +3828,8 @@ function calculateWithS15() {
       panel.innerHTML = panel.innerHTML.replaceAll(`Stage ${vi + 1}`, lbl);
     });
   }
+
+  condenseResultsPanel();
 }
 
 // ─── CALCULATE ────────────────────────────────
@@ -3893,6 +3966,879 @@ function renderResults(r){
     <div class="note">Method: Townsend-Schilling (2009). RMS ~260 m/s; &lt;10% payload error.<br>${destMode==='escape'?'Escape: hyperbolic injection Vinj=√(Vesc²+C3).':'Orbit: verified Hohmann from parking orbit.'} Always use vacuum Isp.</div>`;
 }
 
+// ─── TRADE STUDY ──────────────────────────────
+// Sweep-chart panel for the Results page. Reuses the pure math in 140-physics.js
+// (lvPerformance / lvMaxPayload) — never touches calculate()/evalAtPayload(). Reads
+// the CURRENT vehicle + destination straight off the DOM (own small assembler below,
+// deliberately not shared with calculate()'s local closure).
+let _tsRunToken=0;   // increments to cancel an in-flight chunked sweep
+let _tsResult=null;  // {xLabel,yLabel,xUnit,yUnit,series:[{name,points:[{x,y}]}],zeroLine}
+// Vehicle comparison selection: array of {kind:'builtin'|'user', idx, name}. Max 4.
+// The current DOM vehicle is always series 0 and is NOT stored in this array.
+let _tsCompareVehicles=[];
+const TS_MAX_COMPARE=4;
+const TS_SERIES_COLORS=['var(--accent)','var(--accent2)','var(--accent3)','var(--nm-earth)','var(--nm-lunar)'];
+
+// Trade Studies is now its own always-expanded page (#page-trades). Ensure the
+// panel is populated the first time the page is shown.
+function tsEnsureRendered(){
+  const panel=document.getElementById('ts-panel');
+  if(!panel)return;
+  if(!panel.innerHTML.trim())tsRenderForm();
+}
+
+// Assemble the vehicle/site/booster args the same way calculate() does, from the DOM.
+function _tsCollectBase(){
+  const fairingM=gv('fairing-mass');
+  const fairingJ=parseInt(document.getElementById('fairing-jettison').value);
+  const siteLat=gv('site-lat'),azMin=gv('az-min'),azMax=gv('az-max');
+  const stages=[];
+  for(let s=0;s<numStages;s++)stages.push({dry:gv(`s${s+1}_dry`),prop:gv(`s${s+1}_prop`),thrust:gv(`s${s+1}_thrust`),isp:parseFloat(document.getElementById(`s${s+1}_isp`).value)||1,res:gv(`s${s+1}_res`)});
+  const boosterArg=useBooster?lvBoosterGroups():null;
+  const parkingAlt=destMode==='orbit'?gv('parking-alt'):gv('escape-perigee');
+  const payload=gv('payload-mass');
+  return{fairingM,fairingJ,siteLat,azMin,azMax,stages,boosterArg,parkingAlt,payload};
+}
+
+// On-orbit ΔV for the CURRENT DOM target, replicated minimally for a circular orbit
+// (matches the destIsCirc/destIsPark branch of calculate() when apogee≈perigee≈parking).
+// Not valid for elliptical or escape targets — callers must not use this off that path.
+function _tsOnOrbitDVCircular(parkingAlt,inc,siteLat){
+  const rPk=RE+parkingAlt;
+  const Vc=Math.sqrt(MU/rPk)*1000;
+  const needsPlane=inc<Math.abs(siteLat)-0.5;
+  if(!needsPlane)return 0;
+  const planeAngle=(Math.abs(siteLat)-inc)*Math.PI/180;
+  return 2*Vc*Math.sin(planeAngle/2);
+}
+
+const TS_VARS={
+  altitude:{label:'Parking Altitude',unit:'km',from:200,to:2000,dom:'parking-alt'},
+  inclination:{label:'Inclination',unit:'deg',from:0,to:90,dom:'inclination'},
+  payload:{label:'Payload Mass',unit:'kg',from:0,to:20000,dom:'payload-mass'},
+  destination:{label:'Destination',unit:'',from:0,to:0,dom:null},
+};
+
+// Destination sweep: which destinations are enabled. Keyed by `${planet}::${name}`.
+// Populated lazily on first render of the destination picker (Earth checked by default).
+let _tsDestEnabled=null;
+
+function _tsDestKey(planet,name){return planet+'::'+name;}
+
+function _tsInitDestEnabled(){
+  if(_tsDestEnabled)return;
+  _tsDestEnabled=new Set();
+  ORBIT_CATEGORIES.forEach(cat=>{
+    if(cat.planet==='Earth'){
+      cat.orbits.forEach(o=>_tsDestEnabled.add(_tsDestKey(cat.planet,o.name)));
+    }
+  });
+}
+
+function tsRenderForm(){
+  const panel=document.getElementById('ts-panel');
+  if(!panel)return;
+  _tsInitDestEnabled();
+  panel.innerHTML=`
+    <div style="border:1px solid var(--border);padding:10px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
+        <div>
+          <div class="sl" style="margin-bottom:4px;">Sweep Variable</div>
+          <select id="ts-var" onchange="tsOnVarChange()" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;">
+            <option value="altitude">Parking Altitude (km)</option>
+            <option value="inclination">Inclination (deg)</option>
+            <option value="payload">Payload Mass (kg)</option>
+            <option value="destination">Destination</option>
+          </select>
+        </div>
+        <div id="ts-range-fields" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div><div class="sl" style="margin-bottom:4px;">From</div><input id="ts-from" type="number" style="width:90px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
+          <div><div class="sl" style="margin-bottom:4px;">To</div><input id="ts-to" type="number" style="width:90px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
+          <div><div class="sl" style="margin-bottom:4px;">Steps</div><input id="ts-steps" type="number" value="20" min="2" max="60" style="width:70px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
+        </div>
+        <button class="act-btn green" onclick="tsRunSweep()">▶ Run Sweep</button>
+        <button class="act-btn" id="ts-csv-btn" onclick="tsDownloadCSV()" disabled>Download CSV</button>
+      </div>
+      <div id="ts-dest-picker" style="display:none;border:1px solid var(--border);padding:8px 10px;margin-bottom:10px;max-height:220px;overflow:auto;"></div>
+      <div style="border:1px solid var(--border);padding:8px 10px;margin-bottom:10px;">
+        <div class="sl" style="margin-bottom:6px;">Compare Vehicles <span style="color:var(--text-dim);font-weight:normal;">(current vehicle always included, up to ${TS_MAX_COMPARE} more)</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+          <select id="ts-cmp-select" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;max-width:280px;">
+            ${_tsCompareOptionsHTML()}
+          </select>
+          <button class="act-btn" onclick="tsAddCompareVehicle()">+ Add</button>
+        </div>
+        <div id="ts-cmp-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+      <div id="ts-error" style="color:#ff4444;font-family:var(--mono);font-size:10px;margin-bottom:8px;"></div>
+      <div id="ts-note" style="color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-bottom:8px;"></div>
+      <div id="ts-progress" style="color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-bottom:8px;"></div>
+      <div class="ts-chart-card" id="ts-chart-wrap"></div>
+      <div id="ts-table-wrap" style="margin-top:10px;max-height:280px;overflow:auto;"></div>
+    </div>`;
+  tsOnVarChange();
+  tsRenderCompareChips();
+}
+
+function _tsDestPickerHTML(){
+  let html='';
+  ORBIT_CATEGORIES.forEach(cat=>{
+    const rows=cat.orbits.map(o=>{
+      const key=_tsDestKey(cat.planet,o.name);
+      const checked=_tsDestEnabled.has(key)?'checked':'';
+      return `<label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text-bright);padding:2px 0;cursor:pointer;">
+        <input type="checkbox" ${checked} onchange="tsToggleDest('${_tsEsc(key).replace(/'/g,"\\'")}',this.checked)">
+        ${_tsEsc(o.name)} <span style="color:var(--text-dim);">${o.mode==='escape'?`C3=${o.c3}`:`${o.apogee}×${o.perigee} km, ${o.inc}°`}</span>
+      </label>`;
+    }).join('');
+    html+=`<div style="margin-bottom:8px;">
+      <div class="sl" style="margin-bottom:4px;">${cat.icon} ${_tsEsc(cat.planet)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 12px;">${rows}</div>
+    </div>`;
+  });
+  return html;
+}
+
+function tsToggleDest(key,on){
+  if(!_tsDestEnabled)_tsInitDestEnabled();
+  if(on)_tsDestEnabled.add(key);else _tsDestEnabled.delete(key);
+}
+
+// ── Vehicle comparison: selection UI ──────────
+
+function _tsCompareOptionsHTML(){
+  const opts=[];
+  (typeof BUILTIN_PRESETS!=='undefined'?BUILTIN_PRESETS:[]).forEach((p,i)=>{
+    opts.push(`<option value="builtin:${i}">[Preset] ${_tsEsc(p.name)}</option>`);
+  });
+  (typeof userLVs!=='undefined'?userLVs:[]).forEach((v,i)=>{
+    opts.push(`<option value="user:${i}">[My Stuff] ${_tsEsc(v.name)}</option>`);
+  });
+  return opts.join('')||'<option disabled>No vehicles available</option>';
+}
+
+function _tsEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function tsAddCompareVehicle(){
+  const sel=document.getElementById('ts-cmp-select');
+  if(!sel||!sel.value)return;
+  if(_tsCompareVehicles.length>=TS_MAX_COMPARE){_tsSetError(`You can compare up to ${TS_MAX_COMPARE} additional vehicles.`);return;}
+  const [kind,idxStr]=sel.value.split(':');
+  const idx=parseInt(idxStr);
+  const src=kind==='builtin'?BUILTIN_PRESETS[idx]:userLVs[idx];
+  if(!src)return;
+  // Avoid duplicate entries
+  if(_tsCompareVehicles.some(cv=>cv.kind===kind&&cv.idx===idx))return;
+  _tsCompareVehicles.push({kind,idx,name:src.name||'Unnamed'});
+  tsRenderCompareChips();
+}
+
+function tsRemoveCompareVehicle(i){
+  _tsCompareVehicles.splice(i,1);
+  tsRenderCompareChips();
+}
+
+function tsRenderCompareChips(){
+  const wrap=document.getElementById('ts-cmp-chips');
+  if(!wrap)return;
+  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
+  let html=`<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);border:1px solid var(--accent);padding:3px 8px;background:rgba(0,0,0,.2);">
+    <span style="width:9px;height:9px;background:${TS_SERIES_COLORS[0]};display:inline-block;"></span>Current: ${_tsEsc(curName)}</span>`;
+  _tsCompareVehicles.forEach((cv,i)=>{
+    const color=TS_SERIES_COLORS[(i+1)%TS_SERIES_COLORS.length];
+    html+=`<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);border:1px solid var(--border-bright);padding:3px 8px;">
+      <span style="width:9px;height:9px;background:${color};display:inline-block;"></span>${_tsEsc(cv.name)}
+      <span style="cursor:pointer;color:var(--text-dim);" onclick="tsRemoveCompareVehicle(${i})">✕</span></span>`;
+  });
+  wrap.innerHTML=html;
+}
+
+// Convert a saved/preset vehicle object (buildLVObject shape) into the same
+// {fairingM,fairingJ,siteLat,azMin,azMax,stages,boosterArg,parkingAlt,payload} bundle
+// _tsCollectBase() returns for the current DOM vehicle. Uses the vehicle's OWN
+// stages/booster/fairing/site — but callers overlay the swept variable + shared
+// orbit params so curves stay comparable (see tsRunSweep).
+function _tsVehicleToBase(vehObj){
+  const stages=resolvePresetStages(vehObj).map(sd=>({dry:sd.dry,prop:sd.prop,thrust:sd.thrust,isp:sd.isp,res:sd.res??2,
+    ...(sd.s15?{s15:true,s15_sust_thrust:sd.s15_sust_thrust||0,s15_sust_isp:sd.s15_sust_isp||0,s15_jet_mass:sd.s15_jet_mass||0,s15_beco_twr:sd.s15_beco_twr||1.2}:{})}));
+  // boosterGroups (array, Group 2+) takes precedence like the live-DOM assembler (lvBoosterGroups);
+  // fall back to a single resolved boosterData/boosterName group.
+  let boosterArg=null;
+  if(Array.isArray(vehObj.boosterGroups)&&vehObj.boosterGroups.length){
+    boosterArg=vehObj.boosterGroups.map(g=>({...g}));
+  }else{
+    const b=resolvePresetBooster(vehObj);
+    if(b)boosterArg=[{...b}];
+  }
+  const fairingM=vehObj.fairingMass||0;
+  const fairingJ=vehObj.fairingJettison||0;
+  const site=vehObj.site||{};
+  const siteLat=site.lat??28.5,azMin=site.azMin??37,azMax=site.azMax??112;
+  const parkingAlt=vehObj.mode==='orbit'?(vehObj.parkingAlt??(vehObj.orbit?vehObj.orbit.perigee:400)):(vehObj.parkingAlt??(vehObj.escape?vehObj.escape.perigee:185));
+  const payload=vehObj.payload||0;
+  return{fairingM,fairingJ,siteLat,azMin,azMax,stages,boosterArg,parkingAlt,payload};
+}
+
+function tsOnVarChange(){
+  const key=document.getElementById('ts-var')?.value||'altitude';
+  const v=TS_VARS[key];
+  const isDest=key==='destination';
+  const rangeEl=document.getElementById('ts-range-fields');
+  const pickerEl=document.getElementById('ts-dest-picker');
+  if(rangeEl)rangeEl.style.display=isDest?'none':'flex';
+  if(pickerEl){
+    pickerEl.style.display=isDest?'block':'none';
+    if(isDest){_tsInitDestEnabled();pickerEl.innerHTML=_tsDestPickerHTML();}
+  }
+  if(!isDest){
+    const fromEl=document.getElementById('ts-from'),toEl=document.getElementById('ts-to');
+    if(fromEl)fromEl.value=v.from;
+    if(toEl)toEl.value=v.to;
+  }
+}
+
+function _tsSetError(msg){
+  const el=document.getElementById('ts-error');
+  if(el)el.textContent=msg||'';
+}
+
+function tsRunSweep(){
+  _tsSetError('');
+  const key=document.getElementById('ts-var')?.value||'altitude';
+  if(key==='destination'){tsRunDestinationSweep();return;}
+  const v=TS_VARS[key];
+  const from=parseFloat(document.getElementById('ts-from')?.value);
+  const to=parseFloat(document.getElementById('ts-to')?.value);
+  const steps=parseInt(document.getElementById('ts-steps')?.value);
+  if(!Number.isFinite(from)||!Number.isFinite(to)){_tsSetError('From/To must be numbers.');return;}
+  if(from>=to){_tsSetError('From must be less than To.');return;}
+  if(!Number.isFinite(steps)||steps<2||steps>60){_tsSetError('Steps must be an integer between 2 and 60.');return;}
+
+  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
+  // Series 0 = current DOM vehicle; series 1..N = selected comparison vehicles.
+  const seriesDefs=[{name:'Current: '+curName,base:_tsCollectBase(),isCurrent:true}];
+  _tsCompareVehicles.forEach(cv=>{
+    const src=cv.kind==='builtin'?BUILTIN_PRESETS[cv.idx]:userLVs[cv.idx];
+    if(!src)return;
+    seriesDefs.push({name:cv.name,base:_tsVehicleToBase(src),isCurrent:false});
+  });
+
+  const xs=[];
+  for(let i=0;i<steps;i++)xs.push(from+(to-from)*i/(steps-1));
+
+  const token=++_tsRunToken;
+  const noteEl=document.getElementById('ts-note');
+  const csvBtn=document.getElementById('ts-csv-btn');
+  if(csvBtn)csvBtn.disabled=true;
+  _tsResult=null;
+
+  let xLabel=v.label,xUnit=v.unit,yLabel,yUnit,zeroLine=false;
+
+  if(key==='altitude'){
+    yLabel='Max Payload';yUnit='kg';
+    if(noteEl)noteEl.textContent='Varies: parking/target altitude (circular, apogee=perigee=parking). Holds constant: inclination, payload path, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV recomputed per point via the minimal circular-orbit plane-change formula (see 165-trade-study.js) — NOT calculate()\'s full elliptical logic.';
+  }else if(key==='inclination'){
+    yLabel='Max Payload';yUnit='kg';
+    if(noteEl)noteEl.textContent='Varies: target inclination at the shared sweep parking altitude (circular orbit assumed). Holds constant: parking altitude, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV = plane-change only, via the minimal circular-orbit formula — NOT calculate()\'s full elliptical logic.';
+  }else{
+    yLabel='ΔV Margin';yUnit='m/s';zeroLine=true;
+    if(noteEl)noteEl.textContent='Varies: payload mass. Holds constant: parking altitude, inclination (on-orbit ΔV taken from the last Calculate run for the current vehicle, or 0 if none — same fixed value applied to all compared vehicles for a fair x-axis), booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. Uses lvPerformance() margin directly (same math as Calculate).';
+  }
+
+  const fixedOnOrbitDV=(key==='payload')?((lastResult&&Number.isFinite(lastResult.onOrbitDV))?lastResult.onOrbitDV:0):null;
+  const curInc=gv('inclination');
+  // Shared parking altitude for the inclination sweep so all vehicles are compared at the same altitude.
+  const sharedParkingAlt=seriesDefs[0].base.parkingAlt;
+
+  const progEl=document.getElementById('ts-progress');
+  const series=seriesDefs.map(sd=>({name:sd.name,points:[]}));
+  let si=0,i=0;
+
+  function chunk(){
+    if(token!==_tsRunToken)return; // superseded by a newer run
+    const sd=seriesDefs[si];
+    const base=sd.base;
+    const pts=series[si].points;
+    const end=Math.min(i+5,xs.length);
+    for(;i<end;i++){
+      const x=xs[i];
+      let y;
+      if(key==='altitude'){
+        const onOrbitDV=_tsOnOrbitDVCircular(x,curInc,base.siteLat);
+        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,x,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+      }else if(key==='inclination'){
+        const onOrbitDV=_tsOnOrbitDVCircular(sharedParkingAlt,x,base.siteLat);
+        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,sharedParkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+      }else{
+        const r=lvPerformance(base.stages,base.boosterArg,x,base.fairingM,base.fairingJ,base.parkingAlt,fixedOnOrbitDV,base.siteLat,base.azMin,base.azMax);
+        y=r.margin;
+      }
+      pts.push({x,y:Number.isFinite(y)?y:0});
+    }
+    if(progEl)progEl.textContent=`computing ${sd.name} … ${i}/${xs.length}${seriesDefs.length>1?` (vehicle ${si+1}/${seriesDefs.length})`:''}`;
+    if(i<xs.length){
+      setTimeout(chunk,0);
+    }else if(si<seriesDefs.length-1){
+      si++;i=0;
+      setTimeout(chunk,0);
+    }else{
+      if(progEl)progEl.textContent='';
+      // Zero-clip capability curves (altitude/inclination): end the polyline at the
+      // last positive point, interpolating a clean zero-crossing x. The margin (payload)
+      // sweep is exempt — it legitimately has a negative region.
+      const clip=(key==='altitude'||key==='inclination');
+      _tsResult={xLabel,xUnit,yLabel,yUnit,zeroLine,series,type:'line',clip};
+      tsRenderChart(_tsResult);
+      tsRenderTable(_tsResult);
+      if(csvBtn)csvBtn.disabled=false;
+    }
+  }
+  chunk();
+}
+
+// ── Destination sweep (categorical x-axis, grouped bars) ──────────
+
+function tsRunDestinationSweep(){
+  _tsInitDestEnabled();
+  const selected=[];
+  ORBIT_CATEGORIES.forEach(cat=>{
+    cat.orbits.forEach(o=>{
+      if(_tsDestEnabled.has(_tsDestKey(cat.planet,o.name)))selected.push({planet:cat.planet,...o});
+    });
+  });
+  if(!selected.length){_tsSetError('Select at least one destination.');return;}
+
+  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
+  const seriesDefs=[{name:'Current: '+curName,base:_tsCollectBase(),isCurrent:true}];
+  _tsCompareVehicles.forEach(cv=>{
+    const src=cv.kind==='builtin'?BUILTIN_PRESETS[cv.idx]:userLVs[cv.idx];
+    if(!src)return;
+    seriesDefs.push({name:cv.name,base:_tsVehicleToBase(src),isCurrent:false});
+  });
+
+  const token=++_tsRunToken;
+  const noteEl=document.getElementById('ts-note');
+  const csvBtn=document.getElementById('ts-csv-btn');
+  if(csvBtn)csvBtn.disabled=true;
+  _tsResult=null;
+  if(noteEl)noteEl.textContent='Varies: destination (per ORBIT_CATEGORIES). Holds constant: all stage masses, booster, fairing per vehicle. On-orbit ΔV per destination computed via the pinned pure destOnOrbitDV() (145-dest-dv.js) — same math as the main calculator. Impossible C3 (below escape minimum for the parking perigee) shows payload = 0.';
+
+  const progEl=document.getElementById('ts-progress');
+  const series=seriesDefs.map(sd=>({name:sd.name,points:[]}));
+  let si=0,i=0;
+
+  function chunk(){
+    if(token!==_tsRunToken)return;
+    const sd=seriesDefs[si];
+    const base=sd.base;
+    const pts=series[si].points;
+    const end=Math.min(i+3,selected.length);
+    for(;i<end;i++){
+      const dest=selected[i];
+      const destArg=dest.mode==='escape'
+        ?{mode:'escape',c3:dest.c3,decl:dest.decl,perigee:dest.parking!=null?dest.parking:(dest.perigee!=null?dest.perigee:185)}
+        :{mode:'orbit',apogee:dest.apogee,perigee:dest.perigee,inc:dest.incTracksLat?base.siteLat:dest.inc,parkingAlt:dest.parking!=null?dest.parking:185};
+      const r=destOnOrbitDV(destArg,base.siteLat);
+      let y=0;
+      if(!r.error){
+        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,r.parkingAlt,r.onOrbitDV,base.siteLat,base.azMin,base.azMax);
+        if(!Number.isFinite(y)||y<0)y=0;
+      }
+      pts.push({x:dest.name,y,planet:dest.planet,error:r.error||null});
+    }
+    if(progEl)progEl.textContent=`computing ${sd.name} … ${i}/${selected.length}${seriesDefs.length>1?` (vehicle ${si+1}/${seriesDefs.length})`:''}`;
+    if(i<selected.length){
+      setTimeout(chunk,0);
+    }else if(si<seriesDefs.length-1){
+      si++;i=0;
+      setTimeout(chunk,0);
+    }else{
+      if(progEl)progEl.textContent='';
+      const anyNonzero=series.some(s=>s.points.some(p=>p.y>0));
+      _tsResult={xLabel:'Destination',xUnit:'',yLabel:'Max Payload',yUnit:'kg',zeroLine:false,series,type:'bar',anyNonzero};
+      tsRenderChart(_tsResult);
+      tsRenderTable(_tsResult);
+      if(csvBtn)csvBtn.disabled=false;
+    }
+  }
+  chunk();
+}
+
+function tsRenderTable(res){
+  const wrap=document.getElementById('ts-table-wrap');
+  if(!wrap)return;
+  const n=res.series.length;
+  const maxLen=Math.max(...res.series.map(s=>s.points.length));
+  let rows='';
+  for(let r=0;r<maxLen;r++){
+    const xVal=res.series[0].points[r]?res.series[0].points[r].x:null;
+    let row=`<td style="padding:3px 10px;border-bottom:1px solid var(--border);">${xVal!=null?_tsFmtX(xVal):'—'}</td>`;
+    res.series.forEach(s=>{
+      const p=s.points[r];
+      const cell=p?(p.error?'—':_tsFmt(p.y)):'—';
+      row+=`<td style="padding:3px 10px;border-bottom:1px solid var(--border);" title="${p&&p.error?_tsEsc(p.error):''}">${cell}</td>`;
+    });
+    rows+=`<tr>${row}</tr>`;
+  }
+  const unitSuffix=res.yUnit?` (${res.yUnit})`:'';
+  const headCols=res.series.map((s,i)=>`<th style="text-align:left;padding:3px 10px;color:${TS_SERIES_COLORS[i%TS_SERIES_COLORS.length]};border-bottom:1px solid var(--border-bright);">${_tsEsc(s.name)} — ${res.yLabel}${unitSuffix}</th>`).join('');
+  const xUnitSuffix=res.xUnit?` (${res.xUnit})`:'';
+  wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--text-bright);">
+    <thead><tr><th style="text-align:left;padding:3px 10px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">${res.xLabel}${xUnitSuffix}</th>${headCols}</tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function _tsFmt(v){return Number.isFinite(v)?(Math.abs(v)>=1000?v.toLocaleString(undefined,{maximumFractionDigits:1}):v.toFixed(2)):'—';}
+function _tsFmtX(v){return typeof v==='string'?_tsEsc(v):_tsFmt(v);}
+
+function tsRenderChart(res){
+  const wrap=document.getElementById('ts-chart-wrap');
+  if(!wrap)return;
+  if(res.type==='bar'){tsRenderBarChart(res);return;}
+  tsRenderLineChart(res);
+}
+
+// Zero-clip helper: for each series, walk points in order and stop at the last
+// positive y; if the next point is <=0, linear-interpolate the x where y crosses 0
+// and append a terminus marker point there instead of continuing the polyline flat.
+function _tsClipSeriesAtZero(points){
+  const clipped=[];
+  let terminus=null;
+  for(let i=0;i<points.length;i++){
+    const p=points[i];
+    if(p.y>0){
+      clipped.push(p);
+    }else{
+      const prev=points[i-1];
+      if(prev&&prev.y>0){
+        const t=prev.y/(prev.y-p.y);
+        const xz=prev.x+(p.x-prev.x)*t;
+        terminus={x:xz,y:0};
+      }
+      break;
+    }
+  }
+  return {clipped,terminus};
+}
+
+function tsRenderLineChart(res){
+  const wrap=document.getElementById('ts-chart-wrap');
+  const W=960,H=340,ML=64,MR=24,MT=16,MB=40;
+  const plotW=W-ML-MR,plotH=H-MT-MB;
+
+  // Build per-series render data: clipped points + optional zero-crossing terminus.
+  const renderSeries=res.series.map(s=>{
+    if(res.clip){
+      const {clipped,terminus}=_tsClipSeriesAtZero(s.points);
+      return {name:s.name,points:clipped,terminus};
+    }
+    return {name:s.name,points:s.points,terminus:null};
+  });
+
+  const allPts=res.series.flatMap(s=>s.points);
+  const xs=allPts.map(p=>p.x),ys=allPts.map(p=>p.y);
+  let xMin=Math.min(...xs),xMax=Math.max(...xs);
+  let yMin=Math.min(...ys),yMax=Math.max(...ys);
+  if(res.zeroLine){yMin=Math.min(yMin,0);yMax=Math.max(yMax,0);}
+  if(res.clip)yMin=Math.min(yMin,0);
+  if(xMin===xMax){xMin-=1;xMax+=1;}
+  if(yMin===yMax){yMin-=1;yMax+=1;}
+  const yPad=(yMax-yMin)*0.08||1;
+  yMin-=yPad;yMax+=yPad;
+  const xToPx=x=>ML+(x-xMin)/(xMax-xMin)*plotW;
+  const yToPx=y=>MT+plotH-(y-yMin)/(yMax-yMin)*plotH;
+
+  const nTicks=6;
+  let xTicks='',yTicks='';
+  for(let i=0;i<=nTicks;i++){
+    const xv=xMin+(xMax-xMin)*i/nTicks;
+    const px=xToPx(xv);
+    xTicks+=`<line x1="${px}" y1="${MT}" x2="${px}" y2="${MT+plotH}" stroke="var(--border)" stroke-width="1"/>`;
+    xTicks+=`<text x="${px}" y="${MT+plotH+16}" font-size="9" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(xv)}</text>`;
+  }
+  for(let i=0;i<=nTicks;i++){
+    const yv=yMin+(yMax-yMin)*i/nTicks;
+    const py=yToPx(yv);
+    yTicks+=`<line x1="${ML}" y1="${py}" x2="${ML+plotW}" y2="${py}" stroke="var(--border)" stroke-width="1"/>`;
+    yTicks+=`<text x="${ML-6}" y="${py+3}" font-size="9" fill="var(--text-dim)" text-anchor="end" font-family="var(--mono)">${_tsFmt(yv)}</text>`;
+  }
+
+  const zero=(res.zeroLine||res.clip)?`<line x1="${ML}" y1="${yToPx(0)}" x2="${ML+plotW}" y2="${yToPx(0)}" stroke="var(--border-bright)" stroke-width="1.5" stroke-dasharray="4,3"/>`:'';
+
+  const polylines=renderSeries.map((s,i)=>{
+    const color=TS_SERIES_COLORS[i%TS_SERIES_COLORS.length];
+    const linePts=s.terminus?[...s.points,s.terminus]:s.points;
+    const pts=linePts.map(p=>`${xToPx(p.x)},${yToPx(p.y)}`).join(' ');
+    const line=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.75"/>`;
+    const dot=s.terminus?`<circle cx="${xToPx(s.terminus.x)}" cy="${yToPx(s.terminus.y)}" r="3.5" fill="var(--panel)" stroke="${color}" stroke-width="1.75"/>`:'';
+    return line+dot;
+  }).join('');
+
+  const legend=res.series.map((s,i)=>{
+    const color=TS_SERIES_COLORS[i%TS_SERIES_COLORS.length];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-right:14px;"><span style="width:10px;height:10px;background:${color};display:inline-block;"></span>${_tsEsc(s.name)}</span>`;
+  }).join('');
+
+  const svg=`<div style="margin-bottom:6px;">${legend}</div>
+  <svg id="ts-svg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+    ${xTicks}${yTicks}
+    <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    <line x1="${ML}" y1="${MT+plotH}" x2="${ML+plotW}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    ${zero}
+    ${polylines}
+    <text x="${ML+plotW/2}" y="${H-4}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${res.xLabel} (${res.xUnit})</text>
+    <text x="12" y="${MT+plotH/2}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" transform="rotate(-90 12 ${MT+plotH/2})">${res.yLabel} (${res.yUnit})</text>
+    <circle id="ts-hover-dot" r="3.5" fill="var(--text-bright)" style="display:none;"/>
+  </svg>
+  <div id="ts-hover-readout" style="font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-top:4px;height:14px;"></div>`;
+  wrap.innerHTML=svg;
+
+  const svgEl=document.getElementById('ts-svg');
+  const dot=document.getElementById('ts-hover-dot');
+  const readout=document.getElementById('ts-hover-readout');
+  svgEl.addEventListener('mousemove',ev=>{
+    const rect=svgEl.getBoundingClientRect();
+    const px=(ev.clientX-rect.left)/rect.width*W;
+    let nearest=null,nearestSeries=null,bestD=Infinity;
+    res.series.forEach(s=>{
+      s.points.forEach(p=>{
+        const d=Math.abs(xToPx(p.x)-px);
+        if(d<bestD){bestD=d;nearest=p;nearestSeries=s;}
+      });
+    });
+    if(!nearest)return;
+    dot.style.display='';
+    dot.setAttribute('cx',xToPx(nearest.x));
+    dot.setAttribute('cy',yToPx(nearest.y));
+    readout.textContent=`${_tsEsc(nearestSeries.name)} — ${res.xLabel}: ${_tsFmt(nearest.x)} ${res.xUnit}   →   ${res.yLabel}: ${_tsFmt(nearest.y)} ${res.yUnit}`;
+  });
+  svgEl.addEventListener('mouseleave',()=>{dot.style.display='none';readout.textContent='';});
+}
+
+// Grouped-bar chart for the Destination sweep. Linear y-axis with a per-bar value
+// label (log scale would be nicer for the LEO→C3 span but adds tick complexity;
+// labels keep small bars legible without it).
+function tsRenderBarChart(res){
+  const wrap=document.getElementById('ts-chart-wrap');
+  if(!res.anyNonzero){
+    wrap.innerHTML=`<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:24px;text-align:center;border:1px dashed var(--border);">No capability at these destinations — every compared vehicle returns zero payload (ΔV insufficient or destination C3 unreachable). Try fewer/closer destinations or a bigger vehicle.</div>`;
+    return;
+  }
+  const W=960,H=380,ML=70,MR=24,MT=16,MB=90;
+  const plotW=W-ML-MR,plotH=H-MT-MB;
+  const dests=res.series[0].points.map(p=>p.x);
+  const nGroups=dests.length;
+  const nSeries=res.series.length;
+  let yMax=0;
+  res.series.forEach(s=>s.points.forEach(p=>{if(p.y>yMax)yMax=p.y;}));
+  if(yMax<=0)yMax=1;
+  yMax*=1.15;
+  const yToPx=y=>MT+plotH-(y/yMax)*plotH;
+
+  const groupW=plotW/nGroups;
+  const barPad=groupW*0.12;
+  const barsAreaW=groupW-2*barPad;
+  const barW=barsAreaW/nSeries;
+
+  const nTicks=6;
+  let yTicks='';
+  for(let i=0;i<=nTicks;i++){
+    const yv=yMax*i/nTicks;
+    const py=yToPx(yv);
+    yTicks+=`<line x1="${ML}" y1="${py}" x2="${ML+plotW}" y2="${py}" stroke="var(--border)" stroke-width="1"/>`;
+    yTicks+=`<text x="${ML-6}" y="${py+3}" font-size="9" fill="var(--text-dim)" text-anchor="end" font-family="var(--mono)">${_tsFmt(yv)}</text>`;
+  }
+
+  let bars='',xLabels='';
+  for(let g=0;g<nGroups;g++){
+    const gx=ML+g*groupW;
+    xLabels+=`<text x="${gx+groupW/2}" y="${MT+plotH+14}" font-size="9" fill="var(--text-dim)" text-anchor="end" font-family="var(--mono)" transform="rotate(-40 ${gx+groupW/2} ${MT+plotH+14})">${_tsEsc(String(dests[g]).length>16?String(dests[g]).slice(0,15)+'…':dests[g])}</text>`;
+    for(let si=0;si<nSeries;si++){
+      const p=res.series[si].points[g];
+      const color=TS_SERIES_COLORS[si%TS_SERIES_COLORS.length];
+      const bx=gx+barPad+si*barW;
+      const by=yToPx(p.y);
+      const bh=(MT+plotH)-by;
+      const title=p.error?_tsEsc(p.error):`${_tsEsc(res.series[si].name)}: ${_tsFmt(p.y)} kg`;
+      bars+=`<g><title>${title}</title><rect x="${bx}" y="${by}" width="${Math.max(barW-1.5,0.5)}" height="${Math.max(bh,0)}" fill="${color}"/>
+        ${p.y>0?`<text x="${bx+barW/2}" y="${by-3}" font-size="8" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(p.y)}</text>`:''}</g>`;
+    }
+  }
+
+  const legend=res.series.map((s,i)=>{
+    const color=TS_SERIES_COLORS[i%TS_SERIES_COLORS.length];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);margin-right:14px;"><span style="width:10px;height:10px;background:${color};display:inline-block;"></span>${_tsEsc(s.name)}</span>`;
+  }).join('');
+
+  const svg=`<div style="margin-bottom:6px;">${legend}</div>
+  <svg id="ts-svg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+    ${yTicks}
+    <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    <line x1="${ML}" y1="${MT+plotH}" x2="${ML+plotW}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    ${bars}
+    ${xLabels}
+    <text x="12" y="${MT+plotH/2}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" transform="rotate(-90 12 ${MT+plotH/2})">${res.yLabel} (${res.yUnit})</text>
+  </svg>`;
+  wrap.innerHTML=svg;
+}
+
+function tsDownloadCSV(){
+  if(!_tsResult){showAlert('Run a sweep first.','No Data');return;}
+  const seriesNames=_tsResult.series.map(s=>s.name.replace(/"/g,'""'));
+  const header=[`${_tsResult.xLabel} (${_tsResult.xUnit})`,...seriesNames.map(n=>`"${n}" — ${_tsResult.yLabel} (${_tsResult.yUnit})`)];
+  const lines=[header.join(',')];
+  const maxLen=Math.max(...(_tsResult.series.map(s=>s.points.length)));
+  for(let r=0;r<maxLen;r++){
+    const xRaw=_tsResult.series[0].points[r]?_tsResult.series[0].points[r].x:'';
+    const x=typeof xRaw==='string'?`"${xRaw.replace(/"/g,'""')}"`:xRaw;
+    const row=[x,...(_tsResult.series.map(s=>s.points[r]?s.points[r].y:''))];
+    lines.push(row.join(','));
+  }
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='trade_study.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── ORBITS-PAGE VEHICLE SELECTOR ─────────────
+// Page-local override: lets the Orbits page evaluate ANY library vehicle
+// (built-in preset or user-saved LV) against the current destination inputs,
+// WITHOUT touching the worksheet (the Vehicles page state / stageStore / DOM).
+// Session-only — not persisted, not part of autosave.
+//   null           = "Worksheet (current)" -> classic calculateWithS15() path.
+//   {kind,idx,name}= a library vehicle -> pure orbCalcSelectedVehicle() path.
+let _orbVehSel = null;
+
+function _orbVehEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+// Build the <select> options: Worksheet + optgroups for presets / user vehicles.
+function _orbVehSelectorOptionsHTML(){
+  let html = `<option value="">Worksheet (current)</option>`;
+  const presets = (typeof BUILTIN_PRESETS !== 'undefined') ? BUILTIN_PRESETS : [];
+  if (presets.length) {
+    html += `<optgroup label="Presets">`;
+    presets.forEach((p, i) => {
+      html += `<option value="builtin:${i}">${_orbVehEsc(p.name)}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+  const user = (typeof userLVs !== 'undefined') ? userLVs : [];
+  if (user.length) {
+    html += `<optgroup label="My Vehicles">`;
+    user.forEach((v, i) => {
+      html += `<option value="user:${i}">${_orbVehEsc(v.name || 'Unnamed')}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+  return html;
+}
+
+// Render (or re-render) the selector bar. Called on page show / after saves.
+function orbVehRenderSelectorBar(){
+  const mount = document.getElementById('orb-veh-selector-bar');
+  if (!mount) return;
+  const selVal = _orbVehSel ? `${_orbVehSel.kind}:${_orbVehSel.idx}` : '';
+  mount.innerHTML = `
+    <span class="sl" style="margin:0;">Vehicle:</span>
+    <select id="orb-veh-select" onchange="orbVehOnSelectorChange(this.value)"
+      style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;max-width:260px;">
+      ${_orbVehSelectorOptionsHTML()}
+    </select>
+    ${_orbVehSel ? `<span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 9px;border:1px solid var(--accent);color:var(--accent);background:rgba(136,198,87,.08);">LIBRARY: ${_orbVehEsc(_orbVehSel.name)}</span>` : ''}
+  `;
+  const sel = document.getElementById('orb-veh-select');
+  if (sel) sel.value = selVal;
+  _orbVehUpdateUseInProgramBtn();
+}
+
+function orbVehOnSelectorChange(val){
+  if (!val) { _orbVehSel = null; orbVehRenderSelectorBar(); return; }
+  const [kind, idxStr] = val.split(':');
+  const idx = parseInt(idxStr, 10);
+  const src = kind === 'builtin' ? BUILTIN_PRESETS[idx] : userLVs[idx];
+  if (!src) { _orbVehSel = null; orbVehRenderSelectorBar(); return; }
+  _orbVehSel = { kind, idx, name: src.name || 'Unnamed' };
+  orbVehRenderSelectorBar();
+}
+
+// "Use in Program" is worksheet-only — disable with a tooltip while a library
+// vehicle is selected, to avoid mixing the two.
+function _orbVehUpdateUseInProgramBtn(){
+  const btn = document.getElementById('orb-use-in-program-btn');
+  if (!btn) return;
+  if (_orbVehSel) {
+    btn.disabled = true;
+    btn.title = `Disabled: "${_orbVehSel.name}" (library vehicle) is selected on the Orbits page. Switch to Worksheet to use the Vehicles-page vehicle in the Program.`;
+  } else {
+    btn.disabled = false;
+    btn.title = 'Load this vehicle into the active Program as a VehicleDefinition';
+  }
+}
+
+// Read the destination the SAME way calculate() does — mirrors the DOM reads
+// only, does not touch worksheet stage state. Returns a dest object matching
+// destOnOrbitDV()'s expected shape.
+function _orbVehReadDestFromDOM(){
+  if (destMode === 'escape') {
+    return { mode: 'escape', c3: gv('c3'), decl: gv('decl'), perigee: gv('escape-perigee') };
+  }
+  return { mode: 'orbit', apogee: gv('apogee'), perigee: gv('perigee'), inc: gv('inclination'), parkingAlt: gv('parking-alt') };
+}
+
+function _orbVehModeLabel(dest){
+  return dest.mode === 'escape' ? `C3 = ${dest.c3} km²/s²` : `${dest.apogee}×${dest.perigee} km @ ${dest.inc}°`;
+}
+
+// Pure-path CALCULATE for a selected library vehicle. Never calls calculate().
+function orbCalcSelectedVehicle(){
+  const panel = document.getElementById('results-panel');
+  if (!panel) return;
+  showPage('results');
+  if (!_orbVehSel) { calculateWithS15(); return; }
+
+  const src = _orbVehSel.kind === 'builtin' ? BUILTIN_PRESETS[_orbVehSel.idx] : userLVs[_orbVehSel.idx];
+  if (!src) {
+    panel.innerHTML = `<div class="error-msg">// ERROR: Selected vehicle no longer exists.</div>`;
+    return;
+  }
+
+  try {
+    const base = _tsVehicleToBase(src);
+    const dest = _orbVehReadDestFromDOM();
+    const ddv = destOnOrbitDV(dest, base.siteLat);
+    if (ddv.error) {
+      panel.innerHTML = `<div class="error-msg">// ERROR: ${ddv.error}</div>`;
+      return;
+    }
+    const onOrbitDV = ddv.onOrbitDV;
+    const parkingAlt = ddv.parkingAlt;
+
+    const maxPay = lvMaxPayload(base.stages, base.boosterArg, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+    const res = lvPerformance(base.stages, base.boosterArg, maxPay, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+
+    const fD = v => (v / 1000).toFixed(3) + ' km/s';
+    const fM = v => Math.round(v).toLocaleString() + ' kg';
+    const fS = v => Math.round(v) + ' s';
+    const modeLabel = _orbVehModeLabel(dest);
+    const badge = dest.mode === 'escape' ? '<span class="escape-badge">ESCAPE</span>' : '';
+
+    const dvMax = Math.max(...res.sDVs, 1);
+    const bars = res.sDVs.map((dv, i) => `<div style="margin-bottom:4px;"><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:2px;">STG ${i + 1}</div><div class="dv-bar"><div class="dv-bar-fill" style="width:${Math.min(100, dv / dvMax * 100)}%"></div></div></div>`).join('');
+    const bdown = res.sDVs.map((dv, i) => `<div class="breakdown-row"><span>Stage ${i + 1}</span><span>${fD(dv)}</span></div>`).join('');
+    const TWR = res.A0 / G0;
+    const feasible = res.margin >= -50;
+
+    panel.innerHTML = `
+      <div class="result-row"><span class="result-label">Target${badge}</span><span class="result-val" style="font-size:11px;color:var(--text-dim)">${modeLabel}</span></div>
+      <div class="result-row"><span class="result-label">Est. Max Payload</span><span class="result-val ${maxPay > 0 ? 'hl' : 'neg'}">${fM(maxPay)}</span></div>
+      <div class="result-row"><span class="result-label">Capacity Range (±10%)</span><span class="result-val" style="font-size:11px;">${maxPay > 0 ? fM(maxPay * .9) + ' – ' + fM(maxPay * 1.1) : '—'}</span></div>
+      <div class="result-row"><span class="result-label">Mission Feasible?</span><span class="result-val ${feasible ? '' : 'neg'}">${feasible ? '✓ YES' : '✗ NO'}</span></div>
+      <div class="result-row"><span class="result-label">Total ΔV Available</span><span class="result-val">${fD(res.tDV)}</span></div>
+      <div class="result-row"><span class="result-label">ΔV Required (ascent to park)</span><span class="result-val">${fD(res.DVasc)}</span></div>
+      <div class="result-row"><span class="result-label">ΔV Required (${dest.mode === 'escape' ? 'injection' : 'on-orbit'})</span><span class="result-val">${fD(onOrbitDV)}</span></div>
+      <div class="result-row"><span class="result-label">ΔV Required (total)</span><span class="result-val">${fD(res.DVtot)}</span></div>
+      <div class="result-row"><span class="result-label">ΔV Margin</span><span class="result-val ${res.margin >= 0 ? '' : 'neg'}">${fD(res.margin)}</span></div>
+      <div class="result-row"><span class="result-label">Launch T:W Ratio</span><span class="result-val ${TWR >= 1.2 ? '' : 'neg'}">${TWR.toFixed(3)}</span></div>
+      <div class="result-row"><span class="result-label">Total Burn Time</span><span class="result-val">${fS(res.tBT)}</span></div>
+      <div class="stage-breakdown" style="margin-top:14px;">
+        <div class="sl" style="margin-bottom:8px;">Stage ΔV Breakdown</div>
+        ${bars}${bdown}
+      </div>
+      <div class="note">Computed for: <b>${_orbVehEsc(_orbVehSel.name)}</b> (library vehicle — worksheet unchanged).<br>Method: Townsend-Schilling (2009). Always use vacuum Isp.</div>`;
+  } catch (e) {
+    panel.innerHTML = `<div class="error-msg">// CALCULATION ERROR: ${e.message}</div>`;
+    console.error(e);
+  }
+
+  condenseResultsPanel();
+}
+
+// ─── CONDENSE RESULTS PANEL ───────────────────
+// Progressive-disclosure pass for #results-panel, run AFTER calculateWithS15()
+// (never inside calculate()/evalAtPayload() — those are untouchable). renderResults()
+// in 160-calculate.js writes a flat sequence of `.result-row` divs into #results-panel:
+//   1. Target
+//   2. Est. Max Payload        <- headline
+//   3. Capacity Range (±10%)   <- headline
+//   4. Mission Feasible?
+//   5. Total ΔV Available
+//   ... (several more .result-row)
+//   .stage-breakdown  (bars + per-stage list)
+//   .note             (method footnote)
+// This walks the rendered DOM and wraps everything AFTER "Capacity Range" in a
+// collapsible "▸ Full breakdown" section. Idempotent: if the wrapper already
+// exists it just re-collects any new trailing siblings (safe to call repeatedly,
+// e.g. after every recalculation). Remembers expanded/collapsed state for the
+// session in a module var. Safe no-op if calculate() rendered an error message
+// (no .result-row present) or if the panel is missing.
+let _condenseResultsExpanded = false;
+
+function condenseResultsPanel(){
+  const panel = document.getElementById('results-panel');
+  if (!panel) return;
+  if (panel.querySelector('.error-msg') || panel.querySelector('.placeholder-msg')) return;
+
+  const rows = Array.from(panel.querySelectorAll(':scope > .result-row'));
+  if (rows.length < 3) return; // not the expected result shape — bail safely
+
+  // Headline = Target + Est. Max Payload + Capacity Range (first 3 rows).
+  const headlineRows = rows.slice(0, 3);
+  const restStart = rows[3] || null;
+
+  // Idempotency: if a previous condense pass left a wrapper, remove it and its
+  // contents' ownership marker so we can rebuild cleanly from the current
+  // (freshly re-rendered) panel.innerHTML — calculate() re-renders the whole
+  // panel from scratch each time, so any prior wrapper is now stale/detached
+  // markup risk; simplest safe approach is to rebuild every time.
+  const existingWrap = panel.querySelector('#results-full-breakdown-wrap');
+  if (existingWrap) {
+    // Unwrap: move children back to panel before the wrapper, then drop it.
+    while (existingWrap.firstChild) panel.insertBefore(existingWrap.firstChild, existingWrap);
+    existingWrap.remove();
+  }
+  const existingToggle = panel.querySelector('#results-full-breakdown-toggle');
+  if (existingToggle) existingToggle.remove();
+
+  // Re-collect: everything in the panel after the 3rd headline row.
+  const allChildren = Array.from(panel.children);
+  const headlineEls = new Set(headlineRows);
+  let pastHeadline = false;
+  const trailing = [];
+  for (const el of allChildren) {
+    if (headlineEls.has(el)) { pastHeadline = true; continue; }
+    if (pastHeadline) trailing.push(el);
+  }
+  if (!trailing.length) return; // nothing to collapse
+
+  const toggle = document.createElement('div');
+  toggle.className = 'sl';
+  toggle.id = 'results-full-breakdown-toggle';
+  toggle.style.cssText = 'margin-top:14px;cursor:pointer;';
+  toggle.onclick = _resultsToggleFullBreakdown;
+  toggle.innerHTML = `Full Breakdown <span id="results-full-breakdown-caret" style="margin-left:auto;">${_condenseResultsExpanded ? '▾' : '▸'}</span>`;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'results-full-breakdown-wrap';
+  wrap.style.display = _condenseResultsExpanded ? '' : 'none';
+  trailing.forEach(el => wrap.appendChild(el));
+
+  panel.appendChild(toggle);
+  panel.appendChild(wrap);
+}
+
+function _resultsToggleFullBreakdown(){
+  const wrap = document.getElementById('results-full-breakdown-wrap');
+  const caret = document.getElementById('results-full-breakdown-caret');
+  if (!wrap) return;
+  _condenseResultsExpanded = !_condenseResultsExpanded;
+  wrap.style.display = _condenseResultsExpanded ? '' : 'none';
+  if (caret) caret.textContent = _condenseResultsExpanded ? '▾' : '▸';
+}
+
 // ─── SAVE / LOAD LV ───────────────────────────
 function buildLVObject(name,note){
   const v=collectVehicle();v.name=name||'Unnamed LV';v.note=note||'';
@@ -3945,15 +4891,51 @@ function doSaveLV(){
   const name=document.getElementById('lv-save-name').value.trim()||'LV';
   const note=document.getElementById('lv-save-note').value.trim();
   const obj=buildLVObject(name,note);
-  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.vehicle');
   obj._sessionId=Date.now();userLVs.push(obj);buildPresets();closeModal('modal-save-lv');
+  showAlert('Saved "'+obj.name+'" to your library (My Stuff).','Vehicle Saved');
+}
+// Secondary action in the Save LV modal: download the current vehicle as a standalone .vehicle JSON,
+// without touching the in-app library. Does NOT close the modal.
+function downloadLVAsJSON(){
+  const name=(document.getElementById('lv-save-name')?.value.trim())||'LV';
+  const note=document.getElementById('lv-save-note')?.value.trim()||'';
+  const obj=buildLVObject(name,note);
+  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.vehicle');
 }
 function savePerformance(){openSaveCaseModal();} // legacy alias
+// Shared apply path for a single-vehicle object, used by loadLVFile and the
+// consolidated library Load button's routing.
+function applyLVFileObject(obj){
+  applyLVObject(obj);
+  if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){
+    obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();
+  }
+}
 function loadLVFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVObject(obj);if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();}}catch(err){showAlert('Invalid LV JSON: '+err.message,'Invalid File');}};
+  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVFileObject(obj);}catch(err){showAlert('Invalid LV JSON: '+err.message,'Invalid File');}};
   reader.readAsText(file);input.value='';
+}
+// Consolidated library "Load" button (veh mode). Routes by content:
+//  - a library bundle (schema 'perigee-lib-v1') -> libImportMine's object path
+//  - a single vehicle (.vehicle/.json export)   -> applyLVFileObject
+function libLoadVehicleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let obj;
+    try{obj=JSON.parse(e.target.result);}catch(err){showAlert('Invalid file: '+err.message,'Invalid File');input.value='';return;}
+    if(obj&&obj.schema==='perigee-lib-v1'){
+      if(typeof libImportLibraryObject==='function')libImportLibraryObject(obj);
+    } else if(obj&&obj.name!==undefined&&(obj.stageData||obj.stageNames||obj.stages!==undefined)){
+      applyLVFileObject(obj);
+    } else {
+      showAlert('Unrecognized file — expected a saved vehicle (.vehicle/.json) or a Perigee library export.','Invalid File');
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
 }
 function applyLVObject(obj){
   currentStageNames=new Array(15).fill(null);
@@ -6737,9 +7719,31 @@ function libSpotlightNode(){
   const sub=_libMode==='veh' ? ((it.stageNames||[]).join(' + ')||it.note||'') : `from ${it.vehicle||'—'} · ${it.thrust||'?'} kN · ${it.isp||'?'} s`;
   const cls=_libMode==='stg' ? (libResolveTags(it,'cls','stg').filter(v=>v!=='Unspecified')[0]||'') : '';
   const sp=document.createElement('div'); sp.className='lib-spotlight';
+  sp.draggable=true;
   sp.innerHTML=`<div class="lib-spotlight-lbl">Spotlight${cls?' · '+cls:''}</div><div class="lib-spotlight-name">${it.name||''}</div><div class="lib-spotlight-sub">${sub}</div>`;
+  sp.querySelectorAll('img').forEach(img=>{img.draggable=false;});
   const rr=document.createElement('button'); rr.className='lib-spotlight-reroll'; rr.textContent='⟳ discover'; rr.onclick=e=>{e.stopPropagation();libReroll();}; sp.appendChild(rr);
-  sp.onclick=()=>{ if(_libMode==='veh'){ _libSpot.user?loadPreset(it,_libSpot.key):(openVehicleModal&&openVehicleModal(it)); } else if(typeof openStageModal==='function'){ openStageModal(it); } };
+  // Drag (same payload shape as libMakeVehicleCard / makeCard) — separate from click via _didDrag flag.
+  sp.addEventListener('dragstart',e=>{
+    _didDrag=true;
+    if(_libMode==='veh'){
+      _draggingStage={_isVehicle:true,_preset:it,name:it.name};
+      e.dataTransfer.setData('text/plain',JSON.stringify({_isVehicle:true,name:it.name}));
+    } else {
+      _draggingStage={...it,_cat:_libSpot.cat};
+      e.dataTransfer.setData('text/plain',JSON.stringify(_draggingStage));
+    }
+    e.dataTransfer.effectAllowed='copy';
+    setTimeout(()=>sp.classList.add('dragging'),0);
+  });
+  sp.addEventListener('dragend',()=>{
+    sp.classList.remove('dragging');_draggingStage=null;
+    setTimeout(()=>{_didDrag=false;},80);
+  });
+  sp.onclick=e=>{
+    e.stopPropagation(); if(_didDrag)return;
+    if(_libMode==='veh'){ _libSpot.user?loadPreset(it,_libSpot.key):(openVehicleModal&&openVehicleModal(it)); } else if(typeof openStageModal==='function'){ openStageModal(it); }
+  };
   return sp;
 }
 
@@ -6862,20 +7866,19 @@ function libRenderActions(){
   const slot=document.getElementById('lib-action-slot'); if(!slot)return;
   slot.innerHTML='';
   if(_libMode==='stg'){
-    const mk=document.createElement('button'); mk.className='act-btn green'; mk.textContent='Make Stage';
+    // stg mode: [Save Stage] + [⇣ Import] (accepts .stage files AND library bundles)
+    const mk=document.createElement('button'); mk.className='act-btn green'; mk.textContent='Save Stage';
     mk.onclick=()=>{ if(typeof openAddStageModal==='function')openAddStageModal(); };
     slot.appendChild(mk);
+    const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a stage file or a Perigee library export'; imp.textContent='⇣ Import';
+    const fin=document.createElement('input'); fin.type='file'; fin.accept='.stage,.json'; fin.style.display='none';
+    fin.onchange=function(){ if(typeof loadUserStageFile==='function')loadUserStageFile(this); }; imp.appendChild(fin); slot.appendChild(imp);
   } else {
-    const sv=document.createElement('button'); sv.className='act-btn green'; sv.textContent='Save LV';
-    sv.onclick=()=>{ if(typeof openSaveLVModal==='function')openSaveLVModal(); };
-    slot.appendChild(sv);
+    // veh mode: single [⇣ Load] — accepts .vehicle/.json single vehicles AND library bundles
+    const ld=document.createElement('label'); ld.className='act-btn'; ld.style.cursor='pointer'; ld.title='Load a saved vehicle or a Perigee library export'; ld.textContent='⇣ Load';
+    const fin=document.createElement('input'); fin.type='file'; fin.accept='.vehicle,.json'; fin.style.display='none';
+    fin.onchange=function(){ if(typeof libLoadVehicleFile==='function')libLoadVehicleFile(this); }; ld.appendChild(fin); slot.appendChild(ld);
   }
-  // Export / import the whole user library (vehicles + stages) in one file
-  const exp=document.createElement('button'); exp.className='act-btn'; exp.textContent='⇡ Export'; exp.title='Export all your saved vehicles + stages to one file';
-  exp.onclick=()=>{ if(typeof libExportMine==='function')libExportMine(); }; slot.appendChild(exp);
-  const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a Perigee library file'; imp.textContent='⇣ Import';
-  const fin=document.createElement('input'); fin.type='file'; fin.accept='.json'; fin.style.display='none';
-  fin.onchange=function(){ if(typeof libImportMine==='function')libImportMine(this); }; imp.appendChild(fin); slot.appendChild(imp);
 }
 
 // ── master render + state transitions ──
@@ -6964,18 +7967,24 @@ function libExportMine(){
   if(!vehicles.length && !Object.keys(stages).length){ showAlert('No saved vehicles or stages to export yet. Save some first.','Nothing to Export'); return; }
   downloadJSON({schema:'perigee-lib-v1', exported:new Date().toISOString(), vehicles, stages}, 'my-library.json');
 }
+// Shared object-import path (bundle already parsed) — used by libImportMine
+// and by the consolidated Load/Import buttons that need to route a parsed
+// file to the library-bundle path after sniffing its schema.
+function libImportLibraryObject(o){
+  if(!o||o.schema!=='perigee-lib-v1'){ showAlert('Not a Perigee library export (.json with schema "perigee-lib-v1").','Invalid File'); return; }
+  let nv=0, ns=0;
+  (o.vehicles||[]).forEach(v=>{ if(!userLVs.find(x=>x.name===v.name)){ v._sessionId=v._sessionId||Date.now(); userLVs.push(v); nv++; } });
+  Object.entries(o.stages||{}).forEach(([c,arr])=>{ if(!userStagesByCategory[c])userStagesByCategory[c]=[];
+    (arr||[]).forEach(s=>{ if(!userStagesByCategory[c].find(x=>x.name===s.name)){ s._userGenerated=true; userStagesByCategory[c].unshift(s); ns++; } }); });
+  if(typeof libRender==='function')libRender();
+  showAlert(`Imported ${nv} vehicle(s) and ${ns} stage(s).`,'Library Imported');
+}
 function libImportMine(input){
   const f=input.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=e=>{ try{
     const o=JSON.parse(e.target.result);
-    if(o.schema!=='perigee-lib-v1'){ showAlert('Not a Perigee library export (.json with schema "perigee-lib-v1").','Invalid File'); return; }
-    let nv=0, ns=0;
-    (o.vehicles||[]).forEach(v=>{ if(!userLVs.find(x=>x.name===v.name)){ v._sessionId=v._sessionId||Date.now(); userLVs.push(v); nv++; } });
-    Object.entries(o.stages||{}).forEach(([c,arr])=>{ if(!userStagesByCategory[c])userStagesByCategory[c]=[];
-      (arr||[]).forEach(s=>{ if(!userStagesByCategory[c].find(x=>x.name===s.name)){ s._userGenerated=true; userStagesByCategory[c].unshift(s); ns++; } }); });
-    if(typeof libRender==='function')libRender();
-    showAlert(`Imported ${nv} vehicle(s) and ${ns} stage(s).`,'Library Imported');
+    libImportLibraryObject(o);
   }catch(err){ showAlert('Invalid library JSON: '+err.message,'Invalid File'); } };
   r.readAsText(f); input.value='';
 }
@@ -7453,6 +8462,17 @@ let performanceCases=[];   // { label, timestamp, vehicleName, result, config }
 let activeCaseIndex=null;
 let loadedVehicleName='';  // name from last loaded file
 
+// Cases panel collapse/expand (collapsed by default, per session — Orbits page).
+let _casesPanelOpen=false;
+function casesPanelToggle(){
+  const body=document.getElementById('cases-panel-body');
+  const caret=document.getElementById('cases-toggle-caret');
+  if(!body)return;
+  _casesPanelOpen=!_casesPanelOpen;
+  body.style.display=_casesPanelOpen?'':'none';
+  if(caret)caret.textContent=_casesPanelOpen?'▾':'▸';
+}
+
 function buildCaseList(){
   const list=document.getElementById('case-list');
   if(!list)return;
@@ -7651,10 +8671,8 @@ let boosterSaved=false;
 const VP_COLORS = ['#ff8844','#5599ff','#88cc55','#cc77ff','#55ccff','#ffcc33','#ff5577'];
 
 function updatePerfPanel() {
-  const dvBody    = document.getElementById('vp-dv-body');
-  const statsBody = document.getElementById('vp-stats-body');
   const tblBody   = document.getElementById('vp-table-body');
-  if (!dvBody || !statsBody || !tblBody) return;
+  if (!tblBody) return;
 
   // ── Collect stage data ────────────────────────────────────────
   const pF = v => mathValue(v,0);
@@ -7723,95 +8741,41 @@ function updatePerfPanel() {
     return { ...seg, dv, burnTime, propFrac, massRatio };
   });
 
-  // ── ΔV Panel ─────────────────────────────────────────────────
   const hasAnyDV = totalDV > 0;
-  if (!hasAnyDV) {
-    dvBody.innerHTML = '<div class="vp-dv-empty">// Drop stages into the composition above</div>';
-  } else {
-    const maxDV = Math.max(...calcs.map(c => c.dv), 1);
-    const rows = calcs.map(c => {
-      const barPct = (c.dv / maxDV * 100).toFixed(1);
-      const dvStr  = c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—';
-      const mrStr  = c.massRatio > 0 ? 'MR ' + c.massRatio.toFixed(2) : '';
-      const ispStr = c.isp > 1 ? 'Isp ' + Math.round(c.isp) + ' s' : '';
-      return `<div class="vp-dv-row">
-        <div class="vp-dv-label">${c.label}</div>
-        <div class="vp-dv-track">
-          <div class="vp-dv-fill" style="width:${barPct}%;background:${c.color};opacity:.85;"></div>
-        </div>
-        <div class="vp-dv-val" style="color:${c.color};">${dvStr}</div>
-        <div class="vp-dv-meta">${ispStr}&nbsp;&nbsp;${mrStr}</div>
-      </div>`;
-    }).join('');
 
-    dvBody.innerHTML = rows + `
-      <div class="vp-dv-total">
-        <div class="vp-dv-total-label">Total ΔV (stage-isolation)</div>
-        <div class="vp-dv-total-val">${fmt(Math.round(totalDV))} m/s</div>
-      </div>`;
-  }
-
-  // ── Stats Panel ───────────────────────────────────────────────
-  if (liftoffMass === 0) {
-    statsBody.innerHTML = '<div class="vp-dv-empty">// —</div>';
-  } else {
-    const weightKN   = liftoffMass * G0 / 1000;
-    const twr        = weightKN > 0 ? totalThrust / weightKN : 0;
-    const twrClass   = twr < 1.05 ? 'warn' : twr >= 1.2 ? 'ok' : '';
-    const massFrac   = liftoffMass > 0 ? (totalDry / liftoffMass * 100) : 0;
-
-    statsBody.innerHTML = `
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff Mass</div>
-        <div class="vp-stat-val">${fmtM(liftoffMass)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Total Propellant</div>
-        <div class="vp-stat-val">${fmtM(totalProp)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff Thrust</div>
-        <div class="vp-stat-val">${fmtF(totalThrust, totalThrust >= 100 ? 0 : 1)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff T/W</div>
-        <div class="vp-stat-val ${twrClass}">${twr > 0 ? twr.toFixed(2) : '—'}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Structural Fraction</div>
-        <div class="vp-stat-val">${massFrac.toFixed(1)} %</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Total ΔV</div>
-        <div class="vp-stat-val" style="color:var(--accent);">${hasAnyDV ? fmt(Math.round(totalDV)) + ' m/s' : '—'}</div>
-      </div>`;
-  }
-
-  // ── Spec Table ────────────────────────────────────────────────
+  // ── Spec Table (last column = whole-vehicle summary) ─────────
+  // (The former standalone "ΔV Budget" panel was folded in here — the ΔV (isol.)
+  // row carries a proportional background bar per stage, replacing the old bars.)
   if (calcs.length === 0) {
     tblBody.innerHTML = '<div class="vp-dv-empty">// No stages loaded</div>';
     return;
   }
 
+  const weightKN = liftoffMass * G0 / 1000;
+  const twr      = weightKN > 0 ? totalThrust / weightKN : 0;
+  const twrClass = twr < 1.05 ? 'warn' : twr >= 1.2 ? 'ok' : '';
+  const propFracTot = liftoffMass > 0 ? totalProp / liftoffMass * 100 : 0;
+
   const dotH = c => `<span class="vp-col-dot" style="background:${c.color};"></span>`;
   const th = c => `<th>${dotH(c)}${c.shortLabel}</th>`;
-  const headers = `<tr><th></th>${calcs.map(th).join('')}</tr>`;
+  const headers = `<tr><th></th>${calcs.map(th).join('')}<th class="vp-col-veh">Vehicle</th></tr>`;
 
-  const row = (label, fn) =>
-    `<tr><td>${label}</td>${calcs.map(c => `<td>${fn(c)}</td>`).join('')}</tr>`;
+  const row = (label, fn, vehVal) =>
+    `<tr><td>${label}</td>${calcs.map(c => `<td>${fn(c)}</td>`).join('')}<td class="vp-col-veh">${vehVal}</td></tr>`;
 
   tblBody.innerHTML = `<table class="vp-spec-tbl">
     <thead>${headers}</thead>
     <tbody>
-      ${row('Dry Mass',      c => fmtM(c.dry))}
-      ${row('Propellant',    c => fmtM(c.prop))}
-      ${row('Gross Mass',    c => fmtM(c.dry + c.prop))}
-      ${row('Isp',           c => c.isp > 1 ? Math.round(c.isp) + ' s' : '—')}
-      ${row('Thrust',        c => c.thrust > 0 ? fmtF(c.thrust / (c.isBooster ? 1 : 1), c.thrust >= 100 ? 0 : 1) : '—')}
-      ${row('Prop Fraction', c => c.propFrac > 0 ? c.propFrac.toFixed(1) + ' %' : '—')}
-      ${row('Mass Ratio',    c => c.massRatio > 1 ? c.massRatio.toFixed(2) : '—')}
-      ${row('ΔV (isol.)',    c => `<span class="vp-dv-accent">${c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—'}</span>`)}
-      ${row('Burn Time',     c => c.burnTime > 0 ? (c.burnTime >= 60 ? (c.burnTime/60).toFixed(1) + ' min' : Math.round(c.burnTime) + ' s') : '—')}
+      ${row('Dry Mass',      c => fmtM(c.dry),            fmtM(totalDry))}
+      ${row('Propellant',    c => fmtM(c.prop),           fmtM(totalProp))}
+      ${row('Gross Mass',    c => fmtM(c.dry + c.prop),   fmtM(liftoffMass))}
+      ${row('Isp',           c => c.isp > 1 ? Math.round(c.isp) + ' s' : '—', '—')}
+      ${row('Thrust',        c => c.thrust > 0 ? fmtF(c.thrust / (c.isBooster ? 1 : 1), c.thrust >= 100 ? 0 : 1) : '—', totalThrust > 0 ? fmtF(totalThrust, totalThrust >= 100 ? 0 : 1) : '—')}
+      ${row('Liftoff T/W',   () => '—',                   twr > 0 ? `<span class="vp-stat-val ${twrClass}" style="font-size:inherit;">${twr.toFixed(2)}</span>` : '—')}
+      ${row('Prop Fraction', c => c.propFrac > 0 ? c.propFrac.toFixed(1) + ' %' : '—', propFracTot > 0 ? propFracTot.toFixed(1) + ' %' : '—')}
+      ${row('Mass Ratio',    c => c.massRatio > 1 ? c.massRatio.toFixed(2) : '—', '—')}
+      ${row('ΔV (isol.)',    c => { const pct = (c.dv / Math.max(...calcs.map(x => x.dv), 1) * 100).toFixed(1); return `<span class="vp-dv-cellbar" style="background:linear-gradient(to right, ${c.color}2e ${pct}%, transparent ${pct}%);"><span class="vp-dv-accent">${c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—'}</span></span>`; }, `<span class="vp-dv-accent">${hasAnyDV ? fmt(Math.round(totalDV)) + ' m/s' : '—'}</span>`)}
+      ${row('Burn Time',     c => c.burnTime > 0 ? (c.burnTime >= 60 ? (c.burnTime/60).toFixed(1) + ' min' : Math.round(c.burnTime) + ' s') : '—', '—')}
     </tbody>
   </table>`;
 }
@@ -8837,21 +9801,28 @@ function doAddStage(andSave){
   buildStageLibrary();
 }
 
+// Consolidated stg-mode "Import" button. Routes by content:
+//  - a library bundle (schema 'perigee-lib-v1') -> libImportMine's object path
+//  - a single stage (.stage/.json export)        -> original apply-in-place path
 function loadUserStageFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    try{
-      const s=JSON.parse(e.target.result);
-      if(!s.name||s.dry===undefined){showAlert('Invalid stage file: missing name or dry mass.','Invalid File');return;}
-      s._userGenerated=true; // mark as user content on import
-      const cat=s._category||'Custom';
-      if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
-      userStagesByCategory[cat].unshift(s); // prepend so it appears first
-      buildStageLibrary();
-    }catch(err){showAlert('Invalid stage JSON: '+err.message,'Invalid File');}
+    let s;
+    try{s=JSON.parse(e.target.result);}catch(err){showAlert('Invalid stage JSON: '+err.message,'Invalid File');input.value='';return;}
+    if(s&&s.schema==='perigee-lib-v1'){
+      if(typeof libImportLibraryObject==='function')libImportLibraryObject(s);
+      input.value='';return;
+    }
+    if(!s.name||s.dry===undefined){showAlert('Invalid stage file: missing name or dry mass.','Invalid File');input.value='';return;}
+    s._userGenerated=true; // mark as user content on import
+    const cat=s._category||'Custom';
+    if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
+    userStagesByCategory[cat].unshift(s); // prepend so it appears first
+    buildStageLibrary();
+    input.value='';
   };
-  reader.readAsText(file);input.value='';
+  reader.readAsText(file);
 }
 
 // ─── PROGRAM MODULE — Phase 1: Delta-V Engine ───────────────────────
@@ -9346,7 +10317,7 @@ function progMakeProgram(name) {
     nodeMapCustomNodes:    [],       // user-added nodes (Phase 8)
     nodeMapCustomEdges:    [],       // user-added edges between custom nodes
     nodeMapNodePos:        {},       // nodeId → {cx,cy} position overrides (drag-to-move)
-    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
+    nodeMapActiveNodes:    (typeof PROG_NM_NODES !== 'undefined' ? PROG_NM_NODES : []).filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
     performanceCases:      [],       // archived perf cases (Phase 10)
     warnings:              [],
   };
@@ -10792,6 +11763,144 @@ function applyProgramObject(obj) {
   if (typeof missionRenderDetail === 'function') missionRenderDetail();
 }
 
+// ─── AUTOSAVE / SESSION RESTORE ──────────────────────────────────────────────
+//
+// Persists the whole session (program + current LV) to localStorage on a
+// debounce, and offers to restore it on next load via a dismissible banner.
+// Never allowed to throw into the caller — save/restore failures are caught
+// and swallowed (with a single console.warn) so a full/corrupt localStorage
+// can never break the app.
+
+const AUTOSAVE_KEY = 'lv_autosave_v1';
+
+let _autosaveTimer = null;
+let _autosaveDisabled = false;   // set true after a save failure (quota, etc.)
+// Suspended from module load until the startup restore-banner decision is made
+// (or immediately if there's nothing to restore). Without this, the page's own
+// init calls (scEdInit/fleetInit/missionInit rendering default state) would
+// schedule an autosave that clobbers the still-unread saved blob before the
+// user ever sees the banner.
+let _autosaveSuspended = true;
+
+function autosaveScheduleSave() {
+  if (_autosaveDisabled || _autosaveSuspended) return;
+  clearTimeout(_autosaveTimer);
+  _autosaveTimer = setTimeout(autosaveNow, 2000);
+}
+
+function autosaveNow() {
+  if (_autosaveDisabled || _autosaveSuspended) return;
+  try {
+    const blob = {
+      savedAt: new Date().toISOString(),
+      program: (typeof buildProgramObject === 'function') ? buildProgramObject() : null,
+      lv: (typeof buildLVObject === 'function') ? buildLVObject((typeof loadedVehicleName !== 'undefined' ? loadedVehicleName : '') || '', '') : null,
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(blob));
+  } catch (err) {
+    _autosaveDisabled = true;
+    console.warn('Autosave disabled for this session (localStorage write failed):', err);
+  }
+}
+
+function autosaveClear() {
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch (err) { /* ignore */ }
+}
+
+function autosaveRestore() {
+  let blob = null;
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return false;
+    blob = JSON.parse(raw);
+  } catch (err) {
+    return false; // corrupt data — bail silently
+  }
+  if (!blob) return false;
+  _autosaveSuspended = true;
+  try {
+    if (blob.program && typeof applyProgramObject === 'function') {
+      applyProgramObject(blob.program);
+    }
+    if (blob.lv && typeof applyLVObject === 'function') {
+      applyLVObject(blob.lv);
+    }
+  } catch (err) {
+    console.warn('Autosave restore failed partway through:', err);
+  } finally {
+    _autosaveSuspended = false;
+  }
+  return true;
+}
+
+// ── Restore banner ──────────────────────────────────────────────────────────
+
+function _autosaveRelativeTime(iso) {
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return 'earlier';
+  const diffSec = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (diffSec < 5) return 'just now';
+  if (diffSec < 60) return diffSec + 's ago';
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return diffMin + 'm ago';
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return diffHr + 'h ago';
+  const diffDay = Math.round(diffHr / 24);
+  return diffDay + 'd ago';
+}
+
+function _autosaveDismissBanner() {
+  const el = document.getElementById('autosave-banner');
+  if (el) el.remove();
+}
+
+function autosaveShowBannerIfPresent() {
+  let raw;
+  try { raw = localStorage.getItem(AUTOSAVE_KEY); } catch (err) { _autosaveSuspended = false; return; }
+  if (!raw) { _autosaveSuspended = false; return; }
+  let blob;
+  try { blob = JSON.parse(raw); } catch (err) { _autosaveSuspended = false; return; }
+  if (!blob) { _autosaveSuspended = false; return; }
+
+  const banner = document.createElement('div');
+  banner.id = 'autosave-banner';
+  banner.className = 'autosave-banner';
+  const when = _autosaveRelativeTime(blob.savedAt);
+  banner.innerHTML =
+    '<span class="autosave-banner-msg">Restored session from ' + when + '?</span>' +
+    '<button type="button" class="autosave-banner-btn autosave-banner-restore">Restore</button>' +
+    '<button type="button" class="autosave-banner-btn autosave-banner-discard">Discard</button>';
+  document.body.appendChild(banner);
+
+  banner.querySelector('.autosave-banner-restore').addEventListener('click', () => {
+    autosaveRestore();
+    _autosaveSuspended = false;
+    _autosaveDismissBanner();
+  });
+  banner.querySelector('.autosave-banner-discard').addEventListener('click', () => {
+    autosaveClear();
+    _autosaveSuspended = false;
+    _autosaveDismissBanner();
+  });
+
+  setTimeout(() => { _autosaveSuspended = false; _autosaveDismissBanner(); }, 60000);
+}
+
+window.addEventListener('beforeunload', () => {
+  try { autosaveNow(); } catch (err) { /* never block unload */ }
+});
+
+function _autosaveInitStartup() {
+  autosaveShowBannerIfPresent();
+}
+
+document.addEventListener('DOMContentLoaded', _autosaveInitStartup);
+// In case this script runs after DOMContentLoaded already fired (it's loaded
+// at the end of body via the build), also try immediately.
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  _autosaveInitStartup();
+}
+
 // ─── END PROGRAM MODULE Phase 10 ──────────────────────────────────────────────
 
 // ─── END PROGRAM MODULE Phase 9 ───────────────────────────────────────────────
@@ -11119,7 +12228,7 @@ function _fleetGet(id) {
   return _fleetEntries.find(e => e.fleetId === (id ?? _fleetSel)) ?? null;
 }
 
-function fleetRender() { fleetRenderList(); fleetRenderDetail(); }
+function fleetRender() { fleetRenderList(); fleetRenderDetail(); if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave(); }
 
 function fleetRenderList() {
   const el = document.getElementById('fleet-list');
@@ -11792,6 +12901,11 @@ function missionRenderDetail() {
       <input value="${m.name.replace(/"/g,'&quot;')}" class="sc-stage-name" style="font-size:13px;flex:1;max-width:340px;"
         oninput="missionRename('${id}',this.value)">
       <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
+        <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
+        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
+        <button class="act-btn" onclick="missionExportReport('${id}')" title="Printable mission report">&#x2398; Report</button>
+        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
         <div class="seg">
           <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
           <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
@@ -13208,6 +14322,8 @@ function missionRecompute(m) {
 
   m.vehicleIds = live.map(v => v.vehicleId);
   m.vehicleId = active ? active.vehicleId : (m.vehicleIds[0] || null);
+  if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave();
+  if (typeof missionUndoCapture === 'function') missionUndoCapture(m);
 }
 
 // Rename an on-orbit vehicle via an in-app modal (no browser prompt). Persists by
@@ -15306,6 +16422,371 @@ function progShowTab(tab) {
     }
   }
 }
+// ─── MISSION UNDO/REDO ───
+// Per-mission undo/redo stacks over AUTHORED mission state (m.log, m.groups,
+// m.vehicleNames, m.launchOrbit, m.name, m.fleetEntryId, m.payloadScIds).
+// Snapshot capture is hooked at the end of missionRecompute (570) — every
+// mutation already follows: mutate authored state -> missionRecompute(m) ->
+// missionRenderDetail(). The undo-stack TOP is always the CURRENT state,
+// since capture runs after every recompute (including the very first one).
+
+const _missionUndoStacks = {};   // missionId -> { undo: [snapshotStr...], redo: [snapshotStr...] }
+let _missionUndoRestoring = false;
+const MISSION_UNDO_MAX = 50;
+
+function _missionUndoGetStack(missionId) {
+  if (!_missionUndoStacks[missionId]) _missionUndoStacks[missionId] = { undo: [], redo: [] };
+  return _missionUndoStacks[missionId];
+}
+
+// Serialize only authored state. m.log is snapshotted as-is via JSON — cached/derived
+// fields written by recompute (vehicleId, stagingResult, result, payloadMass,
+// payloadNames, etc.) are harmless since replay overwrites them on restore — EXCEPT
+// the `_expanded` UI accordion flag, which we strip so opening/closing a card doesn't
+// pollute mutation history.
+function _missionUndoSerialize(m) {
+  const log = (m.log || []).map(e => {
+    if (!e || !('_expanded' in e)) return e;
+    const { _expanded, ...rest } = e;
+    return rest;
+  });
+  return JSON.stringify({
+    log,
+    groups: m.groups || {},
+    vehicleNames: m.vehicleNames || {},
+    launchOrbit: m.launchOrbit || null,
+    name: m.name,
+    fleetEntryId: m.fleetEntryId,
+    payloadScIds: m.payloadScIds || [],
+  });
+}
+
+function missionUndoCapture(m) {
+  if (!m || !m.missionId) return;
+  if (_missionUndoRestoring) return;   // never capture while restoring
+  const stack = _missionUndoGetStack(m.missionId);
+  const snap = _missionUndoSerialize(m);
+  if (stack.undo.length && stack.undo[stack.undo.length - 1] === snap) return;   // dedupe (recompute runs on render too)
+  stack.undo.push(snap);
+  if (stack.undo.length > MISSION_UNDO_MAX) stack.undo.shift();
+  stack.redo.length = 0;   // a real new mutation invalidates redo history
+}
+
+function _missionUndoApply(m, snapStr) {
+  const data = JSON.parse(snapStr);
+  m.log = data.log;
+  m.groups = data.groups;
+  m.vehicleNames = data.vehicleNames;
+  m.launchOrbit = data.launchOrbit;
+  m.name = data.name;
+  m.fleetEntryId = data.fleetEntryId;
+  m.payloadScIds = data.payloadScIds;
+  _missionUndoRestoring = true;
+  try {
+    missionRecompute(m);
+    missionRenderDetail();
+  } finally {
+    _missionUndoRestoring = false;
+  }
+}
+
+function missionUndo() {
+  const m = (typeof _missionGet === 'function') ? _missionGet(_missionSel) : null;
+  if (!m) return;
+  const stack = _missionUndoGetStack(m.missionId);
+  if (stack.undo.length < 2) return;   // top === current state; need a prior state to go to
+  const current = stack.undo.pop();
+  stack.redo.push(current);
+  const prev = stack.undo[stack.undo.length - 1];
+  _missionUndoApply(m, prev);
+}
+
+function missionRedo() {
+  const m = (typeof _missionGet === 'function') ? _missionGet(_missionSel) : null;
+  if (!m) return;
+  const stack = _missionUndoGetStack(m.missionId);
+  if (!stack.redo.length) return;
+  const next = stack.redo.pop();
+  stack.undo.push(next);
+  _missionUndoApply(m, next);
+}
+
+function _missionUndoCanUndo() {
+  const m = (typeof _missionGet === 'function') ? _missionGet(_missionSel) : null;
+  if (!m) return false;
+  const stack = _missionUndoGetStack(m.missionId);
+  return stack.undo.length >= 2;
+}
+
+function _missionUndoCanRedo() {
+  const m = (typeof _missionGet === 'function') ? _missionGet(_missionSel) : null;
+  if (!m) return false;
+  const stack = _missionUndoGetStack(m.missionId);
+  return stack.redo.length > 0;
+}
+
+document.addEventListener('keydown', e => {
+  const cc = document.getElementById('mission-cc');
+  const panel = document.getElementById('prog-panel-mission');
+  const pageProgram = document.getElementById('page-program');
+  const visible = cc && panel && pageProgram
+    && getComputedStyle(pageProgram).display !== 'none'
+    && getComputedStyle(panel).display !== 'none';
+  if (!visible) return;   // mission command center not visible
+  const t = e.target;
+  const tag = t && t.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const key = e.key.toLowerCase();
+  if (key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    missionUndo();
+  } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+    e.preventDefault();
+    missionRedo();
+  }
+});
+
+// ─── MISSION REPORT (printable export) ───────────────────────────────────
+// Self-contained, standalone HTML document — NOT part of the app's themed UI,
+// so it does NOT use the app's CSS custom properties (exempt by design: it's
+// meant to be printed / saved / opened outside the tool).
+
+function _mrEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function _mrNum(v, digits) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString(undefined, digits ? { maximumFractionDigits: digits } : {});
+}
+
+// Event description line, reusing the same field-precedence the on-screen
+// event cards use (sub = burnLabel || toLabel || vehicleName || label || targetName).
+function _mrEventDesc(e) {
+  return e.burnLabel || e.toLabel || e.vehicleName || e.label || e.targetName || '';
+}
+
+function _mrEventRow(e, i) {
+  const type = _mrEsc(e.type || '');
+  const desc = _mrEsc(_mrEventDesc(e));
+  let dv = '', prop = '', veh = '';
+  if (e.type === 'LAUNCH') {
+    const sr = e.stagingResult || {};
+    dv = _mrNum(sr.dvDelivered);
+    prop = _mrNum((sr.stages || []).reduce((s, st) => s + (st.propBurned || 0), 0));
+    veh = _mrEsc(e.label || '');
+  } else if (e.type === 'BURN' || e.type === 'MANEUVER') {
+    dv = _mrNum(e.dv_actual != null ? e.dv_actual : e.dv);
+    prop = _mrNum(e.prop_consumed);
+    veh = _mrEsc(e.vehicleName || e.activeName || '');
+  } else if (e.type === 'DEPLOY') {
+    veh = _mrEsc(e.label || '');
+  } else if (e.type === 'SEPARATE' || e.type === 'DOCK') {
+    veh = _mrEsc(e.vehicleName || e.targetName || '');
+  } else if (e.type === 'EXPEND') {
+    veh = _mrEsc(e.vehicleLevel ? e.vehicleName : e.stageName);
+  } else {
+    veh = _mrEsc(e.vehicleName || e.activeName || e.targetName || '');
+  }
+  const rep = e.groupId ? ' <span class="mr-tag">grp</span>' : '';
+  return `<tr>
+    <td class="mr-num">${i + 1}</td>
+    <td>${type}${rep}</td>
+    <td>${desc}</td>
+    <td>${veh}</td>
+    <td class="mr-num">${dv}</td>
+    <td class="mr-num">${prop}</td>
+  </tr>`;
+}
+
+function _mrStageRow(s) {
+  return `<tr>
+    <td>${_mrEsc(s.name)}</td>
+    <td class="mr-num">${_mrNum(s.propTotal)}</td>
+    <td class="mr-num">${_mrNum(s.propBurned)}</td>
+    <td class="mr-num">${_mrNum(s.propRemaining)}</td>
+    <td class="mr-num">${_mrNum(s.dvContrib)}</td>
+    <td>${s.expended ? 'EXPENDED' : 'INSERTION'}</td>
+  </tr>`;
+}
+
+function missionReportHTML(m) {
+  if (!m) return '<!DOCTYPE html><html><body>No mission.</body></html>';
+
+  const log = (m._expanded && m._expanded.length) ? m._expanded : (m.log || []);
+  const entry = (typeof _fleetGet === 'function' && m.fleetEntryId) ? _fleetGet(m.fleetEntryId) : null;
+  const lvName = entry ? entry.name : (m.fleetEntryId ? 'Unknown vehicle' : '—');
+
+  const payloadNames = (m.payloadScIds || []).map(scId => {
+    const sc = (typeof _scEdSC !== 'undefined') ? _scEdSC.find(s => s.spacecraftId === scId) : null;
+    return sc ? sc.name : null;
+  }).filter(Boolean);
+  const payloadMass = (m.payloadScIds || []).reduce((s, scId) =>
+    s + (typeof _fleetScMassById === 'function' ? _fleetScMassById(scId) : 0), 0);
+
+  const o = m.launchOrbit || {};
+
+  const firstLaunch = log.find(e => e.type === 'LAUNCH' && e.stagingResult);
+  const sr = firstLaunch ? firstLaunch.stagingResult : null;
+
+  const budget = (typeof missionBudget === 'function') ? missionBudget(m) : null;
+
+  const genDate = new Date().toLocaleString();
+  const ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '';
+
+  const eventRows = log.map((e, i) => _mrEventRow(e, i)).join('') ||
+    `<tr><td colspan="6" class="mr-empty">No events.</td></tr>`;
+
+  const stageRows = sr ? (sr.stages || []).map(_mrStageRow).join('') : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${_mrEsc(m.name)} — Mission Report</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #1a1a1a;
+    background: #ffffff;
+    margin: 0;
+    padding: 40px 48px 80px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .mr-mono { font-family: 'Consolas', 'Courier New', monospace; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: #555; border-bottom: 1px solid #ccc; padding-bottom: 4px;
+    margin: 28px 0 10px;
+  }
+  .mr-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-bottom: 18px;
+  }
+  .mr-header-right { text-align: right; font-family: 'Consolas','Courier New',monospace; font-size: 11px; color: #555; }
+  .mr-tool { font-weight: bold; color: #1a1a1a; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #ddd; font-family: 'Consolas','Courier New',monospace; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #555; border-bottom: 2px solid #999; }
+  td.mr-num, th.mr-num { text-align: right; }
+  .mr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 20px; font-family: 'Consolas','Courier New',monospace; font-size: 12px; margin-bottom: 8px; }
+  .mr-grid div span { display: block; }
+  .mr-key { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #777; }
+  .mr-val { font-size: 13px; color: #111; }
+  .mr-empty { color: #888; font-style: italic; text-align: center; padding: 14px; }
+  .mr-tag { font-size: 9px; background: #eee; border: 1px solid #ccc; padding: 0 4px; border-radius: 2px; color: #666; }
+  .mr-status { display: inline-block; padding: 1px 8px; font-size: 10px; letter-spacing: .08em; border: 1px solid #333; margin-left: 8px; }
+  .mr-toolbar {
+    position: fixed; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10;
+  }
+  .mr-toolbar button {
+    font-family: 'Consolas','Courier New',monospace; font-size: 12px;
+    background: #1a1a1a; color: #fff; border: none; padding: 8px 14px;
+    cursor: pointer; border-radius: 3px;
+  }
+  .mr-toolbar button:hover { background: #333; }
+  @media print { .mr-toolbar { display: none; } body { padding: 20px; } }
+</style>
+</head>
+<body>
+  <div class="mr-toolbar">
+    <button onclick="window.print()">Print</button>
+    <button onclick="(function(){var blob=new Blob(['&lt;!DOCTYPE html&gt;\\n'+document.documentElement.outerHTML],{type:'text/html'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='${_mrEsc(m.name).replace(/[^a-z0-9_-]/gi,'_')}-report.html';document.body.appendChild(a);a.click();a.remove();})()">Download HTML</button>
+  </div>
+
+  <div class="mr-header">
+    <div>
+      <h1>${_mrEsc(m.name)}</h1>
+      <div class="mr-mono" style="font-size:11px;color:#666;">Mission Report</div>
+    </div>
+    <div class="mr-header-right">
+      <div class="mr-tool">Rocket Playground${ver ? ' v' + _mrEsc(ver) : ''}</div>
+      <div>Generated ${_mrEsc(genDate)}</div>
+    </div>
+  </div>
+
+  <h2>Overview</h2>
+  <div class="mr-grid">
+    <div><span class="mr-key">Launch Vehicle</span><span class="mr-val">${_mrEsc(lvName)}</span></div>
+    <div><span class="mr-key">Payload</span><span class="mr-val">${payloadNames.length ? _mrEsc(payloadNames.join(', ')) : '—'}</span></div>
+    <div><span class="mr-key">Total Payload Mass</span><span class="mr-val">${_mrNum(payloadMass)} kg</span></div>
+    <div><span class="mr-key">Events</span><span class="mr-val">${log.length}</span></div>
+    <div><span class="mr-key">Body</span><span class="mr-val">${_mrEsc(o.body || 'Earth')}</span></div>
+    <div><span class="mr-key">Altitude</span><span class="mr-val">${_mrNum(o.alt_km)} km${o.apo_km && o.apo_km !== o.alt_km ? ' × ' + _mrNum(o.apo_km) + ' km' : ''}</span></div>
+    <div><span class="mr-key">Inclination</span><span class="mr-val">${_mrNum(o.inc_deg)}&deg;</span></div>
+    <div><span class="mr-key">LAN</span><span class="mr-val">${_mrNum(o.lan_deg)}&deg;</span></div>
+  </div>
+
+  <h2>Event Log</h2>
+  <table>
+    <thead><tr>
+      <th class="mr-num">#</th><th>Type</th><th>Description</th><th>Vehicle</th>
+      <th class="mr-num">&#916;V (m/s)</th><th class="mr-num">Prop (kg)</th>
+    </tr></thead>
+    <tbody>${eventRows}</tbody>
+  </table>
+
+  ${sr ? `
+  <h2>Ascent Staging${sr.status ? `<span class="mr-status">${_mrEsc(sr.status)}</span>` : ''}</h2>
+  <table>
+    <thead><tr>
+      <th>Stage</th><th class="mr-num">Prop Total (kg)</th><th class="mr-num">Prop Burned (kg)</th>
+      <th class="mr-num">Prop Remaining (kg)</th><th class="mr-num">&#916;V (m/s)</th><th>Status</th>
+    </tr></thead>
+    <tbody>${stageRows}</tbody>
+  </table>
+  <div class="mr-mono" style="font-size:11px;color:#444;margin-bottom:10px;">
+    Required &#916;V: ${_mrNum(sr.dvRequired)} m/s &nbsp;|&nbsp;
+    Delivered &#916;V: ${_mrNum(sr.dvDelivered)} m/s
+    ${sr.dvMargin != null ? ` &nbsp;|&nbsp; Margin: ${_mrNum(sr.dvMargin)} m/s` : ''}
+  </div>` : ''}
+
+  ${budget ? `
+  <h2>&#916;V Budget Summary</h2>
+  <div class="mr-grid">
+    <div><span class="mr-key">&#916;V Expended</span><span class="mr-val">${_mrNum(budget.dvExpended)} m/s</span></div>
+    <div><span class="mr-key">Prop Consumed</span><span class="mr-val">${_mrNum(budget.propConsumed)} kg</span></div>
+    <div><span class="mr-key">&#916;V Capacity Left</span><span class="mr-val">${_mrNum(budget.dvCapacityRemaining)} m/s</span></div>
+    <div><span class="mr-key">Payload</span><span class="mr-val">${_mrNum(budget.payloadMass)} kg</span></div>
+  </div>` : ''}
+
+</body>
+</html>`;
+}
+
+function missionExportReport(id) {
+  const m = _missionGet(id);
+  if (!m) return;
+  if (!m._expanded || !m._expanded.length) {
+    if (typeof missionRecompute === 'function') missionRecompute(m);
+  }
+  const html = missionReportHTML(m);
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (err) { w = null; }
+  if (w && w.document) {
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // popup blocked — fall back to a direct Blob download of the report HTML
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (m.name || 'mission').replace(/[^a-z0-9_-]/gi, '_') + '-report.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+}
 
 // ─── SPACECRAFT EDITOR ────────────────────────────────────────────────
 
@@ -15345,7 +16826,7 @@ function _scEdGet(id) {
   return _scEdSC.find(s => s.spacecraftId === (id ?? _scEdSel)) ?? null;
 }
 
-function scEdRender() { scEdRenderList(); scEdRenderDetail(); }
+function scEdRender() { scEdRenderList(); scEdRenderDetail(); if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave(); }
 
 function scEdRenderList() {
   const el = document.getElementById('sc-ed-list');
@@ -15790,6 +17271,7 @@ missionInit();
 })();
 
 // Delegated listeners for user-defined tracking
+let _stageCompDebounce=null;
 document.getElementById('stage-tbody').addEventListener('input',e=>{
   if(_suppressUD)return;
   // Clear the library name for the column being manually edited
@@ -15798,7 +17280,8 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   if(td&&tr){
     const colIdx=[...tr.cells].indexOf(td)-1; // -1 for label column
     if(colIdx>=0&&colIdx<15){currentStageNames[colIdx]=null;stageSaved[colIdx]=false;}
-    buildStageComposition();
+    clearTimeout(_stageCompDebounce);
+    _stageCompDebounce=setTimeout(buildStageComposition,200);
   }
   markLVUserDefined();
 });

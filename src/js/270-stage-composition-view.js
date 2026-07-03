@@ -8,10 +8,8 @@ let boosterSaved=false;
 const VP_COLORS = ['#ff8844','#5599ff','#88cc55','#cc77ff','#55ccff','#ffcc33','#ff5577'];
 
 function updatePerfPanel() {
-  const dvBody    = document.getElementById('vp-dv-body');
-  const statsBody = document.getElementById('vp-stats-body');
   const tblBody   = document.getElementById('vp-table-body');
-  if (!dvBody || !statsBody || !tblBody) return;
+  if (!tblBody) return;
 
   // ── Collect stage data ────────────────────────────────────────
   const pF = v => mathValue(v,0);
@@ -80,95 +78,41 @@ function updatePerfPanel() {
     return { ...seg, dv, burnTime, propFrac, massRatio };
   });
 
-  // ── ΔV Panel ─────────────────────────────────────────────────
   const hasAnyDV = totalDV > 0;
-  if (!hasAnyDV) {
-    dvBody.innerHTML = '<div class="vp-dv-empty">// Drop stages into the composition above</div>';
-  } else {
-    const maxDV = Math.max(...calcs.map(c => c.dv), 1);
-    const rows = calcs.map(c => {
-      const barPct = (c.dv / maxDV * 100).toFixed(1);
-      const dvStr  = c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—';
-      const mrStr  = c.massRatio > 0 ? 'MR ' + c.massRatio.toFixed(2) : '';
-      const ispStr = c.isp > 1 ? 'Isp ' + Math.round(c.isp) + ' s' : '';
-      return `<div class="vp-dv-row">
-        <div class="vp-dv-label">${c.label}</div>
-        <div class="vp-dv-track">
-          <div class="vp-dv-fill" style="width:${barPct}%;background:${c.color};opacity:.85;"></div>
-        </div>
-        <div class="vp-dv-val" style="color:${c.color};">${dvStr}</div>
-        <div class="vp-dv-meta">${ispStr}&nbsp;&nbsp;${mrStr}</div>
-      </div>`;
-    }).join('');
 
-    dvBody.innerHTML = rows + `
-      <div class="vp-dv-total">
-        <div class="vp-dv-total-label">Total ΔV (stage-isolation)</div>
-        <div class="vp-dv-total-val">${fmt(Math.round(totalDV))} m/s</div>
-      </div>`;
-  }
-
-  // ── Stats Panel ───────────────────────────────────────────────
-  if (liftoffMass === 0) {
-    statsBody.innerHTML = '<div class="vp-dv-empty">// —</div>';
-  } else {
-    const weightKN   = liftoffMass * G0 / 1000;
-    const twr        = weightKN > 0 ? totalThrust / weightKN : 0;
-    const twrClass   = twr < 1.05 ? 'warn' : twr >= 1.2 ? 'ok' : '';
-    const massFrac   = liftoffMass > 0 ? (totalDry / liftoffMass * 100) : 0;
-
-    statsBody.innerHTML = `
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff Mass</div>
-        <div class="vp-stat-val">${fmtM(liftoffMass)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Total Propellant</div>
-        <div class="vp-stat-val">${fmtM(totalProp)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff Thrust</div>
-        <div class="vp-stat-val">${fmtF(totalThrust, totalThrust >= 100 ? 0 : 1)}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Liftoff T/W</div>
-        <div class="vp-stat-val ${twrClass}">${twr > 0 ? twr.toFixed(2) : '—'}</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Structural Fraction</div>
-        <div class="vp-stat-val">${massFrac.toFixed(1)} %</div>
-      </div>
-      <div class="vp-stat">
-        <div class="vp-stat-label">Total ΔV</div>
-        <div class="vp-stat-val" style="color:var(--accent);">${hasAnyDV ? fmt(Math.round(totalDV)) + ' m/s' : '—'}</div>
-      </div>`;
-  }
-
-  // ── Spec Table ────────────────────────────────────────────────
+  // ── Spec Table (last column = whole-vehicle summary) ─────────
+  // (The former standalone "ΔV Budget" panel was folded in here — the ΔV (isol.)
+  // row carries a proportional background bar per stage, replacing the old bars.)
   if (calcs.length === 0) {
     tblBody.innerHTML = '<div class="vp-dv-empty">// No stages loaded</div>';
     return;
   }
 
+  const weightKN = liftoffMass * G0 / 1000;
+  const twr      = weightKN > 0 ? totalThrust / weightKN : 0;
+  const twrClass = twr < 1.05 ? 'warn' : twr >= 1.2 ? 'ok' : '';
+  const propFracTot = liftoffMass > 0 ? totalProp / liftoffMass * 100 : 0;
+
   const dotH = c => `<span class="vp-col-dot" style="background:${c.color};"></span>`;
   const th = c => `<th>${dotH(c)}${c.shortLabel}</th>`;
-  const headers = `<tr><th></th>${calcs.map(th).join('')}</tr>`;
+  const headers = `<tr><th></th>${calcs.map(th).join('')}<th class="vp-col-veh">Vehicle</th></tr>`;
 
-  const row = (label, fn) =>
-    `<tr><td>${label}</td>${calcs.map(c => `<td>${fn(c)}</td>`).join('')}</tr>`;
+  const row = (label, fn, vehVal) =>
+    `<tr><td>${label}</td>${calcs.map(c => `<td>${fn(c)}</td>`).join('')}<td class="vp-col-veh">${vehVal}</td></tr>`;
 
   tblBody.innerHTML = `<table class="vp-spec-tbl">
     <thead>${headers}</thead>
     <tbody>
-      ${row('Dry Mass',      c => fmtM(c.dry))}
-      ${row('Propellant',    c => fmtM(c.prop))}
-      ${row('Gross Mass',    c => fmtM(c.dry + c.prop))}
-      ${row('Isp',           c => c.isp > 1 ? Math.round(c.isp) + ' s' : '—')}
-      ${row('Thrust',        c => c.thrust > 0 ? fmtF(c.thrust / (c.isBooster ? 1 : 1), c.thrust >= 100 ? 0 : 1) : '—')}
-      ${row('Prop Fraction', c => c.propFrac > 0 ? c.propFrac.toFixed(1) + ' %' : '—')}
-      ${row('Mass Ratio',    c => c.massRatio > 1 ? c.massRatio.toFixed(2) : '—')}
-      ${row('ΔV (isol.)',    c => `<span class="vp-dv-accent">${c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—'}</span>`)}
-      ${row('Burn Time',     c => c.burnTime > 0 ? (c.burnTime >= 60 ? (c.burnTime/60).toFixed(1) + ' min' : Math.round(c.burnTime) + ' s') : '—')}
+      ${row('Dry Mass',      c => fmtM(c.dry),            fmtM(totalDry))}
+      ${row('Propellant',    c => fmtM(c.prop),           fmtM(totalProp))}
+      ${row('Gross Mass',    c => fmtM(c.dry + c.prop),   fmtM(liftoffMass))}
+      ${row('Isp',           c => c.isp > 1 ? Math.round(c.isp) + ' s' : '—', '—')}
+      ${row('Thrust',        c => c.thrust > 0 ? fmtF(c.thrust / (c.isBooster ? 1 : 1), c.thrust >= 100 ? 0 : 1) : '—', totalThrust > 0 ? fmtF(totalThrust, totalThrust >= 100 ? 0 : 1) : '—')}
+      ${row('Liftoff T/W',   () => '—',                   twr > 0 ? `<span class="vp-stat-val ${twrClass}" style="font-size:inherit;">${twr.toFixed(2)}</span>` : '—')}
+      ${row('Prop Fraction', c => c.propFrac > 0 ? c.propFrac.toFixed(1) + ' %' : '—', propFracTot > 0 ? propFracTot.toFixed(1) + ' %' : '—')}
+      ${row('Mass Ratio',    c => c.massRatio > 1 ? c.massRatio.toFixed(2) : '—', '—')}
+      ${row('ΔV (isol.)',    c => { const pct = (c.dv / Math.max(...calcs.map(x => x.dv), 1) * 100).toFixed(1); return `<span class="vp-dv-cellbar" style="background:linear-gradient(to right, ${c.color}2e ${pct}%, transparent ${pct}%);"><span class="vp-dv-accent">${c.dv > 0 ? fmt(Math.round(c.dv)) + ' m/s' : '—'}</span></span>`; }, `<span class="vp-dv-accent">${hasAnyDV ? fmt(Math.round(totalDV)) + ' m/s' : '—'}</span>`)}
+      ${row('Burn Time',     c => c.burnTime > 0 ? (c.burnTime >= 60 ? (c.burnTime/60).toFixed(1) + ' min' : Math.round(c.burnTime) + ' s') : '—', '—')}
     </tbody>
   </table>`;
 }

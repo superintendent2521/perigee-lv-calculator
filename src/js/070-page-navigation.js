@@ -1,42 +1,44 @@
 
 // ─── PAGE NAVIGATION ──────────────────────────
-// Two top-level sections: "LV Calculator" (Vehicles / Orbits / Results sub-tabs)
-// and "Program Manager" (page-program, with its own Spacecraft/Fleet/Missions tabs).
-const _LV_PAGES = ['vehicles', 'orbits', 'results'];
-let _lvSubPage = 'vehicles';   // remembers the last LV sub-tab
+// Flat, single-row top nav: Vehicles | Orbits | Trade Studies | Program.
+// 'results' is a legacy alias (calculate() calls showPage('results') and that
+// function is untouchable) — it resolves to the Orbits page, since the Results
+// content now lives there, and scrolls #results-panel into view.
+const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'program'];
 
 function showPage(p){
+  let target = p;
+  if(target === 'results') target = 'orbits';
+
   document.querySelectorAll('.page').forEach(el=>{
     el.classList.remove('active');
     el.style.display='none';
   });
-  const pg=document.getElementById('page-'+p);
+  const pg=document.getElementById('page-'+target);
   if(!pg) return;
   pg.classList.add('active');
-  pg.style.display=(p==='program'||p==='art')?'flex':'block';
+  pg.style.display=(target==='program'||target==='art')?'flex':'block';
 
-  const isLv=_LV_PAGES.includes(p);
-  // top-level nav highlight (LV section folds vehicles/orbits/results under nav-lv)
+  // top-level nav highlight
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
-  const topBtn=document.getElementById(isLv?'nav-lv':'nav-'+p);
+  const topBtn=document.getElementById('nav-'+target);
   if(topBtn) topBtn.classList.add('active');
-  // LV sub-tab bar: only visible inside the LV section
-  const sub=document.getElementById('lv-subnav');
-  if(sub) sub.style.display=isLv?'flex':'none';
-  if(isLv){
-    _lvSubPage=p;
-    document.querySelectorAll('#lv-subnav .lv-sub-btn').forEach(b=>b.classList.toggle('active', b.dataset.lv===p));
-  }
+
   // Program sub-tab bar + header Save/Load: only visible inside Program Manager
   const psub=document.getElementById('prog-subnav');
-  if(psub) psub.style.display=(p==='program')?'flex':'none';
+  if(psub) psub.style.display=(target==='program')?'flex':'none';
   const pha=document.getElementById('prog-header-actions');
-  if(pha) pha.style.display=(p==='program')?'flex':'none';
+  if(pha) pha.style.display=(target==='program')?'flex':'none';
 
   const vvw=document.getElementById('veh-view-wrap');
-  if(vvw){vvw.style.display=(p==='vehicles')?'flex':'none';}
-  if(p==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
-}
+  if(vvw){vvw.style.display=(target==='vehicles')?'flex':'none';}
+  if(target==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
+  if(target==='trades'){ tsEnsureRendered(); }
+  if(target==='orbits' && typeof orbVehRenderSelectorBar==='function'){ orbVehRenderSelectorBar(); }
 
-// "LV Calculator" top-nav button → return to the last-used LV sub-tab.
-function showLvSection(){ showPage(_lvSubPage || 'vehicles'); }
+  // Legacy 'results' alias: scroll the results panel into view once rendered.
+  if(p==='results'){
+    const rp=document.getElementById('results-panel');
+    if(rp) setTimeout(()=>rp.scrollIntoView({behavior:'smooth',block:'start'}), 0);
+  }
+}

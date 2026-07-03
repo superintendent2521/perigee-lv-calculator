@@ -4,6 +4,17 @@ let performanceCases=[];   // { label, timestamp, vehicleName, result, config }
 let activeCaseIndex=null;
 let loadedVehicleName='';  // name from last loaded file
 
+// Cases panel collapse/expand (collapsed by default, per session — Orbits page).
+let _casesPanelOpen=false;
+function casesPanelToggle(){
+  const body=document.getElementById('cases-panel-body');
+  const caret=document.getElementById('cases-toggle-caret');
+  if(!body)return;
+  _casesPanelOpen=!_casesPanelOpen;
+  body.style.display=_casesPanelOpen?'':'none';
+  if(caret)caret.textContent=_casesPanelOpen?'▾':'▸';
+}
+
 function buildCaseList(){
   const list=document.getElementById('case-list');
   if(!list)return;

@@ -13,13 +13,10 @@
 <header>
   <h1>Rocket Playground</h1>
   <nav class="page-nav">
-    <button class="nav-btn active" id="nav-lv" onclick="showLvSection()">LV Calculator</button>
-    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program Manager</button>
-  </nav>
-  <nav class="lv-subnav" id="lv-subnav">
-    <button class="lv-sub-btn active" data-lv="vehicles" onclick="showPage('vehicles')">Vehicles</button>
-    <button class="lv-sub-btn" data-lv="orbits" onclick="showPage('orbits')">Orbits</button>
-    <button class="lv-sub-btn" data-lv="results" onclick="showPage('results')">Results</button>
+    <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
+    <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
+    <button class="nav-btn" id="nav-trades" onclick="showPage('trades')">Trade Studies</button>
+    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
   </nav>
   <nav class="lv-subnav" id="prog-subnav" style="display:none;">
     <button class="lv-sub-btn active" data-prog="hangar" onclick="progShowTab('hangar')">Hangar</button>
@@ -83,8 +80,6 @@
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div class="sl" style="margin-bottom:0;flex:1;">Stage Composition</div>
         <button class="act-btn green" onclick="openSaveLVModal()">SAVE LV</button>
-        <button class="act-btn" onclick="openJSONModal()">{ } JSON</button>
-        <label class="act-btn" style="cursor:pointer;">LOAD<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
       </div>
 
       <!-- Config controls: stage count, boosters, restartable, fairing jettison -->
@@ -167,7 +162,6 @@
         <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
           <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
           <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
-          <label class="act-btn" style="cursor:pointer;white-space:nowrap;">Load<input type="file" accept=".stage,.json" style="display:none" onchange="loadUserStageFile(this)"></label>
           <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
             <input type="checkbox" id="user-only-check" style="accent-color:var(--accent);cursor:pointer;" onchange="showUserOnly=this.checked;libRender();">
             My Stuff
@@ -181,21 +175,9 @@
 
   <!-- PERFORMANCE SUMMARY PANEL (beginner mode) -->
   <div id="vehicles-perf">
-    <div class="vp-top-row" style="display:grid;grid-template-columns:1fr 210px;gap:14px;margin-bottom:14px;align-items:stretch;">
-      <!-- ΔV Budget -->
-      <div class="lib-panel" style="padding:12px 14px;" id="vp-dv">
-        <div class="vp-header">ΔV Budget <span class="vp-header-sub">stage-isolation basis · payload not included</span></div>
-        <div id="vp-dv-body"><div class="vp-dv-empty">// No stages loaded</div></div>
-      </div>
-      <!-- Vehicle Stats -->
-      <div class="lib-panel" style="padding:12px 14px;" id="vp-stats">
-        <div class="vp-header">Vehicle Summary</div>
-        <div id="vp-stats-body"><div class="vp-dv-empty">// —</div></div>
-      </div>
-    </div>
     <!-- Stage Spec Comparison -->
     <div class="lib-panel" style="padding:12px 14px;" id="vp-table">
-      <div class="vp-header">Stage Specifications</div>
+      <div class="vp-header">Stage Specifications <span class="vp-header-sub">stage-isolation ΔV basis · payload not included</span></div>
       <div id="vp-table-body"><div class="vp-dv-empty">// No stages loaded</div></div>
     </div>
   </div><!-- /vehicles-perf -->
@@ -204,8 +186,7 @@
   <div id="vehicles-advanced" style="display:none;">
     <div style="display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
       <button class="act-btn green" onclick="openSaveLVModal()">Save LV</button>
-      <button class="act-btn" onclick="openJSONModal()">JSON</button>
-      <label class="act-btn" style="cursor:pointer;">Load LV<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
+      <label class="act-btn" style="cursor:pointer;" title="Load a saved vehicle or a Perigee library export">⇣ Load<input type="file" accept=".vehicle,.json" style="display:none" onchange="libLoadVehicleFile(this)"></label>
       <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
       <label class="act-btn" style="cursor:pointer;">Load Stage → Slot<input type="file" accept=".stage,.json" style="display:none" onchange="advLoadStage(this)"></label>
       <button class="act-btn" onclick="openAdvSaveSlotModal()">Save Stage from Slot</button>
@@ -269,38 +250,42 @@
   </div>
   </div><!-- /vehicles-stage-params -->
 
+  <!-- LAUNCH SITE (moved from the former Orbits page, 2026-07-02 IA restructure) -->
+  <div class="lib-panel" style="margin-top:14px;">
+  <div class="left-section" id="sec-launch">
+  <div class="sl">Launch Site</div>
+  <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+      <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
+        <div id="site-selector-grid"></div>
+        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+        </div>
+        <div class="site-note" id="site-note"></div>
+        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+        <div class="site-desc" id="site-desc"></div>
+        <div class="act-row" style="margin-top:10px;">
+          <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
+          <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
+        </div>
+      </div>
+      <canvas id="site-map"></canvas>
+    </div>
+  </div>
+  </div><!-- /left-section launch-site -->
+  </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
 <div id="page-orbits" class="page">
+  <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
   <div class="two-col">
 
     <!-- LEFT: Destination config -->
     <div class="left-col">
-      <div class="left-section" id="sec-launch">
-      <div class="sl">Launch Site</div>
-      <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
-        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
-          <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
-            <div id="site-selector-grid"></div>
-            <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
-              <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
-              <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-              <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-            </div>
-            <div class="site-note" id="site-note"></div>
-            <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
-            <div class="site-desc" id="site-desc"></div>
-            <div class="act-row" style="margin-top:10px;">
-              <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
-              <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
-            </div>
-          </div>
-          <canvas id="site-map"></canvas>
-        </div>
-      </div>
-
-      </div><!-- /left-section launch-site -->
       <div class="left-section" id="sec-orbit">
       <div class="sl">Define an Orbit</div>
       <div class="panel" id="panel-define-orbit">
@@ -353,31 +338,31 @@
     </div>
 
   </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════ PAGE: RESULTS -->
-<div id="page-results" class="page">
-  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+  <!-- RESULTS (moved from the former page-results) -->
+  <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:18px 0 10px;"></div>
+  <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
     <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-    <button onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+    <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
       style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
   </div>
   <div class="results-layout">
 
-    <!-- LEFT: Cases panel -->
+    <!-- LEFT: Cases panel (collapsed by default, toggled) -->
     <div class="cases-panel">
-      <div class="cases-header">
-        <span>Performance Cases</span>
+      <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+        <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
       </div>
-      <div class="act-row" style="margin-bottom:8px;">
-        <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-      </div>
-      <div id="case-list">
-        <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-      </div>
-      <div class="case-actions">
-        <label class="act-btn" style="cursor:pointer;text-align:center;width:100%;box-sizing:border-box;">Load Vehicle File<input type="file" accept=".vehicle,.json" style="display:none" onchange="loadLVFile(this)"></label>
-        <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled>Download All Cases</button>
+      <div id="cases-panel-body" style="display:none;">
+        <div class="act-row" style="margin-bottom:8px;">
+          <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+        </div>
+        <div id="case-list">
+          <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+        </div>
+        <div class="case-actions">
+          <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+        </div>
       </div>
     </div>
 
@@ -385,12 +370,19 @@
     <div>
       <div class="sl">Results</div>
       <div class="results-panel" id="results-panel">
-        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target on the Launch page, then calculate.</div>
+        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
       </div>
     </div>
 
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════ PAGE: TRADE STUDIES -->
+<div id="page-trades" class="page">
+  <div class="vp-header">Trade Studies <span class="vp-header-sub">Compare vehicles across payloads, orbits, and design variables</span></div>
+  <div id="ts-panel"></div>
+</div>
+
 <div id="page-program" class="page">
   <div class="sc-ed-toolbar">
     <div class="seg" id="hangar-pick" style="margin-right:6px;">
@@ -534,11 +526,19 @@
       <input type="text" id="lv-save-note" placeholder="e.g. 3-stage LOX/LH2" maxlength="200">
       <label style="margin-top:10px;">Library Tags <span style="text-transform:none;letter-spacing:normal;color:var(--text-dim);font-size:10px;">— for browsing &amp; the program (propellant &amp; class auto-derive from stages)</span></label>
       <div id="lv-save-tags"></div>
-      <div class="save-note">Downloads a .json file with full vehicle definition and any calculated performance results.</div>
+      <div class="save-note">Saves this vehicle into your library (My Stuff) so it's browsable in the Vehicles list.</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">
+        <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;">Other options</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="act-btn" onclick="downloadLVAsJSON()" title="Download this vehicle as a standalone .vehicle file">⇣ Download as JSON</button>
+          <button class="act-btn" onclick="openJSONModal()" title="View, copy, or paste-edit the raw vehicle JSON">{ } View / Paste JSON</button>
+          <button class="act-btn" onclick="libExportMine()" title="Download your entire saved library (vehicles + stages) as one file">⇣ Download entire library</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
-      <button class="modal-btn primary" onclick="doSaveLV()">Download .json</button>
+      <button class="modal-btn primary" onclick="doSaveLV()">Save to Library</button>
     </div>
   </div>
 </div>

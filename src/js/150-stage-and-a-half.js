@@ -54,13 +54,17 @@ function _s15BecoSplit(s) {
  * without any modification to those functions.
  */
 function calculateWithS15() {
+  // Orbits-page vehicle selector: if a library vehicle (not "Worksheet") is
+  // selected, delegate to the pure path and skip the DOM-reading worksheet
+  // flow entirely. calculate() itself is never touched.
+  if (typeof _orbVehSel !== 'undefined' && _orbVehSel) { orbCalcSelectedVehicle(); return; }
   // Check whether any stage uses S1.5
   saveStoreFromDOM();
   const s15Indices = [];
   for (let i = 0; i < numStages; i++) {
     if (stageStore[i]?.s15) s15Indices.push(i);
   }
-  if (!s15Indices.length) { calculate(); return; }
+  if (!s15Indices.length) { calculate(); condenseResultsPanel(); return; }
 
   // ── 1. Build virtual stage sequence ──────────────────────────────────────────
   const virtualStages = [];   // [{dry,prop,thrust,isp,res, label}]
@@ -152,4 +156,6 @@ function calculateWithS15() {
       panel.innerHTML = panel.innerHTML.replaceAll(`Stage ${vi + 1}`, lbl);
     });
   }
+
+  condenseResultsPanel();
 }
