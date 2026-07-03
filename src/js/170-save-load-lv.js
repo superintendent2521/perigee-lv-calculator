@@ -16,7 +16,27 @@ function openSaveLVModal(){
   document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';
   if(typeof libBuildTagEditor==='function')
     libBuildTagEditor(document.getElementById('lv-save-tags'), _lvTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false}], 'veh');
+  refreshLVSaveSummary();
   openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);
+}
+// "Saving: N stages · boosters: M×/none · launch site: <name> (<lat>°)" — refreshed each open.
+function refreshLVSaveSummary(){
+  const el=document.getElementById('lv-save-summary');
+  if(!el)return;
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const stages=(typeof numStages!=='undefined')?numStages:1;
+  let boosterStr='none';
+  if(typeof useBooster!=='undefined' && useBooster){
+    const nb=document.getElementById('num-boosters');
+    const count=nb?parseInt(nb.value)||0:0;
+    boosterStr=count+'×';
+  }
+  const latEl=document.getElementById('site-lat');
+  const lat=latEl?parseFloat(latEl.value):NaN;
+  const latStr=isFinite(lat)?lat.toFixed(1):'--';
+  const site=(typeof getCurrentSite==='function')?getCurrentSite():null;
+  const siteName=site?site.name:'Custom';
+  el.textContent='Saving: '+stages+' stage'+(stages===1?'':'s')+' · boosters: '+boosterStr+' · launch site: '+esc(siteName)+' ('+latStr+'°)';
 }
 
 /**
@@ -136,6 +156,7 @@ function applyLVObject(obj){
   if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
   if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;
   if(obj.site){document.getElementById('site-lat').value=obj.site.lat??28.5;document.getElementById('az-min').value=obj.site.azMin??37;document.getElementById('az-max').value=obj.site.azMax??112;matchSiteFromFields();}
+  if(typeof launchSiteStripRefresh==='function')launchSiteStripRefresh();
   setDestMode(obj.mode||'orbit');
   if(obj.mode==='escape'&&obj.escape){document.getElementById('c3').value=obj.escape.c3??0;document.getElementById('decl').value=obj.escape.decl??28.5;document.getElementById('escape-perigee').value=obj.escape.perigee??185;}
   else if(obj.orbit){document.getElementById('apogee').value=obj.orbit.apogee??400;document.getElementById('perigee').value=obj.orbit.perigee??400;document.getElementById('inclination').value=obj.orbit.inc??28.5;}

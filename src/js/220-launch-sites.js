@@ -429,3 +429,82 @@ function initSiteMap(){
   _smResize();
 }
 
+// ─── LAUNCH SITE STRIP (collapsible summary inside Stage Composition card) ─────
+let _launchSiteStripExpanded=false;
+
+function launchSiteStripToggle(){
+  _launchSiteStripExpanded=!_launchSiteStripExpanded;
+  const panel=document.getElementById('panel-launch-site');
+  const arrow=document.getElementById('launch-site-strip-arrow');
+  if(!panel)return;
+  panel.style.display=_launchSiteStripExpanded?'':'none';
+  if(arrow)arrow.classList.toggle('open',_launchSiteStripExpanded);
+  if(_launchSiteStripExpanded){
+    // The site-map canvas may have sized itself while hidden (display:none skips layout).
+    // Re-init (idempotent — guarded by canvas._smInited) and force a resize+redraw now that
+    // the panel is visible so the ResizeObserver's initial callback isn't the only trigger.
+    if(typeof initSiteMap==='function')initSiteMap();
+    const canvas=document.getElementById('site-map');
+    if(canvas){
+      // setTimeout (not rAF) — rAF can be throttled/never fire in background/headless
+      // contexts, and this must run reliably right after the panel becomes visible.
+      setTimeout(()=>{
+        const dpr=window.devicePixelRatio||1;
+        const w=canvas.offsetWidth,h=canvas.offsetHeight;
+        if(w&&h){
+          canvas._dpr=dpr;
+          canvas.width=Math.round(w*dpr);
+          canvas.height=Math.round(h*dpr);
+        }
+        if(typeof drawSiteMap==='function')drawSiteMap();
+      },0);
+    }
+  }
+}
+
+function launchSiteStripRefresh(){
+  const textEl=document.getElementById('launch-site-strip-text');
+  if(!textEl)return;
+  const latEl=document.getElementById('site-lat');
+  const azMinEl=document.getElementById('az-min');
+  const azMaxEl=document.getElementById('az-max');
+  const lat=latEl?parseFloat(latEl.value):NaN;
+  const azMin=azMinEl?azMinEl.value:'';
+  const azMax=azMaxEl?azMaxEl.value:'';
+  const site=(typeof getCurrentSite==='function')?getCurrentSite():null;
+  const name=site?site.name:'Custom';
+  const latStr=isFinite(lat)?lat.toFixed(1):'--';
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  textEl.innerHTML='&#9873; Launch Site: '+esc(name)+' &middot; '+latStr+'&deg;N &middot; Az '+esc(azMin)+'&ndash;'+esc(azMax)+'&deg;';
+}
+
+// Delegated listeners: catch site-grid clicks and manual field edits without needing
+// to modify the click handlers that live in 230-orbit-diagram.js / 240-user-spaceports.js.
+// #site-selector-grid persists across buildSiteSelector() re-renders, so a delegated
+// listener on it survives; the field inputs are static, so direct listeners suffice.
+(function _launchSiteStripWire(){
+  function wire(){
+    const grid=document.getElementById('site-selector-grid');
+    if(grid&&!grid._stripWired){
+      grid._stripWired=true;
+      grid.addEventListener('click',()=>setTimeout(launchSiteStripRefresh,0));
+    }
+    ['site-lat','az-min','az-max'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&!el._stripWired){
+        el._stripWired=true;
+        el.addEventListener('input',launchSiteStripRefresh);
+      }
+    });
+    const mapCanvas=document.getElementById('site-map');
+    if(mapCanvas&&!mapCanvas._stripWired){
+      mapCanvas._stripWired=true;
+      mapCanvas.addEventListener('click',()=>setTimeout(launchSiteStripRefresh,0));
+      mapCanvas.addEventListener('mouseup',()=>setTimeout(launchSiteStripRefresh,0));
+    }
+    launchSiteStripRefresh();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire);
+  else wire();
+})();
+

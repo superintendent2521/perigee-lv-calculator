@@ -7,276 +7,84 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
-:root{--bg:#3b393a;--panel:#2e2c2d;--border:#524f50;--border-bright:#6e6b6c;--accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;--text:#e7e8ea;--text-dim:#a7a6a4;--text-bright:#ffffff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--nm-bg:#282628;--nm-earth:#5db877;--nm-lunar:#8890bc;--nm-interp:#b85848;--nm-edge:#5a5758;--nm-edge-act:#88c657;--nm-node-fill:#2e2c2d;--nm-label:#a7a6a4;--nm-pill-bg:#2e2c2d;--nm-pill-bd:#524f50;--nm-pill-text:#a7a6a4;--nm-pal-bg:#252325;--nm-pal-hdr:#1e1c1e;--nm-pal-item:#2e2c2d;--nm-pal-item-act:#1e2419;--nm-ghost:#524f50;}
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;background:var(--bg);overscroll-behavior:none;}
-#rp-root{background:var(--bg);color:var(--text-bright);font-family:var(--sans);font-size:15px;min-height:100%;padding:0;box-sizing:border-box;display:flex;flex-direction:column;}
 header{flex-shrink:0;}
 
 /* ── HEADER ── */
 header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:16px;background:rgba(0,0,0,.3);flex-wrap:wrap;}
-header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;}
 
 /* ── PAGE NAV ── */
-.page-nav{display:flex;gap:2px;margin-right:8px;}
-.nav-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:7px 16px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;}
-.nav-btn:hover{border-color:var(--accent);color:var(--accent);}
-.nav-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:bold;}
 
 /* ── THEME UI ── */
-.theme-wrap{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.theme-wrap label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;}
-#theme-select{background:rgba(0,0,0,.35);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:5px 8px;cursor:pointer;}
-.th-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
-.th-btn:hover{border-color:var(--accent);color:var(--accent);}
-.th-btn.g{border-color:var(--accent3);color:var(--accent3);}
 
 /* ── PAGES ── */
-.page{display:none;padding:14px 16px;}
-.page.active{display:block;}
-.two-col{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;}
-.two-col>div{min-width:0;}
 
 /* ── SECTION LABEL ── */
-.sl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-.sl::after{content:'';flex:1;height:1px;background:var(--border);}
 
 /* ── PANEL ── */
-.panel{background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:12px;overflow:hidden;}
 
 /* ── INPUTS ── */
-.cfg-row{display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;row-gap:10px;}
-.cfg-item{display:inline-flex;flex-direction:column;gap:5px;align-items:flex-start;flex-shrink:0;}
-.cfg-item label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;}
-input[type=number].field,input[type=text].field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;width:100px;-moz-appearance:textfield;}
-input[type=number].field::-webkit-outer-spin-button,input[type=number].field::-webkit-inner-spin-button{-webkit-appearance:none;}
-input[type=number].field:focus,input[type=text].field:focus{outline:none;border-color:var(--accent);}
-select.field{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:6px 10px;cursor:pointer;}
-select.field:focus{outline:none;border-color:var(--accent);}
 
 /* ── SEG CONTROL ── */
-.seg{display:inline-flex;border:none;background:none;align-self:flex-start;gap:5px;}
-.seg button{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:6px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
-.seg button.active{background:var(--accent);color:#000;}
-.seg button:hover:not(.active){background:var(--border-bright);color:var(--text-bright);}
 
 /* ── MODE TOGGLE ── */
-.mode-tog{display:flex;border:1px solid var(--border-bright);overflow:hidden;margin-bottom:12px;}
-.mode-tog button{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 12px;cursor:pointer;transition:all .15s;border-right:1px solid var(--border-bright);letter-spacing:.1em;}
-.mode-tog button:last-child{border-right:none;}
-.mode-tog button.active{background:var(--accent);color:#000;font-weight:bold;}
-.mode-tog button:hover:not(.active){background:var(--border-bright);color:var(--text-bright);}
 
 /* ── STAGE TABLE ── */
-.tscroll{overflow-x:auto;max-width:100%;padding-bottom:4px;margin-right:2px;}
-.stage-table{border-collapse:collapse;font-family:var(--mono);font-size:12px;}
-.stage-table th{text-align:left;padding:5px 8px;color:var(--text-dim);font-size:10px;letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
-.stage-table th.sh{text-align:center;color:var(--accent);font-size:11px;}
-.stage-table th.si{text-align:center;color:var(--accent);font-size:11px;opacity:.2;}
-.stage-table td{padding:4px 5px;border-bottom:1px solid var(--border);}
-.stage-table tr:last-child td{border-bottom:none;}
-.stage-table td.rl{color:var(--text-dim);font-size:10px;letter-spacing:.1em;padding-right:10px;white-space:nowrap;}
-.stage-table input[type=number]{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:12px;padding:4px 7px;width:88px;-moz-appearance:textfield;}
-.stage-table input[type=number]::-webkit-outer-spin-button,.stage-table input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
-.stage-table input[type=number]:focus{outline:none;border-color:var(--accent);background:rgba(0,200,255,.04);}
 .s-active{opacity:1;}.s-inactive{opacity:.18;pointer-events:none;}
 
 /* ── STAGE COUNT ── */
-.stage-count-wrap{display:flex;flex-direction:column;gap:6px;width:fit-content;}
-.sci input{background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--accent);font-family:var(--mono);font-size:18px;padding:4px 8px;width:56px;text-align:center;-moz-appearance:textfield;}
-.sci input::-webkit-outer-spin-button,.sci input::-webkit-inner-spin-button{-webkit-appearance:none;}
-.sci input:focus{outline:none;border-color:var(--accent);}
-.sci{display:flex;align-items:center;}
 
 /* ── ACTION BUTTONS ── */
-.act-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.act-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;box-sizing:border-box;line-height:1;}
-.act-btn:hover{border-color:var(--accent);color:var(--accent);}
-.act-btn.green{border-color:var(--accent3);color:var(--accent3);}
-.act-btn.green:hover{background:rgba(127,255,107,.07);}
-.act-btn.orange{border-color:var(--accent2);color:var(--accent2);}
 
 /* ── VEHICLES PANEL ── */
-.search-bar{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:7px 10px;margin-bottom:8px;letter-spacing:.05em;}
-.search-bar:focus{outline:none;border-color:var(--accent);}
-.lv-list{height:340px;overflow-y:auto;border:1px solid var(--border);}
-.lv-list::-webkit-scrollbar{width:5px;}
-.lv-list::-webkit-scrollbar-thumb{background:var(--border-bright);}
-.lv-item{display:flex;align-items:stretch;border-bottom:1px solid var(--border);}
-.lv-item:last-child{border-bottom:none;}
-.lv-item-btn{flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:8px 10px;cursor:pointer;text-align:left;line-height:1.5;transition:all .15s;}
-.lv-item-btn:hover{color:var(--text-bright);background:rgba(255,255,255,.04);}
-.lv-item-btn.active{color:var(--accent);background:rgba(0,200,255,.08);}
-.lv-item-btn.user-lv{color:var(--accent3);}
-.lv-item-btn.user-lv.active{background:rgba(127,255,107,.1);}
-.lv-item-btn.user-defined{color:var(--text-dim);border-left:2px dashed var(--border-bright);}
-.lv-del{background:transparent;border:none;border-left:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:12px;padding:0 10px;cursor:pointer;transition:all .15s;}
-.lv-del:hover{color:#ff4444;background:rgba(255,0,0,.07);}
 
 /* ── ORBIT CATEGORIES ── */
-.orbit-scroll{height:calc(100vh - 200px);min-height:400px;overflow-y:auto;}
 .orbit-scroll::-webkit-scrollbar{width:5px;}
 .orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
-.planet-section{margin-bottom:14px;}
-.planet-header{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid var(--border);margin-bottom:4px;cursor:pointer;user-select:none;}
-.planet-icon{font-size:14px;font-family:var(--mono);letter-spacing:0;}
-.planet-name{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
-.planet-chevron{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
-.planet-chevron.collapsed{transform:rotate(-90deg);}
-.planet-orbits{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.orbit-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:5px 7px;cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .15s;line-height:1.5;}
-.orbit-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.04);}
-.orbit-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
-.orbit-btn.user-orbit{border-style:dashed;color:var(--accent3);border-color:var(--accent3);}
-.orbit-btn.user-orbit.active{background:rgba(127,255,107,.1);}
+
+/* ── DESTINATIONS: horizontal compact row (Orbits page redesign) ── */
+.orb-dest-panel{background:var(--panel);border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;}
+.orbit-scroll-h{display:flex;flex-direction:row;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;align-items:flex-start;}
+.orbit-scroll-h::-webkit-scrollbar{height:6px;}
+.orbit-scroll-h::-webkit-scrollbar-thumb{background:var(--border-bright);}
+.orbit-scroll-h::-webkit-scrollbar-track{background:var(--border);}
+.planet-col{flex:0 0 150px;min-width:150px;max-width:180px;}
+.planet-orbits-col{display:flex;flex-direction:column;gap:4px;}
 
 /* ── RESULTS ── */
-.calc-btn{width:100%;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;padding:14px;cursor:pointer;margin-bottom:8px;transition:all .2s;font-weight:bold;}
-.calc-btn:hover{filter:brightness(1.15);}
-.results-panel{background:var(--panel);border:1px solid var(--border);padding:16px;min-height:200px;}
-.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);gap:12px;}
-.result-row:last-child{border-bottom:none;}
-.result-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;flex:1;}
-.result-val{font-family:var(--mono);font-size:14px;color:var(--accent3);text-align:right;}
-.result-val.hl{font-size:22px;color:var(--accent);}
-.result-val.warn{color:var(--accent2);}
-.result-val.neg{color:#ff4444;}
-.dv-bar{height:3px;background:var(--border);margin:8px 0 12px;overflow:hidden;}
-.dv-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .6s;}
-.placeholder-msg{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:40px 0;letter-spacing:.1em;}
-.error-msg{font-family:var(--mono);font-size:11px;color:#ff6666;padding:8px 10px;border:1px solid rgba(255,80,80,.3);background:rgba(255,0,0,.05);margin-top:8px;}
-.breakdown-row{display:flex;justify-content:space-between;padding:4px 0;font-family:var(--mono);font-size:11px;color:var(--text-dim);border-bottom:1px solid rgba(30,37,48,.5);}
-.breakdown-row span:last-child{color:var(--text-bright);}
-.note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;line-height:1.7;letter-spacing:.04em;}
-.escape-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--accent2);padding:2px 6px;margin-left:8px;}
 
 /* ── MODALS ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;}
-.modal{background:var(--panel);border:1px solid var(--border-bright);width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
-.modal-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.modal-title{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;}
-.modal-close{background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:16px;cursor:pointer;padding:0 4px;}
-.modal-body{padding:16px;overflow-y:auto;flex:1;}
-.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
-.modal textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical;min-height:300px;line-height:1.6;}
-.modal textarea:focus{outline:none;border-color:var(--accent);}
-.modal-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:11px;padding:8px 16px;cursor:pointer;letter-spacing:.1em;transition:all .15s;}
-.modal-btn:hover{border-color:var(--accent);color:var(--accent);}
-.modal-btn.primary{border-color:var(--accent3);color:var(--accent3);}
-.modal input[type=text]{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:13px;padding:8px 12px;margin-bottom:10px;}
-.modal input[type=text]:focus{outline:none;border-color:var(--accent3);}
-.modal label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:5px;}
-.save-note{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
 
 
 /* ── STAGE LIBRARY ── */
-.lib-panel{background:var(--panel);border:1px solid var(--border);padding:12px;margin-top:10px;}
-.lib-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:0;}
-.lib-toggle-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
-.lib-toggle-arrow.open{transform:rotate(90deg);}
-.lib-body{margin-top:10px;}
-.lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
-.lib-search:focus{outline:none;border-color:var(--accent);}
-.lib-cat{margin-bottom:8px;}
-.lib-cat-hdr{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:5px 0 5px 0;border-bottom:1px solid var(--border);margin-bottom:5px;}
-.lib-cat-hdr:hover .lib-cat-label{color:var(--text-bright);}
-.lib-cat-chevron{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto;transition:transform .2s;}
-.lib-cat-chevron.open{transform:rotate(90deg);}
-.lib-user-stage-card{position:relative;}
-.lib-del-btn{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;line-height:1;padding:1px 3px;}
-.lib-del-btn:hover{color:#ff4444;}
 /* ── FILTERS ── */
-.filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
-.filter-toggle-btn{background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;letter-spacing:.08em;transition:all .15s;white-space:nowrap;}
-.filter-toggle-btn:hover,.filter-toggle-btn.active{border-color:var(--accent);color:var(--accent);}
-.filter-chip{background:rgba(0,200,255,.12);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:3px 7px;display:flex;align-items:center;gap:4px;}
-.filter-chip-x{cursor:pointer;color:var(--accent);opacity:.7;}
-.filter-chip-x:hover{opacity:1;}
-.filter-panel{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:10px;margin-bottom:8px;}
-.filter-cat{margin-bottom:8px;}
-.filter-cat:last-child{margin-bottom:0;}
-.filter-cat-hdr{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:6px;padding:3px 0;user-select:none;}
-.filter-cat-hdr:hover{color:var(--text-bright);}
-.filter-cat-chevron{font-size:8px;transition:transform .15s;}
-.filter-cat-chevron.open{transform:rotate(90deg);}
-.filter-opts{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-left:10px;}
-.filter-opt{font-family:var(--mono);font-size:9px;color:var(--text-dim);border:1px solid var(--border);padding:3px 8px;cursor:pointer;transition:all .15s;letter-spacing:.03em;user-select:none;}
-.filter-opt:hover{border-color:var(--text-dim);color:var(--text-bright);}
-.filter-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.08);}
 /* Tag pills on cards */
-.card-tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;}
-.card-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:1px 4px;line-height:1.4;}
 
-.lib-cat-label{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
 
 .lib-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;}
 
 /* stage-card replaced by slim version above */
 /* Drop targets */
-.stage-col-hover th{background:rgba(0,200,255,.12)!important;border-bottom-color:var(--accent)!important;}
 
 
 /* ── LAUNCH SITE SELECTOR ── */
-.site-region{margin-bottom:10px;}
-.site-region-label{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
-.site-grid{display:flex;flex-wrap:wrap;gap:4px;}
-.site-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:4px 8px;cursor:pointer;transition:all .15s;letter-spacing:.04em;white-space:nowrap;}
-.site-btn:hover{border-color:var(--accent);color:var(--accent);}
-.site-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
-.site-note{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:5px;letter-spacing:.04em;}
-.inc-tracked{font-family:var(--mono);font-size:8px;color:var(--accent3);letter-spacing:.05em;margin-top:3px;}
 
 /* ── RESULTS PAGE LAYOUT ── */
-.results-layout{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start;}
-.cases-panel{background:var(--panel);border:1px solid var(--border);padding:12px;}
-.cases-header{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
-.case-item{display:flex;align-items:stretch;gap:2px;margin-bottom:4px;}
-.case-btn{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:6px 8px;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4;}
-.case-btn:hover{border-color:var(--accent);color:var(--accent);}
-.case-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);}
-.case-btn .case-label{font-size:10px;color:inherit;}
-.case-btn .case-sub{font-size:8px;color:var(--text-dim);margin-top:2px;}
-.case-del{flex:none;width:22px;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-size:12px;cursor:pointer;padding:0;transition:all .15s;}
-.case-del:hover{border-color:#ff4444;color:#ff4444;}
-.cases-empty{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.05em;padding:8px 0;text-align:center;opacity:.6;}
-.case-actions{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
 @media(max-width:900px){.results-layout{grid-template-columns:1fr;}}
 
 /* ── STAGE COMPOSITION VIEW ── */
-.comp-panel{display:flex;flex-direction:column;gap:0;}
-.comp-actions{display:flex;gap:6px;margin-bottom:10px;}
-.comp-stage-wrap{margin-bottom:0;}
-.comp-stage-label{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:1px;}
-.comp-card{background:var(--panel);border:1px solid var(--border);padding:10px 12px;min-height:72px;transition:border-color .15s;cursor:default;}
-.comp-card.drop-hover{border-color:var(--accent);background:rgba(0,200,255,.06);}
-.comp-card.custom-stage{border-color:var(--border);opacity:.7;}
-.comp-card-name{font-family:var(--mono);font-size:12px;color:var(--text-bright);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.comp-card-name.unnamed{color:var(--text-dim);font-style:italic;}
-.comp-card-specs{display:flex;flex-wrap:wrap;gap:2px 10px;font-family:var(--mono);font-size:9px;color:var(--text-dim);line-height:1.6;}
-.comp-card-specs b{color:var(--text-bright);}
-.comp-card-hint{display:none;}
-.comp-edit-btn{width:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-left:none;cursor:pointer;color:var(--text-dim);flex-shrink:0;transition:color .15s;background:transparent;padding:0;}
-.comp-edit-btn:hover{color:var(--accent2);border-color:var(--accent2);}
 
 .comp-card-ghost{background:transparent;border:1px dashed var(--border);padding:10px 12px;min-height:72px;
   opacity:.35;cursor:default;transition:border-color .15s,opacity .15s;}
-.comp-card-ghost.drop-hover{border-color:var(--accent);opacity:.7;}
 .comp-card-ghost-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);
   letter-spacing:.08em;font-style:italic;}
 th.sh-ghost{color:var(--border-bright)!important;border:1px dashed var(--border)!important;
   background:transparent!important;cursor:copy;}
-th.sh-ghost.drop-hover{border-color:var(--accent)!important;color:var(--accent)!important;}
 td.ghost-cell input{color:var(--border)!important;background:transparent!important;
   border-color:var(--border)!important;pointer-events:none;}
 
-.comp-booster-wrap{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;}
 
 /* ── STYLED SCROLLBARS ── */
 /* Horizontal (lib-scroll card rows) */
-.lib-scroll::-webkit-scrollbar{height:5px;}
-.lib-scroll::-webkit-scrollbar-track{background:var(--border);margin:0 2px;}
-.lib-scroll::-webkit-scrollbar-thumb{background:var(--accent);opacity:.7;}
-.lib-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
 .lib-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
 
 /* Vertical (lib-body, comp-body, case list, lv-list) */
@@ -289,7 +97,6 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 #comp-body::-webkit-scrollbar-track,
 .lv-list::-webkit-scrollbar-track,
 #case-list::-webkit-scrollbar-track,
-.orbit-scroll::-webkit-scrollbar-track{background:var(--border);}
 .lib-body::-webkit-scrollbar-thumb,
 #comp-body::-webkit-scrollbar-thumb,
 .lv-list::-webkit-scrollbar-thumb,
@@ -299,7 +106,6 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 #comp-body::-webkit-scrollbar-thumb:hover,
 .lv-list::-webkit-scrollbar-thumb:hover,
 #case-list::-webkit-scrollbar-thumb:hover,
-.orbit-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-bright);}
 .lib-body,.lv-list,#case-list,.orbit-scroll{scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
 
 /* ── TOOLTIP ── */
@@ -308,61 +114,35 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
   font-family:var(--sans);font-size:9px;font-style:italic;font-weight:600;
   line-height:1;color:var(--text-dim);cursor:default;
   position:relative;margin-left:5px;flex-shrink:0;vertical-align:middle;}
-.info-tip:hover{border-color:var(--accent);color:var(--accent);}
 .info-tip .tip-text{display:none;position:fixed;
   background:var(--panel);border:1px solid var(--accent);
   color:var(--text-bright);font-family:var(--mono);font-size:9px;padding:7px 10px;
   white-space:nowrap;letter-spacing:.04em;pointer-events:none;
   box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:99999;}
-.info-tip:hover .tip-text{display:block;}
 
 /* ── SLIM STAGE CARDS ── */
 .stage-card{flex:0 0 auto;width:130px;background:rgba(0,0,0,.3);border:1px solid var(--border);
   padding:6px 8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;}
-.stage-card:hover{border-color:var(--accent);background:rgba(0,200,255,.05);}
-.stage-card:active{cursor:grabbing;}
-.stage-card.dragging{opacity:.4;border-style:dashed;}
-.stage-card.booster-card{border-color:color-mix(in srgb,var(--accent2) 50%,transparent);}
-.stage-card.booster-card:hover{border-color:var(--accent2);}
 .stage-card-name{font-family:var(--mono);font-size:10px;color:var(--text-bright);
   margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.stage-card-mini{font-family:var(--mono);font-size:8px;color:var(--text-dim);line-height:1.5;}
-.stage-card-mini b{color:var(--text-bright);}
 /* Stage detail modal body */
-.stage-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px;}
-.stage-detail-row{font-family:var(--mono);font-size:10px;}
-.stage-detail-row label{display:block;font-size:8px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px;}
-.stage-detail-row span{color:var(--text-bright);}
-.stage-detail-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
-.stage-detail-tag{font-family:var(--mono);font-size:8px;color:var(--text-dim);border:1px solid var(--border);padding:2px 6px;}
 /* Booster column highlight */
-.sh-booster-hover{background:color-mix(in srgb,var(--accent) 20%,transparent)!important;}
-.sh-booster{background:color-mix(in srgb,var(--accent) 10%,transparent)!important;border-left:2px solid var(--accent)!important;color:var(--accent)!important;}
-td.booster-cell{border-left:2px solid color-mix(in srgb,var(--accent) 30%,transparent)!important;background:color-mix(in srgb,var(--accent) 5%,transparent);}
 
 /* ── VISUAL THEME EDITOR ── */
 .te-section{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
   color:var(--text-dim);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
-.te-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.te-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);flex:1;white-space:nowrap;}
 .te-swatch{width:26px;height:26px;border:1px solid var(--border-bright);cursor:pointer;
   padding:0;background:none;flex-shrink:0;position:relative;overflow:hidden;}
 .te-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100%+8px);
   height:calc(100%+8px);border:none;cursor:pointer;opacity:0;}
-.te-swatch-fill{width:100%;height:100%;pointer-events:none;}
 .te-hex{font-family:var(--mono);font-size:10px;background:transparent;
   border:1px solid var(--border);color:var(--text-bright);padding:4px 6px;width:78px;flex-shrink:0;}
-.te-preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
 .te-preset-btn{font-family:var(--mono);font-size:9px;padding:5px 10px;background:transparent;
   border:1px solid var(--border-bright);color:var(--text-dim);cursor:pointer;transition:all .15s;}
-.te-preset-btn:hover,.te-preset-btn.active{border-color:var(--accent);color:var(--accent);}
 .te-font-input{font-family:var(--mono);font-size:10px;background:transparent;
   border:1px solid var(--border);color:var(--text-bright);padding:4px 8px;flex:1;}
-#vehicles-advanced{padding:16px 20px;background:var(--panel);border:1px solid var(--border);margin-bottom:14px;}
-#vehicles-stage-params{padding:0 4px;}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
 /* ─── Spacecraft Editor ────────────────────────────────────────────────────── */
-#page-program.active{display:flex;flex-direction:column;padding:0;}
 .sc-ed-toolbar{display:flex;align-items:center;padding:8px 14px;gap:8px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;}
 .sc-ed-wrap{display:flex;flex:1;min-height:0;overflow:hidden;}
 .sc-ed-list-col{width:230px;min-width:230px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
@@ -518,7 +298,6 @@ select option,select optgroup{background:var(--input);color:var(--text-bright);}
 
 /* ===== RESTORED LV CALCULATOR CSS (from backup) ===== */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root{--bg:#3b393a;--panel:#2e2c2d;--border:#524f50;--border-bright:#6e6b6c;--accent:#88c657;--accent2:#c6a057;--accent3:#b0e080;--text:#e7e8ea;--text-dim:#a7a6a4;--text-bright:#ffffff;--mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--nm-bg:#282628;--nm-earth:#5db877;--nm-lunar:#8890bc;--nm-interp:#b85848;--nm-edge:#5a5758;--nm-edge-act:#88c657;--nm-node-fill:#2e2c2d;--nm-label:#a7a6a4;--nm-pill-bg:#2e2c2d;--nm-pill-bd:#524f50;--nm-pill-text:#a7a6a4;--nm-pal-bg:#252325;--nm-pal-hdr:#1e1c1e;--nm-pal-item:#2e2c2d;--nm-pal-item-act:#1e2419;--nm-ghost:#524f50;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;margin:0;background:var(--bg);overscroll-behavior:none;}
@@ -547,7 +326,7 @@ header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spac
 .page{display:none;padding:14px 16px 28px;}
 .page.active{display:block;}
 #page-program{flex-direction:column;}
-#page-program.active{display:flex;flex:1;min-height:0;}
+#page-program.active{display:flex;flex-direction:column;padding:0;flex:1;min-height:0;}
 #page-art{flex-direction:column;padding:0;}
 #page-art.active{display:flex;flex:1;min-height:0;}
 .two-col{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;}
@@ -807,6 +586,13 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .inc-tracked{font-family:var(--mono);font-size:8px;color:var(--accent3);letter-spacing:.05em;margin-top:3px;}
 .site-desc{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:8px;line-height:1.55;flex:1;min-height:0;overflow-y:auto;border-left:2px solid var(--accent);padding-left:8px;opacity:.8;display:none;}
 #site-map{display:block;flex:1 1 520px;min-width:300px;aspect-ratio:2/1;cursor:crosshair;border:1px solid var(--border);box-sizing:border-box;}
+
+/* ── LAUNCH SITE STRIP (collapsible, lives in Stage Composition card) ── */
+.launch-site-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--text-bright);padding:6px 2px;}
+.launch-site-strip:hover{color:var(--accent);}
+.launch-site-strip-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;flex-shrink:0;}
+.launch-site-strip-arrow.open{transform:rotate(90deg);}
 
 /* ── RESULTS PAGE LAYOUT ── */
 .results-layout{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start;}
@@ -1245,6 +1031,34 @@ button,input,select,textarea{font-family:inherit;}
         <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;padding:6px;"></div>
       </div>
       <div id="preset-grid" style="display:none"></div>
+
+      <!-- LAUNCH SITE — collapsible strip inside Stage Composition (2026-07-02 IA restructure) -->
+      <div class="left-section" id="sec-launch" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <div class="launch-site-strip" id="launch-site-strip" onclick="launchSiteStripToggle()">
+          <span id="launch-site-strip-text">⚑ Launch Site: Custom</span>
+          <span class="launch-site-strip-arrow" id="launch-site-strip-arrow">▸</span>
+        </div>
+        <div class="panel" id="panel-launch-site" style="padding-bottom:10px;display:none;margin-top:8px;">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+            <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
+              <div id="site-selector-grid"></div>
+              <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+                <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+                <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+                <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+              </div>
+              <div class="site-note" id="site-note"></div>
+              <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+              <div class="site-desc" id="site-desc"></div>
+              <div class="act-row" style="margin-top:10px;">
+                <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
+                <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
+              </div>
+            </div>
+            <canvas id="site-map"></canvas>
+          </div>
+        </div>
+      </div><!-- /left-section launch-site -->
     </div>
 
     <!-- RIGHT: Stage Library, same height cap -->
@@ -1356,130 +1170,102 @@ button,input,select,textarea{font-family:inherit;}
   </div>
   </div><!-- /vehicles-stage-params -->
 
-  <!-- LAUNCH SITE (moved from the former Orbits page, 2026-07-02 IA restructure) -->
-  <div class="lib-panel" style="margin-top:14px;">
-  <div class="left-section" id="sec-launch">
-  <div class="sl">Launch Site</div>
-  <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
-    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
-      <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
-        <div id="site-selector-grid"></div>
-        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
-          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-        </div>
-        <div class="site-note" id="site-note"></div>
-        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
-        <div class="site-desc" id="site-desc"></div>
-        <div class="act-row" style="margin-top:10px;">
-          <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
-          <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
-        </div>
-      </div>
-      <canvas id="site-map"></canvas>
-    </div>
-  </div>
-  </div><!-- /left-section launch-site -->
-  </div>
 
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
 <div id="page-orbits" class="page">
   <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
-  <div class="two-col">
 
-    <!-- LEFT: Destination config -->
-    <div class="left-col">
-      <div class="left-section" id="sec-orbit">
-      <div class="sl">Define an Orbit</div>
-      <div class="panel" id="panel-define-orbit">
-        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
-          <div style="flex:1 1 220px;min-width:180px;">
-            <div class="mode-tog" style="margin-bottom:10px;">
-              <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
-              <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+  <!-- DESTINATIONS: compact horizontal picker -->
+  <div class="orb-dest-panel">
+    <div class="sl">Destinations</div>
+    <div class="act-row" style="margin-bottom:8px;">
+      <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+      <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
+    </div>
+    <div class="orbit-scroll-h" id="orbit-categories"></div>
+  </div>
+
+  <!-- DEFINE AN ORBIT (with diagram) -->
+  <div class="left-section" id="sec-orbit">
+    <div class="sl">Define an Orbit</div>
+    <div class="panel" id="panel-define-orbit">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+        <div style="flex:1 1 220px;min-width:180px;">
+          <div class="mode-tog" style="margin-bottom:10px;">
+            <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
+            <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+          </div>
+          <div id="dest-orbit">
+            <div class="cfg-row">
+              <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
+              <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100" oninput="drawOrbitDiagram()"></div>
             </div>
-            <div id="dest-orbit">
-              <div class="cfg-row">
-                <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
-                <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+            <div class="cfg-item">
+              <label>Trajectory</label>
+              <div class="seg" id="traj-toggle">
+                <button onclick="setTraj('direct')">Direct</button>
+                <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
+                <button onclick="setTraj('optimal')">Optimal</button>
               </div>
-              <div class="cfg-item">
-                <label>Trajectory</label>
-                <div class="seg" id="traj-toggle">
-                  <button onclick="setTraj('direct')">Direct</button>
-                  <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
-                  <button onclick="setTraj('optimal')">Optimal</button>
-                </div>
-              </div>
-            </div>
-            <div id="dest-escape" style="display:none;">
-              <div class="cfg-row">
-                <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
-                <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
-              </div>
-              <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
             </div>
           </div>
-          <canvas id="orbit-diagram"></canvas>
+          <div id="dest-escape" style="display:none;">
+            <div class="cfg-row">
+              <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
+              <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+            </div>
+            <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
+          </div>
         </div>
-      </div>
-      </div><!-- /left-section define-orbit -->
-    </div><!-- /left-col -->
-
-    <!-- RIGHT: Orbit categories -->
-    <div>
-      <div class="sl">Destinations</div>
-      <div class="act-row" style="margin-bottom:8px;">
-        <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-        <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
-      </div>
-      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:8px;">
-      <div class="orbit-scroll" id="orbit-categories"></div>
-    </div>
-
-  </div>
-
-  <!-- RESULTS (moved from the former page-results) -->
-  <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:18px 0 10px;"></div>
-  <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
-    <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-    <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
-      style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
-  </div>
-  <div class="results-layout">
-
-    <!-- LEFT: Cases panel (collapsed by default, toggled) -->
-    <div class="cases-panel">
-      <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
-        <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
-      </div>
-      <div id="cases-panel-body" style="display:none;">
-        <div class="act-row" style="margin-bottom:8px;">
-          <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-        </div>
-        <div id="case-list">
-          <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-        </div>
-        <div class="case-actions">
-          <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
-        </div>
+        <canvas id="orbit-diagram"></canvas>
       </div>
     </div>
+  </div><!-- /left-section define-orbit -->
 
-    <!-- RIGHT: Results display -->
-    <div>
-      <div class="sl">Results</div>
-      <div class="results-panel" id="results-panel">
-        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
-      </div>
+  <!-- PERFORMANCE (boxed results area) -->
+  <div class="lib-panel" id="orb-performance-panel">
+    <div class="sl">Performance</div>
+    <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
+    <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
+      <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
+      <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+        style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
     </div>
+    <div class="results-layout">
 
+      <!-- LEFT: Cases panel (collapsed by default, toggled) -->
+      <div class="cases-panel">
+        <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+          <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
+        </div>
+        <div id="cases-panel-body" style="display:none;">
+          <div class="act-row" style="margin-bottom:8px;">
+            <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+          </div>
+          <div id="case-list">
+            <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+          </div>
+          <div class="case-actions">
+            <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results display -->
+      <div>
+        <div class="sl">Results</div>
+        <div class="results-panel" id="results-panel">
+          <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -1641,6 +1427,7 @@ button,input,select,textarea{font-family:inherit;}
           <button class="act-btn" onclick="libExportMine()" title="Download your entire saved library (vehicles + stages) as one file">⇣ Download entire library</button>
         </div>
       </div>
+      <div id="lv-save-summary" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.75;margin-top:10px;letter-spacing:.03em;"></div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>
@@ -3260,19 +3047,19 @@ function buildOrbitCategories(){
     grid.appendChild(wrap);
   };
 
-  // Helper: render one planet section
+  // Helper: render one planet section (now a vertical COLUMN in a horizontal row)
   const renderSection=(name,icon,color,builtinOrbits,userOrbitsInCat)=>{
     const collapsed=_oq?false:collapsedPlanets.has(name); // auto-expand when searching
     const hasContent=builtinOrbits.length+userOrbitsInCat.length>0||(name==='(current)'&&userDefinedOrbit);
     if(!hasContent)return;
-    const sec=document.createElement('div');sec.className='planet-section';
+    const sec=document.createElement('div');sec.className='planet-col';
     const hdr=document.createElement('div');hdr.className='planet-header';
     hdr.style.cssText=`border-left:3px solid ${color};`;
     hdr.innerHTML=`<span class="planet-icon">${icon}</span><span class="planet-name" style="color:${color}">${name}</span><span class="planet-chevron${collapsed?' collapsed':''}">▼</span>`;
     hdr.onclick=()=>{collapsedPlanets.has(name)?collapsedPlanets.delete(name):collapsedPlanets.add(name);buildOrbitCategories();};
     sec.appendChild(hdr);
     if(!collapsed){
-      const grid=document.createElement('div');grid.className='planet-orbits';
+      const grid=document.createElement('div');grid.className='planet-orbits-col';
       // Built-in orbits (no delete)
       builtinOrbits.forEach((o,oi)=>{
         const key=`orbit_${name}_${oi}`;
@@ -3308,12 +3095,12 @@ function buildOrbitCategories(){
 
   // "Current Parameters" tracking button (unsaved edits)
   if(userDefinedOrbit){
-    const sec=document.createElement('div');sec.className='planet-section';
+    const sec=document.createElement('div');sec.className='planet-col';
     const hdr=document.createElement('div');hdr.className='planet-header';
     hdr.style.cssText='border-left:3px solid var(--text-dim);opacity:0.7;';
     hdr.innerHTML=`<span class="planet-icon">✏</span><span class="planet-name">Unsaved</span>`;
     sec.appendChild(hdr);
-    const grid=document.createElement('div');grid.className='planet-orbits';
+    const grid=document.createElement('div');grid.className='planet-orbits-col';
     const btn=document.createElement('button');
     btn.className='orbit-btn user-orbit'+(activeOrbitKey==='user_defined_orbit'?' active':'');
     btn.innerHTML='<b>Current Parameters</b>';
@@ -4856,7 +4643,27 @@ function openSaveLVModal(){
   document.getElementById('lv-save-name').value='';document.getElementById('lv-save-note').value='';
   if(typeof libBuildTagEditor==='function')
     libBuildTagEditor(document.getElementById('lv-save-tags'), _lvTagHolder, [{dim:'era',multi:true},{dim:'origin',multi:false}], 'veh');
+  refreshLVSaveSummary();
   openModal('modal-save-lv');setTimeout(()=>document.getElementById('lv-save-name').focus(),100);
+}
+// "Saving: N stages · boosters: M×/none · launch site: <name> (<lat>°)" — refreshed each open.
+function refreshLVSaveSummary(){
+  const el=document.getElementById('lv-save-summary');
+  if(!el)return;
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const stages=(typeof numStages!=='undefined')?numStages:1;
+  let boosterStr='none';
+  if(typeof useBooster!=='undefined' && useBooster){
+    const nb=document.getElementById('num-boosters');
+    const count=nb?parseInt(nb.value)||0:0;
+    boosterStr=count+'×';
+  }
+  const latEl=document.getElementById('site-lat');
+  const lat=latEl?parseFloat(latEl.value):NaN;
+  const latStr=isFinite(lat)?lat.toFixed(1):'--';
+  const site=(typeof getCurrentSite==='function')?getCurrentSite():null;
+  const siteName=site?site.name:'Custom';
+  el.textContent='Saving: '+stages+' stage'+(stages===1?'':'s')+' · boosters: '+boosterStr+' · launch site: '+esc(siteName)+' ('+latStr+'°)';
 }
 
 /**
@@ -4976,6 +4783,7 @@ function applyLVObject(obj){
   if(obj.payload!==undefined)document.getElementById('payload-mass').value=obj.payload;
   if(obj.fairingMass!==undefined)document.getElementById('fairing-mass').value=obj.fairingMass;
   if(obj.site){document.getElementById('site-lat').value=obj.site.lat??28.5;document.getElementById('az-min').value=obj.site.azMin??37;document.getElementById('az-max').value=obj.site.azMax??112;matchSiteFromFields();}
+  if(typeof launchSiteStripRefresh==='function')launchSiteStripRefresh();
   setDestMode(obj.mode||'orbit');
   if(obj.mode==='escape'&&obj.escape){document.getElementById('c3').value=obj.escape.c3??0;document.getElementById('decl').value=obj.escape.decl??28.5;document.getElementById('escape-perigee').value=obj.escape.perigee??185;}
   else if(obj.orbit){document.getElementById('apogee').value=obj.orbit.apogee??400;document.getElementById('perigee').value=obj.orbit.perigee??400;document.getElementById('inclination').value=obj.orbit.inc??28.5;}
@@ -7583,6 +7391,85 @@ function initSiteMap(){
   });
   _smResize();
 }
+
+// ─── LAUNCH SITE STRIP (collapsible summary inside Stage Composition card) ─────
+let _launchSiteStripExpanded=false;
+
+function launchSiteStripToggle(){
+  _launchSiteStripExpanded=!_launchSiteStripExpanded;
+  const panel=document.getElementById('panel-launch-site');
+  const arrow=document.getElementById('launch-site-strip-arrow');
+  if(!panel)return;
+  panel.style.display=_launchSiteStripExpanded?'':'none';
+  if(arrow)arrow.classList.toggle('open',_launchSiteStripExpanded);
+  if(_launchSiteStripExpanded){
+    // The site-map canvas may have sized itself while hidden (display:none skips layout).
+    // Re-init (idempotent — guarded by canvas._smInited) and force a resize+redraw now that
+    // the panel is visible so the ResizeObserver's initial callback isn't the only trigger.
+    if(typeof initSiteMap==='function')initSiteMap();
+    const canvas=document.getElementById('site-map');
+    if(canvas){
+      // setTimeout (not rAF) — rAF can be throttled/never fire in background/headless
+      // contexts, and this must run reliably right after the panel becomes visible.
+      setTimeout(()=>{
+        const dpr=window.devicePixelRatio||1;
+        const w=canvas.offsetWidth,h=canvas.offsetHeight;
+        if(w&&h){
+          canvas._dpr=dpr;
+          canvas.width=Math.round(w*dpr);
+          canvas.height=Math.round(h*dpr);
+        }
+        if(typeof drawSiteMap==='function')drawSiteMap();
+      },0);
+    }
+  }
+}
+
+function launchSiteStripRefresh(){
+  const textEl=document.getElementById('launch-site-strip-text');
+  if(!textEl)return;
+  const latEl=document.getElementById('site-lat');
+  const azMinEl=document.getElementById('az-min');
+  const azMaxEl=document.getElementById('az-max');
+  const lat=latEl?parseFloat(latEl.value):NaN;
+  const azMin=azMinEl?azMinEl.value:'';
+  const azMax=azMaxEl?azMaxEl.value:'';
+  const site=(typeof getCurrentSite==='function')?getCurrentSite():null;
+  const name=site?site.name:'Custom';
+  const latStr=isFinite(lat)?lat.toFixed(1):'--';
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  textEl.innerHTML='&#9873; Launch Site: '+esc(name)+' &middot; '+latStr+'&deg;N &middot; Az '+esc(azMin)+'&ndash;'+esc(azMax)+'&deg;';
+}
+
+// Delegated listeners: catch site-grid clicks and manual field edits without needing
+// to modify the click handlers that live in 230-orbit-diagram.js / 240-user-spaceports.js.
+// #site-selector-grid persists across buildSiteSelector() re-renders, so a delegated
+// listener on it survives; the field inputs are static, so direct listeners suffice.
+(function _launchSiteStripWire(){
+  function wire(){
+    const grid=document.getElementById('site-selector-grid');
+    if(grid&&!grid._stripWired){
+      grid._stripWired=true;
+      grid.addEventListener('click',()=>setTimeout(launchSiteStripRefresh,0));
+    }
+    ['site-lat','az-min','az-max'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&!el._stripWired){
+        el._stripWired=true;
+        el.addEventListener('input',launchSiteStripRefresh);
+      }
+    });
+    const mapCanvas=document.getElementById('site-map');
+    if(mapCanvas&&!mapCanvas._stripWired){
+      mapCanvas._stripWired=true;
+      mapCanvas.addEventListener('click',()=>setTimeout(launchSiteStripRefresh,0));
+      mapCanvas.addEventListener('mouseup',()=>setTimeout(launchSiteStripRefresh,0));
+    }
+    launchSiteStripRefresh();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire);
+  else wire();
+})();
 
 
 // ─── LIBRARY BROWSER (v2 merged design) ───────

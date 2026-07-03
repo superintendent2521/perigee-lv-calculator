@@ -139,6 +139,34 @@
         <div id="comp-body" style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;padding:6px;"></div>
       </div>
       <div id="preset-grid" style="display:none"></div>
+
+      <!-- LAUNCH SITE — collapsible strip inside Stage Composition (2026-07-02 IA restructure) -->
+      <div class="left-section" id="sec-launch" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <div class="launch-site-strip" id="launch-site-strip" onclick="launchSiteStripToggle()">
+          <span id="launch-site-strip-text">⚑ Launch Site: Custom</span>
+          <span class="launch-site-strip-arrow" id="launch-site-strip-arrow">▸</span>
+        </div>
+        <div class="panel" id="panel-launch-site" style="padding-bottom:10px;display:none;margin-top:8px;">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+            <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
+              <div id="site-selector-grid"></div>
+              <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
+                <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
+                <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+                <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
+              </div>
+              <div class="site-note" id="site-note"></div>
+              <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
+              <div class="site-desc" id="site-desc"></div>
+              <div class="act-row" style="margin-top:10px;">
+                <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
+                <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
+              </div>
+            </div>
+            <canvas id="site-map"></canvas>
+          </div>
+        </div>
+      </div><!-- /left-section launch-site -->
     </div>
 
     <!-- RIGHT: Stage Library, same height cap -->
@@ -250,130 +278,102 @@
   </div>
   </div><!-- /vehicles-stage-params -->
 
-  <!-- LAUNCH SITE (moved from the former Orbits page, 2026-07-02 IA restructure) -->
-  <div class="lib-panel" style="margin-top:14px;">
-  <div class="left-section" id="sec-launch">
-  <div class="sl">Launch Site</div>
-  <div class="panel" id="panel-launch-site" style="padding-bottom:10px;">
-    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
-      <div style="flex:0 1 380px;min-width:220px;display:flex;flex-direction:column;">
-        <div id="site-selector-grid"></div>
-        <div class="cfg-row" style="margin-top:10px;margin-bottom:0;">
-          <div class="cfg-item"><label>Latitude (deg)</label><input type="number" class="field" id="site-lat" value="28.5" step="0.1" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Min Az (deg)</label><input type="number" class="field" id="az-min" value="37" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-          <div class="cfg-item"><label>Max Az (deg)</label><input type="number" class="field" id="az-max" value="112" min="0" max="360" oninput="onSiteFieldEdit()"></div>
-        </div>
-        <div class="site-note" id="site-note"></div>
-        <div class="inc-tracked" id="inc-tracked-note" style="display:none;"></div>
-        <div class="site-desc" id="site-desc"></div>
-        <div class="act-row" style="margin-top:10px;">
-          <button class="act-btn green" onclick="saveUserSpaceport()">SAVE SITE</button>
-          <label class="act-btn" style="cursor:pointer;">LOAD SITE<input type="file" accept=".json" style="display:none" onchange="loadSpaceportFile(this)"></label>
-        </div>
-      </div>
-      <canvas id="site-map"></canvas>
-    </div>
-  </div>
-  </div><!-- /left-section launch-site -->
-  </div>
 
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: ORBITS -->
 <div id="page-orbits" class="page">
   <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
-  <div class="two-col">
 
-    <!-- LEFT: Destination config -->
-    <div class="left-col">
-      <div class="left-section" id="sec-orbit">
-      <div class="sl">Define an Orbit</div>
-      <div class="panel" id="panel-define-orbit">
-        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
-          <div style="flex:1 1 220px;min-width:180px;">
-            <div class="mode-tog" style="margin-bottom:10px;">
-              <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
-              <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+  <!-- DESTINATIONS: compact horizontal picker -->
+  <div class="orb-dest-panel">
+    <div class="sl">Destinations</div>
+    <div class="act-row" style="margin-bottom:8px;">
+      <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+      <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
+    </div>
+    <div class="orbit-scroll-h" id="orbit-categories"></div>
+  </div>
+
+  <!-- DEFINE AN ORBIT (with diagram) -->
+  <div class="left-section" id="sec-orbit">
+    <div class="sl">Define an Orbit</div>
+    <div class="panel" id="panel-define-orbit">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+        <div style="flex:1 1 220px;min-width:180px;">
+          <div class="mode-tog" style="margin-bottom:10px;">
+            <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
+            <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
+          </div>
+          <div id="dest-orbit">
+            <div class="cfg-row">
+              <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
+              <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100" oninput="drawOrbitDiagram()"></div>
             </div>
-            <div id="dest-orbit">
-              <div class="cfg-row">
-                <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
-                <div class="cfg-item"><label>Parking Alt (km)</label><input type="number" class="field" id="parking-alt" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+            <div class="cfg-item">
+              <label>Trajectory</label>
+              <div class="seg" id="traj-toggle">
+                <button onclick="setTraj('direct')">Direct</button>
+                <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
+                <button onclick="setTraj('optimal')">Optimal</button>
               </div>
-              <div class="cfg-item">
-                <label>Trajectory</label>
-                <div class="seg" id="traj-toggle">
-                  <button onclick="setTraj('direct')">Direct</button>
-                  <button class="active" onclick="setTraj('two-burn')">Two-Burn</button>
-                  <button onclick="setTraj('optimal')">Optimal</button>
-                </div>
-              </div>
-            </div>
-            <div id="dest-escape" style="display:none;">
-              <div class="cfg-row">
-                <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
-                <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
-                <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
-              </div>
-              <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
             </div>
           </div>
-          <canvas id="orbit-diagram"></canvas>
+          <div id="dest-escape" style="display:none;">
+            <div class="cfg-row">
+              <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
+              <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
+              <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
+            </div>
+            <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
+          </div>
         </div>
-      </div>
-      </div><!-- /left-section define-orbit -->
-    </div><!-- /left-col -->
-
-    <!-- RIGHT: Orbit categories -->
-    <div>
-      <div class="sl">Destinations</div>
-      <div class="act-row" style="margin-bottom:8px;">
-        <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-        <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
-      </div>
-      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:8px;">
-      <div class="orbit-scroll" id="orbit-categories"></div>
-    </div>
-
-  </div>
-
-  <!-- RESULTS (moved from the former page-results) -->
-  <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:18px 0 10px;"></div>
-  <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
-    <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-    <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
-      style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
-  </div>
-  <div class="results-layout">
-
-    <!-- LEFT: Cases panel (collapsed by default, toggled) -->
-    <div class="cases-panel">
-      <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
-        <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
-      </div>
-      <div id="cases-panel-body" style="display:none;">
-        <div class="act-row" style="margin-bottom:8px;">
-          <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-        </div>
-        <div id="case-list">
-          <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-        </div>
-        <div class="case-actions">
-          <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
-        </div>
+        <canvas id="orbit-diagram"></canvas>
       </div>
     </div>
+  </div><!-- /left-section define-orbit -->
 
-    <!-- RIGHT: Results display -->
-    <div>
-      <div class="sl">Results</div>
-      <div class="results-panel" id="results-panel">
-        <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
-      </div>
+  <!-- PERFORMANCE (boxed results area) -->
+  <div class="lib-panel" id="orb-performance-panel">
+    <div class="sl">Performance</div>
+    <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
+    <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
+      <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
+      <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+        style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
     </div>
+    <div class="results-layout">
 
+      <!-- LEFT: Cases panel (collapsed by default, toggled) -->
+      <div class="cases-panel">
+        <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+          <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
+        </div>
+        <div id="cases-panel-body" style="display:none;">
+          <div class="act-row" style="margin-bottom:8px;">
+            <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+          </div>
+          <div id="case-list">
+            <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+          </div>
+          <div class="case-actions">
+            <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results display -->
+      <div>
+        <div class="sl">Results</div>
+        <div class="results-panel" id="results-panel">
+          <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -535,6 +535,7 @@
           <button class="act-btn" onclick="libExportMine()" title="Download your entire saved library (vehicles + stages) as one file">⇣ Download entire library</button>
         </div>
       </div>
+      <div id="lv-save-summary" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.75;margin-top:10px;letter-spacing:.03em;"></div>
     </div>
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal('modal-save-lv')">Cancel</button>

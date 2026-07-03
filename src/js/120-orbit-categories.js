@@ -30,19 +30,19 @@ function buildOrbitCategories(){
     grid.appendChild(wrap);
   };
 
-  // Helper: render one planet section
+  // Helper: render one planet section (now a vertical COLUMN in a horizontal row)
   const renderSection=(name,icon,color,builtinOrbits,userOrbitsInCat)=>{
     const collapsed=_oq?false:collapsedPlanets.has(name); // auto-expand when searching
     const hasContent=builtinOrbits.length+userOrbitsInCat.length>0||(name==='(current)'&&userDefinedOrbit);
     if(!hasContent)return;
-    const sec=document.createElement('div');sec.className='planet-section';
+    const sec=document.createElement('div');sec.className='planet-col';
     const hdr=document.createElement('div');hdr.className='planet-header';
     hdr.style.cssText=`border-left:3px solid ${color};`;
     hdr.innerHTML=`<span class="planet-icon">${icon}</span><span class="planet-name" style="color:${color}">${name}</span><span class="planet-chevron${collapsed?' collapsed':''}">▼</span>`;
     hdr.onclick=()=>{collapsedPlanets.has(name)?collapsedPlanets.delete(name):collapsedPlanets.add(name);buildOrbitCategories();};
     sec.appendChild(hdr);
     if(!collapsed){
-      const grid=document.createElement('div');grid.className='planet-orbits';
+      const grid=document.createElement('div');grid.className='planet-orbits-col';
       // Built-in orbits (no delete)
       builtinOrbits.forEach((o,oi)=>{
         const key=`orbit_${name}_${oi}`;
@@ -78,12 +78,12 @@ function buildOrbitCategories(){
 
   // "Current Parameters" tracking button (unsaved edits)
   if(userDefinedOrbit){
-    const sec=document.createElement('div');sec.className='planet-section';
+    const sec=document.createElement('div');sec.className='planet-col';
     const hdr=document.createElement('div');hdr.className='planet-header';
     hdr.style.cssText='border-left:3px solid var(--text-dim);opacity:0.7;';
     hdr.innerHTML=`<span class="planet-icon">✏</span><span class="planet-name">Unsaved</span>`;
     sec.appendChild(hdr);
-    const grid=document.createElement('div');grid.className='planet-orbits';
+    const grid=document.createElement('div');grid.className='planet-orbits-col';
     const btn=document.createElement('button');
     btn.className='orbit-btn user-orbit'+(activeOrbitKey==='user_defined_orbit'?' active':'');
     btn.innerHTML='<b>Current Parameters</b>';
