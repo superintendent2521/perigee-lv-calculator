@@ -218,7 +218,8 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 .mcc-export-danger{color:var(--accent2);}
 .mcc-export-danger:hover{background:rgba(198,160,87,.12);color:var(--accent2);}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
-.mcc-view-toggle-float{position:absolute;top:8px;right:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);}
+.mcc-view-toggle-float{position:absolute;top:8px;right:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);display:flex;align-items:center;gap:6px;padding:4px 6px;}
+.mcc-toolbar-sep{width:1px;height:16px;background:var(--border);flex-shrink:0;}
 .mcc-left-col{width:260px;min-width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .mcc-left-budget{flex-shrink:0;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);margin-top:auto;}
 .mcc-center-col{flex:1;min-width:0;position:relative;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;}
@@ -12835,43 +12836,15 @@ function missionRenderDetail() {
   // ── center content ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
 
-  // ── topbar — mission name only (single-mission-per-program: no switcher/new/delete) ──
+  // ── mission/program name now live in the File ▾ menu (topbar removed — its row's
+  // vertical space goes to the body; the view toggle + undo/redo + File menu all
+  // moved into one floating toolbar over the view area, see mcc-view-toggle-float) ──
   const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
 
   cc.innerHTML = `
-    <!-- TOP BAR — mission name + view toggle moved into view + File menu -->
-    <div class="mcc-topbar">
-      <div class="mcc-topbar-group mcc-topbar-title">
-        <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
-          oninput="missionRename('${id}',this.value)">
-      </div>
-      <div class="mcc-topbar-group mcc-topbar-undoredo" style="margin-left:auto;">
-        <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
-        <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
-      </div>
-      <div class="mcc-topbar-group mcc-export-wrap">
-        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="File options">File &#x25BE;</button>
-        <div class="mcc-export-menu" id="mcc-export-menu">
-          <div class="mcc-export-progrow" onclick="event.stopPropagation();">
-            <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
-              onclick="event.stopPropagation();" oninput="event.stopPropagation();_missionProgramRename(this.value)" title="Program name">
-          </div>
-          <button class="mcc-export-item" onclick="_missionCloseExportMenu();saveProgramFile()">&#x1F4BE; Save Program</button>
-          <label class="mcc-export-item" style="cursor:pointer;" title="Load a .program file" onclick="_missionCloseExportMenu();">&#x1F4C2; Load Program
-            <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
-          </label>
-          <div class="mcc-export-sep"></div>
-          <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportReport('${id}')">&#x2398; Report</button>
-          <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportPNG('${id}')">&#x2B07; PNG</button>
-          <div class="mcc-export-sep"></div>
-          ${m.log.length ? `<button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
-        </div>
-      </div>
-    </div>
-
     <!-- BODY -->
     <div class="mcc-body">
-      <!-- LEFT COLUMN — Orbit Map: the ORBITS catalog fills it; Band: vehicles + budget -->
+      <!-- LEFT COLUMN — Orbit Map: the ORBITS catalog fills it; Band: vehicles + state -->
       <div class="mcc-left-col">
         ${_missionViewMode === 'nodemap'
           ? `<div class="mcc-orbit-cat">${_missionOrbitPaletteHTML(m)}</div>`
@@ -12879,18 +12852,49 @@ function missionRenderDetail() {
             <div class="mcc-panel-pad"><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.7;">
               Use <b style="color:var(--text-bright)">＋ Add Event → Launch</b> (or Place in Orbit) on the right to bring a vehicle into the mission.
             </div></div>`}
-            ${m.vehicleId ? _missionMultiVehicleHTML(m) : ''}
-            ${m.vehicleId ? `<div class="mcc-left-budget">${_missionBudgetCardHTML(m)}</div>` : ''}`}
+            ${m.vehicleId ? _missionMultiVehicleHTML(m) : ''}`}
       </div>
 
       <!-- CENTER COLUMN — node map / band view -->
-      <div class="mcc-center-col"><div class="mcc-view-area">
-        <div class="mcc-view-toggle-float seg">
-          <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
-          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
+      <div class="mcc-center-col">
+        <!-- toolbar is a sibling of the scrolling view area (not inside it) so its
+             File menu can never be clipped by .mcc-view-area's overflow -->
+        <div class="mcc-view-toggle-float">
+          <div class="seg">
+            <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
+            <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
+          </div>
+          <div class="mcc-toolbar-sep"></div>
+          <div class="mcc-topbar-undoredo">
+            <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
+            <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
+          </div>
+          <div class="mcc-toolbar-sep"></div>
+          <div class="mcc-export-wrap">
+            <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="File options">File &#x25BE;</button>
+            <div class="mcc-export-menu" id="mcc-export-menu">
+              <div class="mcc-export-progrow" onclick="event.stopPropagation();">
+                <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
+                  onclick="event.stopPropagation();" oninput="event.stopPropagation();_missionProgramRename(this.value)" title="Program name" placeholder="Program name">
+              </div>
+              <div class="mcc-export-progrow" onclick="event.stopPropagation();">
+                <input class="mcc-program-name-input" value="${m.name.replace(/"/g,'&quot;')}"
+                  onclick="event.stopPropagation();" oninput="event.stopPropagation();missionRename('${id}',this.value)" title="Mission name" placeholder="Mission name">
+              </div>
+              <button class="mcc-export-item" onclick="_missionCloseExportMenu();saveProgramFile()">&#x1F4BE; Save Program</button>
+              <label class="mcc-export-item" style="cursor:pointer;" title="Load a .program file" onclick="_missionCloseExportMenu();">&#x1F4C2; Load Program
+                <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
+              </label>
+              <div class="mcc-export-sep"></div>
+              <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportReport('${id}')">&#x2398; Report</button>
+              <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportPNG('${id}')">&#x2B07; PNG</button>
+              <div class="mcc-export-sep"></div>
+              ${m.log.length ? `<button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
+            </div>
+          </div>
         </div>
-        ${view}
-      </div></div>
+        <div class="mcc-view-area">${view}</div>
+      </div>
 
       <!-- RIGHT COLUMN — events (list on top, Add Event docked at the bottom) -->
       <div class="mcc-right-col">
@@ -14917,6 +14921,16 @@ function _missionDockLogCardHTML(entry) {
   </div>`;
 }
 
+// Merged Vehicles + Mission ΔV Budget panel (band-mode left column). Each vehicle
+// card is the old roster row ENRICHED with that vehicle's own current orbit +
+// remaining ΔV/prop (what the old sticky budget card showed, but per-vehicle
+// instead of just the focused one) — plus a compact mission-level totals line at
+// the bottom (same fields the old budget card showed mission-wide). Numbers here
+// always reflect current/live state exactly like the old budget card did: neither
+// missionBudget() nor these per-vehicle numbers are affected by the band-view
+// scrub position (_missionBandScrub only moves the scrub marker + expands the
+// matching event card — it never rewinds vehicle state), so this preserves that
+// semantic unchanged.
 function _missionMultiVehicleHTML(m) {
   const live = _missionLiveVehicles(m);
   if (!live.length) return '';
@@ -14925,23 +14939,47 @@ function _missionMultiVehicleHTML(m) {
   const rows = live.map(({ id: vid, fv }) => {
     const isActive = vid === m.vehicleId;
     const expended = fv.status === 'EXPENDED';
+    const os = fv.orbitState || null;
+    const remDv = Math.round(_missionVehicleRemainingDv(fv));
+    const remProp = Math.round(fv.stages.reduce((s, st) => s + progStageRemainingProp(st), 0));
+    const orbitLine = os
+      ? `<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">${os.body || 'Earth'} · ${Math.round(os.perigee ?? os.apogee ?? 0).toLocaleString()}×${Math.round(os.apogee ?? os.perigee ?? 0).toLocaleString()} km · ${(os.inclination || 0)}&deg;</span>`
+      : '';
     // whole row is clickable to make this the active vehicle; active = green
-    return `<div onclick="missionSetActiveVehicle('${id}','${vid}')" title="Click to make active" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 8px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-left:3px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin-bottom:4px;background:${isActive ? 'rgba(136,198,87,.14)' : 'transparent'};cursor:pointer;">
-      <span style="flex-shrink:0;width:12px;font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-dim)'};">${isActive ? '●' : '○'}</span>
-      <span style="font-family:var(--mono);font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isActive ? '600' : '400'};flex:1 1 100px;min-width:80px;white-space:normal;word-break:break-word;line-height:1.3;">${_missionVehicleDisplayName(fv)}</span>
-      <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${fv.stages.length} stages</span>
-      ${expended ? '<span style="font-family:var(--mono);font-size:9px;color:var(--error,#e06c75)">EXPENDED</span>' : ''}
-      <button class="act-btn" style="padding:2px 6px;font-size:10px;flex-shrink:0;" onclick="event.stopPropagation();missionRenameVehicle('${id}','${fv._originKey || ''}')" title="Rename this vehicle">✎</button>
-      <button class="act-btn" style="padding:2px 8px;font-size:10px;flex-shrink:0;" onclick="event.stopPropagation();missionExecExpendVehicle('${id}','${vid}')"${expended ? ' disabled' : ''}>Expend</button>
+    return `<div onclick="missionSetActiveVehicle('${id}','${vid}')" title="Click to make active" style="display:flex;flex-direction:column;gap:4px;padding:6px 8px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-left:3px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin-bottom:4px;background:${isActive ? 'rgba(136,198,87,.14)' : 'transparent'};cursor:pointer;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+        <span style="flex-shrink:0;width:12px;font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-dim)'};">${isActive ? '●' : '○'}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isActive ? '600' : '400'};flex:1 1 100px;min-width:80px;white-space:normal;word-break:break-word;line-height:1.3;">${_missionVehicleDisplayName(fv)}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${fv.stages.length} stages</span>
+        ${expended ? '<span style="font-family:var(--mono);font-size:9px;color:var(--error,#e06c75)">EXPENDED</span>' : ''}
+        <button class="act-btn" style="padding:2px 6px;font-size:10px;flex-shrink:0;" onclick="event.stopPropagation();missionRenameVehicle('${id}','${fv._originKey || ''}')" title="Rename this vehicle">✎</button>
+        <button class="act-btn" style="padding:2px 8px;font-size:10px;flex-shrink:0;" onclick="event.stopPropagation();missionExecExpendVehicle('${id}','${vid}')"${expended ? ' disabled' : ''}>Expend</button>
+      </div>
+      ${orbitLine ? `<div>${orbitLine}</div>` : ''}
+      <div style="display:flex;gap:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);">
+        <span>&Delta;V left: <span style="color:${remDv > 0 ? 'var(--accent3)' : 'var(--accent2)'}">${remDv.toLocaleString()} m/s</span></span>
+        <span>Prop left: <span style="color:var(--text-bright)">${remProp.toLocaleString()} kg</span></span>
+      </div>
     </div>`;
   }).join('');
 
-  // Separate & Dock are done via ＋ Add Event; this panel is purely the vehicle list.
+  const b = missionBudget(m);
+  const capColor = b.dvCapacityRemaining > 0 ? 'var(--accent3)' : 'var(--accent2)';
+  const totals = `<div style="display:flex;flex-wrap:wrap;gap:4px 14px;padding-top:6px;margin-top:4px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text-dim);">
+      <span>&Delta;V expended: <span style="color:var(--text-bright)">${b.dvExpended.toLocaleString()} m/s</span></span>
+      <span>Prop consumed: <span style="color:var(--text-bright)">${b.propConsumed.toLocaleString()} kg</span></span>
+      <span>&Delta;V left (active): <span style="color:${capColor}">${b.dvCapacityRemaining.toLocaleString()} m/s</span></span>
+      <span>Payload: <span style="color:var(--text-bright)">${b.payloadMass.toLocaleString()} kg</span></span>
+    </div>`;
+
+  // Separate & Dock are done via ＋ Add Event; this panel is the vehicle list plus
+  // per-vehicle + mission-wide state (formerly a separate sticky budget card).
   // Selecting a row sets the focused vehicle that the Orbit Map edits and that new
   // events default to.
   return `<div class="mcc-box">
-      <div class="mcc-box-hdr">Vehicles</div>
+      <div class="mcc-box-hdr">Vehicles &amp; Mission State</div>
       ${rows}
+      ${totals}
     </div>`;
 }
 
