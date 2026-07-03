@@ -3884,21 +3884,49 @@ const TS_METRICS={
 };
 const TS_METRIC_ORDER=['maxpay','margin','payfrac','tdv','tbt','tw'];
 
+// Expand authored (source-level) stages into the virtual stage sequence lvPerformance/
+// lvMaxPayload actually understand: a stage-and-a-half (s15) stage splits into its
+// Phase 1 (booster pack, dry+prop_ph1 @ full thrust/isp) + Phase 2 (sustainer-only,
+// dry_ph2+prop_ph2 @ sustainer thrust/isp), per _s15BecoSplit — mirroring
+// calculateWithS15()/_fleetExpandStages() so trade-study numbers match the LV
+// calculator and fleet views. Non-s15 stages pass through unchanged. Re-run on every
+// evaluation (never cached) so perturbing an authored s15 field re-derives the split,
+// which is the physically-correct behavior (the BECO point is a function of those fields).
+function _tsExpandStages(stages){
+  const out=[];
+  (stages||[]).forEach(st=>{
+    if(st.s15&&typeof _s15BecoSplit==='function'){
+      const sp=_s15BecoSplit(st);
+      if(sp.error){out.push(st);return;}   // fall back to the raw (invalid-config) stage rather than dropping it
+      out.push({dry:st.dry||0,prop:sp.prop_ph1,thrust:st.thrust||0,isp:sp.isp_ph1,res:st.res||0});
+      out.push({dry:sp.dry_ph2,prop:sp.prop_ph2,thrust:st.s15_sust_thrust||0,isp:sp.isp_ph2,res:st.res||0});
+    }else{
+      out.push(st);
+    }
+  });
+  return out;
+}
+
 // Compute the chosen metric for a base vehicle at a given payload + orbit params.
 // onOrbitDV: fixed on-orbit ΔV to use (payload/altitude/inclination sweeps pass a
 // shared or per-point value; destination sweep passes the per-destination r.onOrbitDV).
+// base.stages holds AUTHORED (source-level) stages — s15 stages carry their raw
+// isp/prop/thrust/s15_* fields, not a pre-expanded Ph.1/Ph.2 split (needed so the
+// tornado sweep can perturb one authored field at a time). Expand here, per call,
+// immediately before handing stages to the pure physics functions.
 function _tsMetricAt(metric,base,payload,parkingAlt,onOrbitDV){
+  const stages=_tsExpandStages(base.stages);
   if(metric==='maxpay'){
-    const y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    const y=lvMaxPayload(stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
     return Number.isFinite(y)?y:0;
   }
   if(metric==='payfrac'){
-    const maxPay=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    const maxPay=lvMaxPayload(stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
     if(!Number.isFinite(maxPay)||maxPay<=0)return 0;
-    const r=lvPerformance(base.stages,base.boosterArg,maxPay,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    const r=lvPerformance(stages,base.boosterArg,maxPay,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
     return r.tMas>0?(maxPay/r.tMas)*100:0;
   }
-  const r=lvPerformance(base.stages,base.boosterArg,payload,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+  const r=lvPerformance(stages,base.boosterArg,payload,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
   if(metric==='margin')return Number.isFinite(r.margin)?r.margin:0;
   if(metric==='tdv')return Number.isFinite(r.tDV)?r.tDV:0;
   if(metric==='tbt')return Number.isFinite(r.tBT)?r.tBT:0;
@@ -4867,8 +4895,11 @@ function orbCalcSelectedVehicle(){
     const onOrbitDV = ddv.onOrbitDV;
     const parkingAlt = ddv.parkingAlt;
 
-    const maxPay = lvMaxPayload(base.stages, base.boosterArg, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
-    const res = lvPerformance(base.stages, base.boosterArg, maxPay, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+    // S1.5 stages must be BECO-split before the pure physics (same fix as the
+    // trade study's _tsMetricAt — lvPerformance knows nothing about s15 fields).
+    const stages = (typeof _tsExpandStages === 'function') ? _tsExpandStages(base.stages) : base.stages;
+    const maxPay = lvMaxPayload(stages, base.boosterArg, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+    const res = lvPerformance(stages, base.boosterArg, maxPay, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
 
     const fD = v => (v / 1000).toFixed(3) + ' km/s';
     const fM = v => Math.round(v).toLocaleString() + ' kg';

@@ -112,8 +112,11 @@ function orbCalcSelectedVehicle(){
     const onOrbitDV = ddv.onOrbitDV;
     const parkingAlt = ddv.parkingAlt;
 
-    const maxPay = lvMaxPayload(base.stages, base.boosterArg, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
-    const res = lvPerformance(base.stages, base.boosterArg, maxPay, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+    // S1.5 stages must be BECO-split before the pure physics (same fix as the
+    // trade study's _tsMetricAt — lvPerformance knows nothing about s15 fields).
+    const stages = (typeof _tsExpandStages === 'function') ? _tsExpandStages(base.stages) : base.stages;
+    const maxPay = lvMaxPayload(stages, base.boosterArg, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
+    const res = lvPerformance(stages, base.boosterArg, maxPay, base.fairingM, base.fairingJ, parkingAlt, onOrbitDV, base.siteLat, base.azMin, base.azMax);
 
     const fD = v => (v / 1000).toFixed(3) + ' km/s';
     const fM = v => Math.round(v).toLocaleString() + ' kg';
