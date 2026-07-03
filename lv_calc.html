@@ -1705,15 +1705,16 @@ const MAX_STAGES=15;
 const APP_VERSION='2.0.0';
 const APP_REPO_URL='https://github.com/rp1-lox/perigee-lv-calculator';
 const APP_CHANGELOG=[
-  {v:'2.0.0', title:'Trade Studies', date:'2026-07-03', notes:[
-    'One flat nav — Vehicles | Orbits | Trade Studies | Program. No more switching between LV-calculator and Program-manager modes; everything lives on the same bar now.',
-    'NEW Trade Studies page: line up to 5 vehicles side-by-side across altitude, inclination, and payload-margin sweeps — plus the flagship Destination sweep, a real user\'s-guide-style max-payload table for LEO/SSO/GTO/TLI/C3 and beyond. Charts, tables, and CSV export included. Capability curves now stop at their zero-crossing instead of dragging along the floor.',
-    'Orbits page rebuilt: horizontal destination picker sits beside Define-an-Orbit, with one boxed Performance panel below. Headline numbers (Est. Max Payload + capacity range) up top, full breakdown collapsed underneath. New page-local vehicle selector lets you check any library vehicle against a destination without disturbing your worksheet.',
-    'Vehicles page: Launch Site now lives inside the Stage Composition card and saves with the vehicle (the Save dialog spells out exactly what\'s included). ΔV Budget and Vehicle Summary are merged into one Stage Specifications table with a whole-vehicle column and inline ΔV bars.',
-    'Autosave: your whole session — worksheet, program, and missions — persists in the browser, with a restore banner waiting when you come back.',
-    'Missions get undo/redo (Ctrl+Z / Ctrl+Y) and a printable mission report you can print or download straight from the command center.',
-    'Cleaner save/load: one SAVE LV button covers JSON download and library export; library Load auto-detects the file type for you.',
-    'Under the hood: every build now runs an automated physics regression suite (43 checks pinned to the calculator\'s exact outputs), spotlight cards are draggable, and a pile of small dedupe/fixes went in along the way.',
+  {v:'2.0.0', title:'Integral', date:'2026-07-03', notes:[
+    'The whole app has one flat nav now — Vehicles | Orbits | Trade Studies | Spacecraft | Mission. No more mode-switching, no more sub-menus hiding half the tool.',
+    'NEW Trade Studies page, and it\'s the centerpiece: destination sweeps by default (a real user\'s-guide-style payload table for LEO/SSO/GTO/TLI/C3 and beyond), pick your metric (max payload, ΔV margin, payload fraction, total ΔV, burn time, liftoff T:W), compare up to 5 vehicles, and — my favorite — a tornado sensitivity chart that shows which parameter your design actually lives or dies by (spoiler: it\'s Isp). Charts, tables, CSV export.',
+    'The Program section grew up: one mission per program, no more Hangar maze. The Spacecraft editor is its own page now, the mission command center IS the Mission page, and you pick launch vehicles straight from your library — the fleet bookkeeping happens invisibly (residuals and remaining propellant carry through exactly as before).',
+    'Mission view got honest: separated spacecraft stages finally get their own names and tracks (your LM ascent/descent are "Ascent Stage" and "Descent Stage" now, not "#1" and "#2"), and clicking any event rewinds the Vehicles & Mission State panel to that exact moment.',
+    'Orbits page rebuilt: destination picker + boxed Performance panel on the left, Define-an-Orbit on the right, a clear highlight on whichever orbit you\'ve targeted, and a page-local vehicle selector so you can evaluate any library vehicle without disturbing your worksheet.',
+    'Vehicles page: Launch Site lives inside the Stage Composition card and saves with the vehicle; ΔV Budget and Vehicle Summary folded into one Stage Specifications table with a whole-vehicle column.',
+    'Autosave — your whole session (worksheet, spacecraft, mission) persists in the browser with a restore banner. Plus mission undo/redo (Ctrl+Z/Y) and a printable mission report.',
+    'Bug hunt: five built-in vehicles were flying phantom zero-mass stages due to library name mismatches (that "S-IVB in orbit next to the S-II" weirdness — fixed, and now impossible to reintroduce). Stage-and-a-half vehicles are now BECO-split correctly everywhere, not just in the calculator.',
+    'Under the hood: every build runs a 46-check physics regression suite pinned to the calculator\'s exact outputs. If the math drifts, the build fails. Sleep easy.',
   ]},
   {v:'1.1.1', title:'Extended Math', date:'2026-07-01', notes:[
     'Added ability to do use equations in stage and vehicle information boxes.',
