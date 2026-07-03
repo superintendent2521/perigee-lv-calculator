@@ -42,23 +42,25 @@ header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;alig
 .orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
 
 /* ── ORBITS PAGE: two-column layout (Destinations+Performance left, Define-an-Orbit right) ── */
-.orb-layout{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start;}
+.orb-layout{display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:start;}
 .orb-col-left{min-width:0;display:flex;flex-direction:column;}
 .orb-col-right{min-width:0;}
-.orb-define-inner{display:flex;flex-direction:column;gap:12px;}
-.cfg-row-stacked{flex-direction:column;align-items:stretch;gap:10px;}
+.orb-define-inner{display:flex;flex-direction:column;gap:9px;}
+.cfg-row-stacked{flex-direction:column;align-items:stretch;gap:7px;}
 .cfg-row-stacked .cfg-item{width:100%;}
 .cfg-row-stacked .cfg-item .field{width:100%;box-sizing:border-box;}
 @media(max-width:1000px){.orb-layout{grid-template-columns:1fr;}}
 
 /* ── DESTINATIONS: horizontal compact row (Orbits page redesign) ── */
-.orb-dest-panel{background:var(--panel);border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;}
-.orbit-scroll-h{display:flex;flex-direction:row;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;align-items:flex-start;}
+.orb-dest-panel{background:var(--panel);border:1px solid var(--border);padding:10px 12px;margin-bottom:10px;}
+.orbit-scroll-h{display:flex;flex-direction:row;gap:10px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;align-items:flex-start;}
 .orbit-scroll-h::-webkit-scrollbar{height:6px;}
 .orbit-scroll-h::-webkit-scrollbar-thumb{background:var(--border-bright);}
 .orbit-scroll-h::-webkit-scrollbar-track{background:var(--border);}
-.planet-col{flex:0 0 150px;min-width:150px;max-width:180px;}
-.planet-orbits-col{display:flex;flex-direction:column;gap:4px;}
+.planet-col{flex:0 0 138px;min-width:138px;max-width:165px;}
+.planet-orbits-col{display:flex;flex-direction:column;gap:3px;}
+#orb-performance-panel{padding:10px;}
+#panel-define-orbit{padding:11px;}
 
 /* ── RESULTS ── */
 
@@ -194,7 +196,7 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 .sc-ed-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;align-content:start;}
 
 /* ─── Mission Command Center ─────────────────────────────────────────────── */
-#prog-panel-mission{flex:1;min-height:0;display:flex;flex-direction:column;}
+/* #page-program IS the mission command center now — no fleet/mission subnav. */
 #mission-cc{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;border:1px solid var(--border);}
 .mcc-topbar{display:flex;align-items:center;gap:14px;padding:6px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .mcc-topbar .sl{margin:0;}
@@ -216,7 +218,7 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 .mcc-export-danger{color:var(--accent2);}
 .mcc-export-danger:hover{background:rgba(198,160,87,.12);color:var(--accent2);}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
-.mcc-view-toggle-float{position:absolute;top:8px;left:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);}
+.mcc-view-toggle-float{position:absolute;top:8px;right:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);}
 .mcc-left-col{width:260px;min-width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .mcc-left-budget{flex-shrink:0;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);margin-top:auto;}
 .mcc-center-col{flex:1;min-width:0;position:relative;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;}
@@ -437,13 +439,13 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .orbit-scroll::-webkit-scrollbar{width:5px;}
 .orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
 .planet-section{margin-bottom:14px;}
-.planet-header{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid var(--border);margin-bottom:4px;cursor:pointer;user-select:none;}
-.planet-icon{font-size:14px;font-family:var(--mono);letter-spacing:0;}
-.planet-name{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
-.planet-chevron{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
+.planet-header{display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.3);border:1px solid var(--border);margin-bottom:3px;cursor:pointer;user-select:none;}
+.planet-icon{font-size:13px;font-family:var(--mono);letter-spacing:0;}
+.planet-name{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;}
+.planet-chevron{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text-dim);transition:transform .2s;}
 .planet-chevron.collapsed{transform:rotate(-90deg);}
-.planet-orbits{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.orbit-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:5px 7px;cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .15s;line-height:1.5;}
+.planet-orbits{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.orbit-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;padding:4px 6px;cursor:pointer;text-align:left;letter-spacing:.04em;transition:all .15s;line-height:1.4;}
 .orbit-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.04);}
 .orbit-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);font-weight:bold;}
 .orbit-btn.user-orbit{border-style:dashed;color:var(--accent3);border-color:var(--accent3);}
@@ -452,7 +454,7 @@ select.field:focus{outline:none;border-color:var(--accent);}
 /* ── RESULTS ── */
 .calc-btn{width:100%;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;padding:14px;cursor:pointer;margin-bottom:8px;transition:all .2s;font-weight:bold;}
 .calc-btn:hover{filter:brightness(1.15);}
-.results-panel{background:var(--panel);border:1px solid var(--border);padding:16px;min-height:200px;}
+.results-panel{background:var(--panel);border:1px solid var(--border);padding:12px;min-height:0;}
 .result-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);gap:12px;}
 .result-row:last-child{border-bottom:none;}
 .result-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;flex:1;}
@@ -462,7 +464,10 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .result-val.neg{color:#ff4444;}
 .dv-bar{height:3px;background:var(--border);margin:8px 0 12px;overflow:hidden;}
 .dv-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .6s;}
-.placeholder-msg{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:40px 0;letter-spacing:.1em;}
+.placeholder-msg{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:14px 0;letter-spacing:.1em;}
+/* Selected-orbit label in Define-an-Orbit header */
+.orb-target-label{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--accent);margin:-4px 0 4px;}
+.orb-target-label.custom{color:var(--text-dim);}
 .error-msg{font-family:var(--mono);font-size:11px;color:#ff6666;padding:8px 10px;border:1px solid rgba(255,80,80,.3);background:rgba(255,0,0,.05);margin-top:8px;}
 .breakdown-row{display:flex;justify-content:space-between;padding:4px 0;font-family:var(--mono);font-size:11px;color:var(--text-dim);border-bottom:1px solid rgba(30,37,48,.5);}
 .breakdown-row span:last-child{color:var(--text-bright);}
@@ -561,7 +566,13 @@ select.field:focus{outline:none;border-color:var(--accent);}
 /* Vehicles-page library card: stretch to match the composition card's height (see #vehicles-beginner
    align-items:stretch), and let the inner browsing list absorb the extra height by scrolling —
    scoped to this card only since .lib-panel/.lib-body are shared by other (non-stretching) cards. */
-#veh-lib-panel{display:flex;flex-direction:column;min-height:0;}
+/* Wrapper is the grid-stretch target (see #vehicles-beginner align-items:stretch): it receives
+   the stretched height from the row (driven solely by Stage Composition's natural height), with
+   a floor so a 1-stage/collapsed-site row doesn't shrink the library to something unusably small.
+   #veh-lib-panel is position:absolute/inset:0 inside it, so the library's OWN content height
+   (which can run to ~3000px for 41 vehicles) never feeds back into the row's height calculation. */
+#veh-lib-wrap{min-height:560px;}
+#veh-lib-panel{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;}
 #veh-lib-panel #lib-body{display:flex;flex-direction:column;flex:1;min-height:0;}
 #veh-lib-panel #lib-browser-body{flex:1;min-height:0;max-height:none;overflow-y:auto;}
 .lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
@@ -939,11 +950,8 @@ button,input,select,textarea{font-family:inherit;}
     <button class="nav-btn active" id="nav-vehicles" onclick="showPage('vehicles')">Vehicles</button>
     <button class="nav-btn" id="nav-orbits" onclick="showPage('orbits')">Orbits</button>
     <button class="nav-btn" id="nav-trades" onclick="showPage('trades')">Trade Studies</button>
-    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Program</button>
-  </nav>
-  <nav class="lv-subnav" id="prog-subnav" style="display:none;">
-    <button class="lv-sub-btn active" data-prog="hangar" onclick="progShowTab('hangar')">Hangar</button>
-    <button class="lv-sub-btn" data-prog="mission" onclick="progShowTab('mission')">Missions</button>
+    <button class="nav-btn" id="nav-spacecraft" onclick="showPage('spacecraft')">Spacecraft</button>
+    <button class="nav-btn" id="nav-program" onclick="showPage('program')">Mission</button>
   </nav>
   <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
     <div class="theme-wrap" style="margin-left:0;">
@@ -1086,8 +1094,12 @@ button,input,select,textarea{font-family:inherit;}
       </div><!-- /left-section launch-site -->
     </div>
 
-    <!-- RIGHT: Stage Library, same height cap -->
-    <div class="lib-panel" id="veh-lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+    <!-- RIGHT: Stage Library, wrapper is the grid-stretch target; the library card itself is
+         position:absolute/inset:0 inside it so ITS content never contributes to the row's
+         natural height — the Stage Composition card (left) is the only auto-height item,
+         and this wrapper (stretched to match it) clips the library to that height. -->
+    <div id="veh-lib-wrap" style="margin-top:0;min-width:0;position:relative;">
+    <div class="lib-panel" id="veh-lib-panel" style="margin-top:0;min-width:0;position:absolute;inset:0;display:flex;flex-direction:column;">
       <div class="lib-toggle" onclick="toggleLibrary()" style="flex-shrink:0;">
         <span class="sl" style="margin-bottom:0;flex:1;">Library
           <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
@@ -1115,6 +1127,7 @@ button,input,select,textarea{font-family:inherit;}
         <div id="lib-browser-body"></div>
       </div>
     </div>
+    </div><!-- /veh-lib-wrap -->
 
   </div><!-- /vehicles-beginner -->
 
@@ -1210,9 +1223,7 @@ button,input,select,textarea{font-family:inherit;}
       <!-- DESTINATIONS: compact horizontal picker -->
       <div class="orb-dest-panel">
         <div class="sl">Destinations</div>
-        <div class="act-row" style="margin-bottom:8px;">
-          <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-          <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+        <div class="act-row" style="margin-bottom:6px;">
           <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
         </div>
         <div class="orbit-scroll-h" id="orbit-categories"></div>
@@ -1265,6 +1276,11 @@ button,input,select,textarea{font-family:inherit;}
       <div class="sl">Define an Orbit</div>
       <div class="panel" id="panel-define-orbit">
         <div class="orb-define-inner">
+          <div id="orb-target-label" class="orb-target-label" style="display:none;"></div>
+          <div class="act-row" style="margin:0 0 2px;">
+            <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+            <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+          </div>
           <div class="mode-tog" style="margin-bottom:10px;">
             <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
             <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
@@ -1307,93 +1323,58 @@ button,input,select,textarea{font-family:inherit;}
   <div id="ts-panel"></div>
 </div>
 
+<!-- ═══════════════════════════════════════════════ PAGE: SPACECRAFT -->
+<div id="page-spacecraft" class="page">
+  <div class="vp-header">Spacecraft <span class="vp-header-sub">Design payload spacecraft &amp; assemble them from reusable stages</span></div>
+
+  <div style="display:grid;grid-template-columns:2fr 2fr;gap:14px;align-items:stretch;">
+
+    <!-- LEFT: Spacecraft Composition (selected craft editor) -->
+    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div class="sl">Spacecraft Composition</div>
+      <div id="sc-ed-detail" class="sc-page-main-col">
+        <div class="placeholder-msg">Select or create a spacecraft</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Library (My Spacecraft <-> SC Stages) -->
+    <div id="sc-lib-wrap" style="margin-top:0;min-width:0;position:relative;">
+    <div class="lib-panel" id="sc-lib-panel" style="margin-top:0;min-width:0;position:absolute;inset:0;display:flex;flex-direction:column;">
+      <div class="sl" style="flex-shrink:0;">Library</div>
+      <div class="seg" id="sc-lib-mode-seg" style="margin-bottom:8px;flex-shrink:0;">
+        <button class="active" data-scl="mine" onclick="scLibSetMode('mine')">My Spacecraft</button>
+        <button data-scl="stages" onclick="scLibSetMode('stages')">SC Stages</button>
+      </div>
+
+      <!-- Mode: My Spacecraft -->
+      <div id="sc-lib-mine" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+        <input type="text" id="sc-ed-search" class="lib-search sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
+        <div id="sc-ed-list" class="sc-ed-list-inner lv-list" style="flex:1;min-height:0;overflow-y:auto;"></div>
+        <div class="sc-ed-actions">
+          <button class="act-btn" onclick="scEdNew()">+ New Spacecraft</button>
+          <label class="act-btn sc-ed-file-btn">Load Spacecraft
+            <input type="file" accept=".spacecraft,.json" style="display:none" onchange="scEdLoadJSON(this)">
+          </label>
+        </div>
+      </div>
+
+      <!-- Mode: SC Stages -->
+      <div id="sc-lib-stages" style="display:none;flex-direction:column;flex:1;min-height:0;overflow-y:auto;">
+        <div id="sc-lib-stages-body"></div>
+      </div>
+    </div>
+    </div><!-- /sc-lib-wrap -->
+
+  </div>
+</div>
+
 <div id="page-program" class="page">
-  <div class="sc-ed-toolbar">
-    <div class="seg" id="hangar-pick" style="margin-right:6px;">
-      <button class="active" data-hv="spacecraft" onclick="progSetHangar('spacecraft')">Spacecraft</button>
-      <button data-hv="fleet" onclick="progSetHangar('fleet')">Vehicle</button>
-    </div>
-    <div class="prog-tab-actions" id="prog-tb-sc"></div>
-    <div class="prog-tab-actions" id="prog-tb-fleet" style="display:none;"></div>
-    <div class="prog-tab-actions" id="prog-tb-mission" style="display:none;"></div>
-  </div>
-
-  <!-- Spacecraft panel -->
-  <div id="prog-panel-sc" class="sc-ed-wrap">
-    <div class="lib-panel sc-ed-list-col">
-      <div class="sl">Spacecraft</div>
-      <input type="text" id="sc-ed-search" class="lib-search sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
-      <div id="sc-ed-list" class="sc-ed-list-inner lv-list"></div>
-      <div class="sc-ed-actions">
-        <button class="act-btn" onclick="scEdNew()">+ New Spacecraft</button>
-        <label class="act-btn sc-ed-file-btn">Load Spacecraft
-          <input type="file" accept=".spacecraft,.json" style="display:none" onchange="scEdLoadJSON(this)">
-        </label>
-      </div>
-    </div>
-    <div id="sc-ed-detail" class="lib-panel sc-ed-main-col">
-      <div class="placeholder-msg">Select or create a spacecraft</div>
-    </div>
-  </div>
-
-  <!-- Fleet panel -->
-  <div id="prog-panel-fleet" class="sc-ed-wrap" style="display:none;">
-    <div class="lib-panel sc-ed-list-col">
-      <div class="sl">Fleet</div>
-      <input type="text" id="fleet-search" class="lib-search sc-ed-search" placeholder="Search fleet..." oninput="fleetRenderList()">
-      <div id="fleet-list" class="sc-ed-list-inner lv-list"></div>
-      <div class="fleet-drop-zone" ondragover="fleetDragOver(event)" ondragleave="fleetDragLeave(event)" ondrop="fleetLibAddDrop(event)">&#x2295; Drop a vehicle here to add it to the fleet</div>
-      <div class="sc-ed-actions">
-        <button class="act-btn" onclick="fleetNew()">+ New Entry</button>
-        <button class="act-btn" onclick="fleetOpenImportModal()">Import Vehicle</button>
-        <label class="act-btn sc-ed-file-btn">Load Vehicle
-          <input type="file" accept=".vehicle,.json" style="display:none" onchange="fleetLoadJSON(this)">
-        </label>
-      </div>
-    </div>
-    <div id="fleet-detail" class="lib-panel sc-ed-main-col">
-      <div class="placeholder-msg">Add or select a launch vehicle</div>
-    </div>
-  </div>
-
-  <!-- Missions panel — full-page command center -->
-  <div id="prog-panel-mission" style="display:none;">
-    <div id="mission-cc" style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">
-      <div class="placeholder-msg">Select or create a mission</div>
-    </div>
+  <!-- Mission command center — the Program page IS the mission command center now -->
+  <div id="mission-cc" style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="placeholder-msg">Select or create a mission</div>
   </div>
 </div>
 
-
-<!-- ── MODAL: Fleet Vehicle Import ── -->
-<div class="modal-overlay" id="modal-fleet-import" style="display:none">
-  <div class="modal" style="max-width:580px;display:flex;flex-direction:column;height:68vh;">
-    <div class="modal-header">
-      <span class="modal-title">Import Launch Vehicle</span>
-      <button class="modal-close" onclick="closeModal('modal-fleet-import')">&#x2715;</button>
-    </div>
-    <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
-      <input type="text" id="fleet-import-search" class="search-bar" style="margin-bottom:0;"
-        placeholder="Search vehicles..." oninput="fleetImportRenderList()">
-    </div>
-    <div id="fleet-import-list" style="flex:1;overflow-y:auto;"></div>
-  </div>
-</div>
-
-<!-- ── MODAL: Vehicle library info (click a library card) ── -->
-<div class="modal-overlay" id="modal-fleet-vehinfo" style="display:none">
-  <div class="modal" style="max-width:620px;display:flex;flex-direction:column;max-height:82vh;">
-    <div class="modal-header">
-      <span class="modal-title" id="fleet-vehinfo-title">Vehicle</span>
-      <button class="modal-close" onclick="closeModal('modal-fleet-vehinfo')">&#x2715;</button>
-    </div>
-    <div id="fleet-vehinfo-body" style="flex:1;overflow-y:auto;padding:14px 18px;"></div>
-    <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
-      <button class="act-btn" onclick="closeModal('modal-fleet-vehinfo')">Close</button>
-      <button class="act-btn green" onclick="fleetVehInfoAdd()">&#x2295; Add to Fleet</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── MODAL: New / Edit spacecraft stage (Stage Library) ── -->
 <div class="modal-overlay" id="modal-scstage-new" style="display:none">
@@ -2659,7 +2640,7 @@ function renderTutorials() {
 // 'results' is a legacy alias (calculate() calls showPage('results') and that
 // function is untouchable) — it resolves to the Orbits page, since the Results
 // content now lives there, and scrolls #results-panel into view.
-const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'program'];
+const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'spacecraft', 'program'];
 
 function showPage(p){
   let target = p;
@@ -2679,14 +2660,13 @@ function showPage(p){
   const topBtn=document.getElementById('nav-'+target);
   if(topBtn) topBtn.classList.add('active');
 
-  // Program sub-tab bar: only visible inside Program Manager
-  const psub=document.getElementById('prog-subnav');
-  if(psub) psub.style.display=(target==='program')?'flex':'none';
+  if(target==='program' && typeof missionEnsureDefault==='function'){ missionEnsureDefault(); }
 
   const vvw=document.getElementById('veh-view-wrap');
   if(vvw){vvw.style.display=(target==='vehicles')?'flex':'none';}
   if(target==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
   if(target==='trades'){ tsEnsureRendered(); }
+  if(target==='spacecraft'){ scEdRenderList(); scEdRenderDetail(); if(typeof scLibSetMode==='function') scLibSetMode(_scLibMode||'mine'); }
   if(target==='orbits' && typeof orbVehRenderSelectorBar==='function'){ orbVehRenderSelectorBar(); }
 
   // Legacy 'results' alias: scroll the results panel into view once rendered.
@@ -3150,6 +3130,39 @@ function buildOrbitCategories(){
     btn.onclick=()=>{activeOrbitKey='user_defined_orbit';buildOrbitCategories();};
     grid.appendChild(btn);
     sec.appendChild(grid);container.appendChild(sec);
+  }
+  updateOrbTargetLabel();
+}
+
+function updateOrbTargetLabel(){
+  const el=document.getElementById('orb-target-label');
+  if(!el)return;
+  if(userDefinedOrbit||activeOrbitKey==='user_defined_orbit'){
+    el.textContent='Target: Custom';
+    el.classList.add('custom');
+    el.style.display='block';
+  } else if(activeOrbitKey){
+    // Find the display name for the active key by re-scanning categories/user orbits
+    let name=null;
+    ORBIT_CATEGORIES.forEach(cat=>{
+      cat.orbits.forEach((o,oi)=>{
+        if(`orbit_${cat.planet}_${oi}`===activeOrbitKey)name=o.name;
+      });
+    });
+    Object.keys(userOrbitsByCategory).forEach(catName=>{
+      (userOrbitsByCategory[catName]||[]).forEach((o,ui)=>{
+        if(`uorbit_${catName}_${ui}`===activeOrbitKey)name=o.name;
+      });
+    });
+    if(name){
+      el.textContent='Target: '+name;
+      el.classList.remove('custom');
+      el.style.display='block';
+    } else {
+      el.style.display='none';
+    }
+  } else {
+    el.style.display='none';
   }
 }
 
@@ -11679,17 +11692,17 @@ function applyProgramObject(obj) {
   if (Array.isArray(obj.scStageLib)) _scStageLib = obj.scStageLib;
   PROG_ACTIVE_PROGRAM = obj.activeProgram || progMakeProgram('Loaded Program');
   _fleetSel   = (obj.sel && obj.sel.fleet)   || (_fleetEntries[0] && _fleetEntries[0].fleetId) || null;
-  _missionSel = (obj.sel && obj.sel.mission) || (_missions[0] && _missions[0].missionId)       || null;
   _scEdSel    = (_scEdSC[0] && _scEdSC[0].spacecraftId) || null;
   // Re-simulate every mission so PROG_ACTIVE_PROGRAM's runtime vehicles are
   // rebuilt from each log (m.log is the source of truth).
   _missions.forEach(m => { try { missionRecompute(m); } catch (err) { /* keep loading the rest */ } });
+  // One mission per program: pin the UI to _missions[0] (creates a default if the
+  // loaded file had none). Older multi-mission .program files keep the rest of
+  // _missions in the array — just not surfaced in the UI.
+  if (typeof missionEnsureDefault === 'function') missionEnsureDefault();
   // Refresh all program UI.
   if (typeof scEdRenderList    === 'function') scEdRenderList();
   if (typeof scEdRenderDetail  === 'function') scEdRenderDetail();
-  if (typeof fleetRender       === 'function') fleetRender();
-  if (typeof missionRenderList === 'function') missionRenderList();
-  if (typeof missionRenderDetail === 'function') missionRenderDetail();
 }
 
 // ─── AUTOSAVE / SESSION RESTORE ──────────────────────────────────────────────
@@ -12822,19 +12835,15 @@ function missionRenderDetail() {
   // ── center content ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
 
-  // ── topbar mission switcher (select + name + new + delete) ──
-  const missionOpts = _missions.map(mi => `<option value="${mi.missionId}"${mi.missionId===_missionSel?' selected':''}>${mi.name}</option>`).join('');
+  // ── topbar — mission name only (single-mission-per-program: no switcher/new/delete) ──
   const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
 
   cc.innerHTML = `
-    <!-- TOP BAR — mission switcher + view toggle moved into view + File menu -->
+    <!-- TOP BAR — mission name + view toggle moved into view + File menu -->
     <div class="mcc-topbar">
       <div class="mcc-topbar-group mcc-topbar-title">
-        <select class="mcc-mission-select" title="Switch mission" onchange="missionSelect(this.value)">${missionOpts}</select>
         <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
           oninput="missionRename('${id}',this.value)">
-        <button class="act-btn" onclick="missionNew()" title="New mission">＋</button>
-        <button class="act-btn" onclick="_missionConfirmDelete('${id}')" title="Delete this mission">✕</button>
       </div>
       <div class="mcc-topbar-group mcc-topbar-undoredo" style="margin-left:auto;">
         <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
@@ -12967,10 +12976,47 @@ function _missionOrbitFieldsHTML(m) {
   </div>`;
 }
 
+// Library-vehicle launch picker: optgroups Built-in / My Vehicles / Program (legacy
+// fleet entries, so old loaded programs keep working). Selecting a library vehicle
+// runs the EXISTING snapshot path (_fleetVehicleSpecFromLib → new fleet entry) so
+// ascent/staging math is untouched; selecting a Program entry just reuses it.
+function missionPickLibVehicle(id, val) {
+  const m = _missionGet(id); if (!m || !val) return;
+  const [kind, ref] = val.split(':');
+  let fleetId;
+  if (kind === 'fleet') {
+    fleetId = ref;   // existing fleet entry (legacy / already-snapshotted)
+  } else {
+    const spec = _fleetVehicleSpecFromLib(kind, parseInt(ref, 10));
+    if (!spec) return;
+    const entry = { fleetId: progUUID(), ...spec, payloads: [] };
+    _fleetEntries.push(entry);
+    fleetId = entry.fleetId;
+  }
+  missionSetFleet(id, fleetId);
+  _missionRefreshLaunchModal(id);
+}
+
+function _missionLvPickerOptsHTML(selectedFleetId) {
+  const opt = (val, label, sel) => `<option value="${val}"${sel ? ' selected' : ''}>${label}</option>`;
+  let html = '<option value="">— select launch vehicle —</option>';
+  if (BUILTIN_PRESETS && BUILTIN_PRESETS.length) {
+    html += '<optgroup label="Built-in">' + BUILTIN_PRESETS.map((v, i) => opt('builtin:' + i, v.name, false)).join('') + '</optgroup>';
+  }
+  if (typeof userLVs !== 'undefined' && userLVs.length) {
+    html += '<optgroup label="My Vehicles">' + userLVs.map((v, i) => opt('user:' + i, v.name, false)).join('') + '</optgroup>';
+  }
+  if (_fleetEntries.length) {
+    html += '<optgroup label="Program">' + _fleetEntries.map(e =>
+      opt('fleet:' + e.fleetId, e.name, e.fleetId === selectedFleetId)
+    ).join('') + '</optgroup>';
+  }
+  return html;
+}
+
 function _missionLaunchParamsHTML(m) {
   const id = m.missionId;
-  const lvOpts = ['<option value="">— select launch vehicle —</option>',
-    ..._fleetEntries.map(e => `<option value="${e.fleetId}"${e.fleetId === m.fleetEntryId ? ' selected' : ''}>${e.name}</option>`)].join('');
+  const lvOpts = _missionLvPickerOptsHTML(m.fleetEntryId);
   const payChecks = _scEdSC.map(sc => `
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;">
       <input type="checkbox"${m.payloadScIds.includes(sc.spacecraftId) ? ' checked' : ''}
@@ -12982,7 +13028,7 @@ function _missionLaunchParamsHTML(m) {
   return `
     <div class="mcc-section-header" style="padding-top:0;">Launch Vehicle</div>
     <div class="mcc-panel-pad" style="padding-top:4px;"><div class="panel" style="padding:8px 10px;">
-      <select class="mcc-field-select" onchange="missionSetFleet('${id}',this.value);_missionRefreshLaunchModal('${id}')">${lvOpts}</select>
+      <select class="mcc-field-select" onchange="missionPickLibVehicle('${id}',this.value)">${lvOpts}</select>
     </div></div>
     <div class="mcc-section-header">Payload Manifest${payMass ? ` <span style="color:var(--text-dim);text-transform:none;letter-spacing:0;">— ${payMass.toLocaleString()} kg</span>` : ''}</div>
     <div class="mcc-panel-pad" style="padding-top:4px;"><div class="panel" style="padding:8px 10px;">
@@ -16360,31 +16406,20 @@ function missionNmDragEnd() {
 function missionInit() {
   _missions  = [];
   _missionSel = null;
+  missionEnsureDefault();
 }
 
-let _hangarView = 'spacecraft';   // Hangar sub-picker: 'spacecraft' | 'fleet'
-function progSetHangar(v) { _hangarView = v; progShowTab('hangar'); }
-
-function progShowTab(tab) {
-  // back-compat: Spacecraft & Fleet are now one "Hangar" tab with an inner picker
-  if (tab === 'spacecraft' || tab === 'fleet') { _hangarView = tab === 'fleet' ? 'fleet' : 'spacecraft'; tab = 'hangar'; }
-  const showSc      = tab === 'hangar' && _hangarView === 'spacecraft';
-  const showFleet   = tab === 'hangar' && _hangarView === 'fleet';
-  const showMission = tab === 'mission';
-  const setD = (id, on, disp) => { const el = document.getElementById(id); if (el) el.style.display = on ? (disp || 'flex') : 'none'; };
-  setD('prog-panel-sc', showSc);       setD('prog-tb-sc', showSc);
-  setD('prog-panel-fleet', showFleet); setD('prog-tb-fleet', showFleet);
-  setD('prog-panel-mission', showMission); setD('prog-tb-mission', showMission);
-  setD('hangar-pick', tab === 'hangar', 'inline-flex');
-  document.querySelectorAll('#prog-subnav .lv-sub-btn').forEach(b => b.classList.toggle('active', b.dataset.prog === tab));
-  document.querySelectorAll('#hangar-pick button').forEach(b => b.classList.toggle('active', b.dataset.hv === _hangarView));
-  if (tab === 'mission') {
-    if (!_missions.length) { missionNew(); }            // auto-create the first mission so the command center is never blank
-    else {
-      if (!_missionGet(_missionSel)) _missionSel = _missions[0].missionId;  // auto-select if none selected
-      missionRender();
-    }
+// One mission per program: pin the UI to _missions[0]. Creates a default mission
+// if none exist (fresh init, or after loading a .program file with zero missions).
+// Loading an OLD multi-mission .program file: _missions[0] is shown; the rest stay
+// in the array untouched (data preserved, just not surfaced — no UI to switch to them).
+function missionEnsureDefault() {
+  if (!_missions.length) {
+    const m = _missionMake('Mission 1');
+    _missions.push(m);
   }
+  _missionSel = _missions[0].missionId;
+  missionRender();
 }
 // ─── MISSION UNDO/REDO ───
 // Per-mission undo/redo stacks over AUTHORED mission state (m.log, m.groups,
@@ -16491,11 +16526,9 @@ function _missionUndoCanRedo() {
 
 document.addEventListener('keydown', e => {
   const cc = document.getElementById('mission-cc');
-  const panel = document.getElementById('prog-panel-mission');
   const pageProgram = document.getElementById('page-program');
-  const visible = cc && panel && pageProgram
-    && getComputedStyle(pageProgram).display !== 'none'
-    && getComputedStyle(panel).display !== 'none';
+  const visible = cc && pageProgram
+    && getComputedStyle(pageProgram).display !== 'none';
   if (!visible) return;   // mission command center not visible
   const t = e.target;
   const tag = t && t.tagName;
@@ -16825,6 +16858,18 @@ function scEdDelete(id) {
   scEdRender();
 }
 
+function scEdDuplicate(id) {
+  const sc = _scEdGet(id);
+  if (!sc) return;
+  const copy = JSON.parse(JSON.stringify(sc));
+  copy.spacecraftId = progUUID();
+  copy.name = (sc.name || 'Spacecraft') + ' (copy)';
+  copy.stages = (copy.stages || []).map(st => ({ ...st, stageId: progUUID() }));
+  _scEdSC.push(copy);
+  _scEdSel = copy.spacecraftId;
+  scEdRender();
+}
+
 function scEdSaveJSON(id) {
   const sc = _scEdGet(id);
   if (!sc) return;
@@ -16921,7 +16966,7 @@ function scEdRenderDetail() {
   const el = document.getElementById('sc-ed-detail');
   if (!el) return;
   const sc = _scEdGet();
-  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>' + _scStageLibPanelHTML(); return; }
+  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>'; return; }
   const id = sc.spacecraftId;
   const stageCards = sc.stages.map((st, i) => {
     const isBot = i === 0, isTop = i === sc.stages.length - 1;
@@ -16981,10 +17026,10 @@ function scEdRenderDetail() {
         <input type="text" class="field" style="width:100%;max-width:340px;" value="${sc.name.replace(/"/g,'&quot;')}"
           oninput="scEdNameSet('${id}',this.value)"></div>
       <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text-bright);cursor:pointer;white-space:nowrap;padding-bottom:6px;"><input type="checkbox" style="accent-color:var(--accent);" ${sc.massSim ? 'checked' : ''} onchange="scEdSetMassSim('${id}',this.checked)"> Mass simulator</label>
+      <button class="act-btn" onclick="scEdDuplicate('${id}')">&#x29C9; Duplicate</button>
       <button class="act-btn green" onclick="scEdSaveJSON('${id}')">&#x2B07; Save JSON</button>
     </div>
-    ${sc.massSim ? massBody : stackBody}
-    ${_scStageLibPanelHTML()}`;
+    ${sc.massSim ? massBody : stackBody}`;
 }
 
 // Toggle "mass simulator" — collapse the spacecraft to one inert stage (its total mass) so it
@@ -17069,12 +17114,25 @@ function scStageDrop(e) {
   scStageLibAddToCraft(d.slice('scstage:'.length));
 }
 
+// ── Spacecraft page: Library card mode toggle ("My Spacecraft" <-> "SC Stages") ─
+let _scLibMode = 'mine';   // 'mine' | 'stages'
+function scLibSetMode(mode) {
+  _scLibMode = mode === 'stages' ? 'stages' : 'mine';
+  document.querySelectorAll('#sc-lib-mode-seg button').forEach(b => b.classList.toggle('active', b.dataset.scl === _scLibMode));
+  const mine = document.getElementById('sc-lib-mine'), stages = document.getElementById('sc-lib-stages');
+  if (mine) mine.style.display = (_scLibMode === 'mine') ? 'flex' : 'none';
+  if (stages) stages.style.display = (_scLibMode === 'stages') ? 'flex' : 'none';
+  if (_scLibMode === 'stages') scStageLibRender();
+}
+
 // ── library panel (rendered under the spacecraft detail) ────────────────────
 function scStageLibRender() {
   const inp = document.getElementById('scstage-lib-search');
   if (inp) _scStageLibQuery = inp.value;
   const grid = document.getElementById('scstage-lib-grid');
-  if (grid) grid.innerHTML = _scStageLibChipsHTML();
+  if (grid) { grid.innerHTML = _scStageLibChipsHTML(); return; }
+  const body = document.getElementById('sc-lib-stages-body');
+  if (body) body.innerHTML = _scStageLibPanelHTML();
 }
 function _scStageLibChipsHTML() {
   const q = (_scStageLibQuery || '').toLowerCase();

@@ -60,12 +60,25 @@ function scStageDrop(e) {
   scStageLibAddToCraft(d.slice('scstage:'.length));
 }
 
+// ── Spacecraft page: Library card mode toggle ("My Spacecraft" <-> "SC Stages") ─
+let _scLibMode = 'mine';   // 'mine' | 'stages'
+function scLibSetMode(mode) {
+  _scLibMode = mode === 'stages' ? 'stages' : 'mine';
+  document.querySelectorAll('#sc-lib-mode-seg button').forEach(b => b.classList.toggle('active', b.dataset.scl === _scLibMode));
+  const mine = document.getElementById('sc-lib-mine'), stages = document.getElementById('sc-lib-stages');
+  if (mine) mine.style.display = (_scLibMode === 'mine') ? 'flex' : 'none';
+  if (stages) stages.style.display = (_scLibMode === 'stages') ? 'flex' : 'none';
+  if (_scLibMode === 'stages') scStageLibRender();
+}
+
 // ── library panel (rendered under the spacecraft detail) ────────────────────
 function scStageLibRender() {
   const inp = document.getElementById('scstage-lib-search');
   if (inp) _scStageLibQuery = inp.value;
   const grid = document.getElementById('scstage-lib-grid');
-  if (grid) grid.innerHTML = _scStageLibChipsHTML();
+  if (grid) { grid.innerHTML = _scStageLibChipsHTML(); return; }
+  const body = document.getElementById('sc-lib-stages-body');
+  if (body) body.innerHTML = _scStageLibPanelHTML();
 }
 function _scStageLibChipsHTML() {
   const q = (_scStageLibQuery || '').toLowerCase();

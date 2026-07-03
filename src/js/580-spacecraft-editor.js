@@ -72,6 +72,18 @@ function scEdDelete(id) {
   scEdRender();
 }
 
+function scEdDuplicate(id) {
+  const sc = _scEdGet(id);
+  if (!sc) return;
+  const copy = JSON.parse(JSON.stringify(sc));
+  copy.spacecraftId = progUUID();
+  copy.name = (sc.name || 'Spacecraft') + ' (copy)';
+  copy.stages = (copy.stages || []).map(st => ({ ...st, stageId: progUUID() }));
+  _scEdSC.push(copy);
+  _scEdSel = copy.spacecraftId;
+  scEdRender();
+}
+
 function scEdSaveJSON(id) {
   const sc = _scEdGet(id);
   if (!sc) return;
@@ -168,7 +180,7 @@ function scEdRenderDetail() {
   const el = document.getElementById('sc-ed-detail');
   if (!el) return;
   const sc = _scEdGet();
-  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>' + _scStageLibPanelHTML(); return; }
+  if (!sc) { el.innerHTML = '<div class="placeholder-msg">Select or create a spacecraft</div>'; return; }
   const id = sc.spacecraftId;
   const stageCards = sc.stages.map((st, i) => {
     const isBot = i === 0, isTop = i === sc.stages.length - 1;
@@ -228,10 +240,10 @@ function scEdRenderDetail() {
         <input type="text" class="field" style="width:100%;max-width:340px;" value="${sc.name.replace(/"/g,'&quot;')}"
           oninput="scEdNameSet('${id}',this.value)"></div>
       <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text-bright);cursor:pointer;white-space:nowrap;padding-bottom:6px;"><input type="checkbox" style="accent-color:var(--accent);" ${sc.massSim ? 'checked' : ''} onchange="scEdSetMassSim('${id}',this.checked)"> Mass simulator</label>
+      <button class="act-btn" onclick="scEdDuplicate('${id}')">&#x29C9; Duplicate</button>
       <button class="act-btn green" onclick="scEdSaveJSON('${id}')">&#x2B07; Save JSON</button>
     </div>
-    ${sc.massSim ? massBody : stackBody}
-    ${_scStageLibPanelHTML()}`;
+    ${sc.massSim ? massBody : stackBody}`;
 }
 
 // Toggle "mass simulator" — collapse the spacecraft to one inert stage (its total mass) so it

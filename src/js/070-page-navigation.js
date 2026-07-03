@@ -4,7 +4,7 @@
 // 'results' is a legacy alias (calculate() calls showPage('results') and that
 // function is untouchable) — it resolves to the Orbits page, since the Results
 // content now lives there, and scrolls #results-panel into view.
-const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'program'];
+const _TOP_PAGES = ['vehicles', 'orbits', 'trades', 'spacecraft', 'program'];
 
 function showPage(p){
   let target = p;
@@ -24,14 +24,13 @@ function showPage(p){
   const topBtn=document.getElementById('nav-'+target);
   if(topBtn) topBtn.classList.add('active');
 
-  // Program sub-tab bar: only visible inside Program Manager
-  const psub=document.getElementById('prog-subnav');
-  if(psub) psub.style.display=(target==='program')?'flex':'none';
+  if(target==='program' && typeof missionEnsureDefault==='function'){ missionEnsureDefault(); }
 
   const vvw=document.getElementById('veh-view-wrap');
   if(vvw){vvw.style.display=(target==='vehicles')?'flex':'none';}
   if(target==='art'){ _progArtRebuildManagerList(); artPageRebuildSlots(); }
   if(target==='trades'){ tsEnsureRendered(); }
+  if(target==='spacecraft'){ scEdRenderList(); scEdRenderDetail(); if(typeof scLibSetMode==='function') scLibSetMode(_scLibMode||'mine'); }
   if(target==='orbits' && typeof orbVehRenderSelectorBar==='function'){ orbVehRenderSelectorBar(); }
 
   // Legacy 'results' alias: scroll the results panel into view once rendered.

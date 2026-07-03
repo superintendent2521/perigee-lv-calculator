@@ -103,11 +103,9 @@ function _missionUndoCanRedo() {
 
 document.addEventListener('keydown', e => {
   const cc = document.getElementById('mission-cc');
-  const panel = document.getElementById('prog-panel-mission');
   const pageProgram = document.getElementById('page-program');
-  const visible = cc && panel && pageProgram
-    && getComputedStyle(pageProgram).display !== 'none'
-    && getComputedStyle(panel).display !== 'none';
+  const visible = cc && pageProgram
+    && getComputedStyle(pageProgram).display !== 'none';
   if (!visible) return;   // mission command center not visible
   const t = e.target;
   const tag = t && t.tagName;

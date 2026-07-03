@@ -92,6 +92,39 @@ function buildOrbitCategories(){
     grid.appendChild(btn);
     sec.appendChild(grid);container.appendChild(sec);
   }
+  updateOrbTargetLabel();
+}
+
+function updateOrbTargetLabel(){
+  const el=document.getElementById('orb-target-label');
+  if(!el)return;
+  if(userDefinedOrbit||activeOrbitKey==='user_defined_orbit'){
+    el.textContent='Target: Custom';
+    el.classList.add('custom');
+    el.style.display='block';
+  } else if(activeOrbitKey){
+    // Find the display name for the active key by re-scanning categories/user orbits
+    let name=null;
+    ORBIT_CATEGORIES.forEach(cat=>{
+      cat.orbits.forEach((o,oi)=>{
+        if(`orbit_${cat.planet}_${oi}`===activeOrbitKey)name=o.name;
+      });
+    });
+    Object.keys(userOrbitsByCategory).forEach(catName=>{
+      (userOrbitsByCategory[catName]||[]).forEach((o,ui)=>{
+        if(`uorbit_${catName}_${ui}`===activeOrbitKey)name=o.name;
+      });
+    });
+    if(name){
+      el.textContent='Target: '+name;
+      el.classList.remove('custom');
+      el.style.display='block';
+    } else {
+      el.style.display='none';
+    }
+  } else {
+    el.style.display='none';
+  }
 }
 
 function loadOrbitPreset(o,key){

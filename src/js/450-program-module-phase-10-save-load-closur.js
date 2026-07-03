@@ -58,15 +58,15 @@ function applyProgramObject(obj) {
   if (Array.isArray(obj.scStageLib)) _scStageLib = obj.scStageLib;
   PROG_ACTIVE_PROGRAM = obj.activeProgram || progMakeProgram('Loaded Program');
   _fleetSel   = (obj.sel && obj.sel.fleet)   || (_fleetEntries[0] && _fleetEntries[0].fleetId) || null;
-  _missionSel = (obj.sel && obj.sel.mission) || (_missions[0] && _missions[0].missionId)       || null;
   _scEdSel    = (_scEdSC[0] && _scEdSC[0].spacecraftId) || null;
   // Re-simulate every mission so PROG_ACTIVE_PROGRAM's runtime vehicles are
   // rebuilt from each log (m.log is the source of truth).
   _missions.forEach(m => { try { missionRecompute(m); } catch (err) { /* keep loading the rest */ } });
+  // One mission per program: pin the UI to _missions[0] (creates a default if the
+  // loaded file had none). Older multi-mission .program files keep the rest of
+  // _missions in the array — just not surfaced in the UI.
+  if (typeof missionEnsureDefault === 'function') missionEnsureDefault();
   // Refresh all program UI.
   if (typeof scEdRenderList    === 'function') scEdRenderList();
   if (typeof scEdRenderDetail  === 'function') scEdRenderDetail();
-  if (typeof fleetRender       === 'function') fleetRender();
-  if (typeof missionRenderList === 'function') missionRenderList();
-  if (typeof missionRenderDetail === 'function') missionRenderDetail();
 }

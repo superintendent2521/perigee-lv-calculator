@@ -353,19 +353,15 @@ function missionRenderDetail() {
   // ── center content ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
 
-  // ── topbar mission switcher (select + name + new + delete) ──
-  const missionOpts = _missions.map(mi => `<option value="${mi.missionId}"${mi.missionId===_missionSel?' selected':''}>${mi.name}</option>`).join('');
+  // ── topbar — mission name only (single-mission-per-program: no switcher/new/delete) ──
   const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
 
   cc.innerHTML = `
-    <!-- TOP BAR — mission switcher + view toggle moved into view + File menu -->
+    <!-- TOP BAR — mission name + view toggle moved into view + File menu -->
     <div class="mcc-topbar">
       <div class="mcc-topbar-group mcc-topbar-title">
-        <select class="mcc-mission-select" title="Switch mission" onchange="missionSelect(this.value)">${missionOpts}</select>
         <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
           oninput="missionRename('${id}',this.value)">
-        <button class="act-btn" onclick="missionNew()" title="New mission">＋</button>
-        <button class="act-btn" onclick="_missionConfirmDelete('${id}')" title="Delete this mission">✕</button>
       </div>
       <div class="mcc-topbar-group mcc-topbar-undoredo" style="margin-left:auto;">
         <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
@@ -498,10 +494,47 @@ function _missionOrbitFieldsHTML(m) {
   </div>`;
 }
 
+// Library-vehicle launch picker: optgroups Built-in / My Vehicles / Program (legacy
+// fleet entries, so old loaded programs keep working). Selecting a library vehicle
+// runs the EXISTING snapshot path (_fleetVehicleSpecFromLib → new fleet entry) so
+// ascent/staging math is untouched; selecting a Program entry just reuses it.
+function missionPickLibVehicle(id, val) {
+  const m = _missionGet(id); if (!m || !val) return;
+  const [kind, ref] = val.split(':');
+  let fleetId;
+  if (kind === 'fleet') {
+    fleetId = ref;   // existing fleet entry (legacy / already-snapshotted)
+  } else {
+    const spec = _fleetVehicleSpecFromLib(kind, parseInt(ref, 10));
+    if (!spec) return;
+    const entry = { fleetId: progUUID(), ...spec, payloads: [] };
+    _fleetEntries.push(entry);
+    fleetId = entry.fleetId;
+  }
+  missionSetFleet(id, fleetId);
+  _missionRefreshLaunchModal(id);
+}
+
+function _missionLvPickerOptsHTML(selectedFleetId) {
+  const opt = (val, label, sel) => `<option value="${val}"${sel ? ' selected' : ''}>${label}</option>`;
+  let html = '<option value="">— select launch vehicle —</option>';
+  if (BUILTIN_PRESETS && BUILTIN_PRESETS.length) {
+    html += '<optgroup label="Built-in">' + BUILTIN_PRESETS.map((v, i) => opt('builtin:' + i, v.name, false)).join('') + '</optgroup>';
+  }
+  if (typeof userLVs !== 'undefined' && userLVs.length) {
+    html += '<optgroup label="My Vehicles">' + userLVs.map((v, i) => opt('user:' + i, v.name, false)).join('') + '</optgroup>';
+  }
+  if (_fleetEntries.length) {
+    html += '<optgroup label="Program">' + _fleetEntries.map(e =>
+      opt('fleet:' + e.fleetId, e.name, e.fleetId === selectedFleetId)
+    ).join('') + '</optgroup>';
+  }
+  return html;
+}
+
 function _missionLaunchParamsHTML(m) {
   const id = m.missionId;
-  const lvOpts = ['<option value="">— select launch vehicle —</option>',
-    ..._fleetEntries.map(e => `<option value="${e.fleetId}"${e.fleetId === m.fleetEntryId ? ' selected' : ''}>${e.name}</option>`)].join('');
+  const lvOpts = _missionLvPickerOptsHTML(m.fleetEntryId);
   const payChecks = _scEdSC.map(sc => `
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;">
       <input type="checkbox"${m.payloadScIds.includes(sc.spacecraftId) ? ' checked' : ''}
@@ -513,7 +546,7 @@ function _missionLaunchParamsHTML(m) {
   return `
     <div class="mcc-section-header" style="padding-top:0;">Launch Vehicle</div>
     <div class="mcc-panel-pad" style="padding-top:4px;"><div class="panel" style="padding:8px 10px;">
-      <select class="mcc-field-select" onchange="missionSetFleet('${id}',this.value);_missionRefreshLaunchModal('${id}')">${lvOpts}</select>
+      <select class="mcc-field-select" onchange="missionPickLibVehicle('${id}',this.value)">${lvOpts}</select>
     </div></div>
     <div class="mcc-section-header">Payload Manifest${payMass ? ` <span style="color:var(--text-dim);text-transform:none;letter-spacing:0;">— ${payMass.toLocaleString()} kg</span>` : ''}</div>
     <div class="mcc-panel-pad" style="padding-top:4px;"><div class="panel" style="padding:8px 10px;">
@@ -3891,29 +3924,18 @@ function missionNmDragEnd() {
 function missionInit() {
   _missions  = [];
   _missionSel = null;
+  missionEnsureDefault();
 }
 
-let _hangarView = 'spacecraft';   // Hangar sub-picker: 'spacecraft' | 'fleet'
-function progSetHangar(v) { _hangarView = v; progShowTab('hangar'); }
-
-function progShowTab(tab) {
-  // back-compat: Spacecraft & Fleet are now one "Hangar" tab with an inner picker
-  if (tab === 'spacecraft' || tab === 'fleet') { _hangarView = tab === 'fleet' ? 'fleet' : 'spacecraft'; tab = 'hangar'; }
-  const showSc      = tab === 'hangar' && _hangarView === 'spacecraft';
-  const showFleet   = tab === 'hangar' && _hangarView === 'fleet';
-  const showMission = tab === 'mission';
-  const setD = (id, on, disp) => { const el = document.getElementById(id); if (el) el.style.display = on ? (disp || 'flex') : 'none'; };
-  setD('prog-panel-sc', showSc);       setD('prog-tb-sc', showSc);
-  setD('prog-panel-fleet', showFleet); setD('prog-tb-fleet', showFleet);
-  setD('prog-panel-mission', showMission); setD('prog-tb-mission', showMission);
-  setD('hangar-pick', tab === 'hangar', 'inline-flex');
-  document.querySelectorAll('#prog-subnav .lv-sub-btn').forEach(b => b.classList.toggle('active', b.dataset.prog === tab));
-  document.querySelectorAll('#hangar-pick button').forEach(b => b.classList.toggle('active', b.dataset.hv === _hangarView));
-  if (tab === 'mission') {
-    if (!_missions.length) { missionNew(); }            // auto-create the first mission so the command center is never blank
-    else {
-      if (!_missionGet(_missionSel)) _missionSel = _missions[0].missionId;  // auto-select if none selected
-      missionRender();
-    }
+// One mission per program: pin the UI to _missions[0]. Creates a default mission
+// if none exist (fresh init, or after loading a .program file with zero missions).
+// Loading an OLD multi-mission .program file: _missions[0] is shown; the rest stay
+// in the array untouched (data preserved, just not surfaced — no UI to switch to them).
+function missionEnsureDefault() {
+  if (!_missions.length) {
+    const m = _missionMake('Mission 1');
+    _missions.push(m);
   }
+  _missionSel = _missions[0].missionId;
+  missionRender();
 }
