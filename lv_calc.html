@@ -3826,7 +3826,15 @@ const TS_SERIES_COLORS=['var(--accent)','var(--accent2)','var(--accent3)','var(-
 function tsEnsureRendered(){
   const panel=document.getElementById('ts-panel');
   if(!panel)return;
-  if(!panel.innerHTML.trim())tsRenderForm();
+  if(!panel.innerHTML.trim()){tsRenderForm();return;}
+  // Vehicles saved since the first render must appear: rebuild the compare
+  // dropdown's options on every page visit, preserving the current selection.
+  const sel=document.getElementById('ts-cmp-select');
+  if(sel){
+    const v=sel.value;
+    sel.innerHTML=_tsCompareOptionsHTML();
+    if([...sel.options].some(o=>o.value===v))sel.value=v;
+  }
 }
 
 // Assemble the vehicle/site/booster args the same way calculate() does, from the DOM.
@@ -4214,19 +4222,19 @@ function tsRenderTable(res){
   let rows='';
   for(let r=0;r<maxLen;r++){
     const xVal=res.series[0].points[r]?res.series[0].points[r].x:null;
-    let row=`<td style="padding:3px 10px;border-bottom:1px solid var(--border);">${xVal!=null?_tsFmtX(xVal):'—'}</td>`;
+    let row=`<td style="padding:2px 8px;border-bottom:1px solid var(--border);">${xVal!=null?_tsFmtX(xVal):'—'}</td>`;
     res.series.forEach(s=>{
       const p=s.points[r];
       const cell=p?(p.error?'—':_tsFmt(p.y)):'—';
-      row+=`<td style="padding:3px 10px;border-bottom:1px solid var(--border);" title="${p&&p.error?_tsEsc(p.error):''}">${cell}</td>`;
+      row+=`<td style="padding:2px 8px;border-bottom:1px solid var(--border);" title="${p&&p.error?_tsEsc(p.error):''}">${cell}</td>`;
     });
     rows+=`<tr>${row}</tr>`;
   }
   const unitSuffix=res.yUnit?` (${res.yUnit})`:'';
-  const headCols=res.series.map((s,i)=>`<th style="text-align:left;padding:3px 10px;color:${TS_SERIES_COLORS[i%TS_SERIES_COLORS.length]};border-bottom:1px solid var(--border-bright);">${_tsEsc(s.name)} — ${res.yLabel}${unitSuffix}</th>`).join('');
+  const headCols=res.series.map((s,i)=>`<th style="text-align:left;padding:2px 8px;color:${TS_SERIES_COLORS[i%TS_SERIES_COLORS.length]};border-bottom:1px solid var(--border-bright);">${_tsEsc(s.name)} — ${res.yLabel}${unitSuffix}</th>`).join('');
   const xUnitSuffix=res.xUnit?` (${res.xUnit})`:'';
-  wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--text-bright);">
-    <thead><tr><th style="text-align:left;padding:3px 10px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">${res.xLabel}${xUnitSuffix}</th>${headCols}</tr></thead>
+  wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:9px;color:var(--text-bright);">
+    <thead><tr><th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">${res.xLabel}${xUnitSuffix}</th>${headCols}</tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
 
