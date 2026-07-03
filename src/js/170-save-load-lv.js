@@ -72,6 +72,7 @@ function doSaveLV(){
   const note=document.getElementById('lv-save-note').value.trim();
   const obj=buildLVObject(name,note);
   obj._sessionId=Date.now();userLVs.push(obj);buildPresets();closeModal('modal-save-lv');
+  if(typeof autosaveScheduleSave==='function')autosaveScheduleSave();
   showAlert('Saved "'+obj.name+'" to your library (My Stuff).','Vehicle Saved');
 }
 // Secondary action in the Save LV modal: download the current vehicle as a standalone .vehicle JSON,

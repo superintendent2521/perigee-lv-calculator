@@ -36,6 +36,7 @@ function doSaveOrbit(){
   userDefinedOrbit=false;
   closeModal('modal-save-orbit');
   buildOrbitCategories();
+  if(typeof autosaveScheduleSave==='function')autosaveScheduleSave();
 }
 
 function collectCurrentOrbit(){

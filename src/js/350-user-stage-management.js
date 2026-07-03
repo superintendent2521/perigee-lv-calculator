@@ -113,6 +113,7 @@ function doAddStage(andSave){
   }
   closeModal('modal-add-stage');
   buildStageLibrary();
+  if(typeof autosaveScheduleSave==='function')autosaveScheduleSave();
 }
 
 // Consolidated stg-mode "Import" button. Routes by content:

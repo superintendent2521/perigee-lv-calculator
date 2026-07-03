@@ -24,14 +24,30 @@ function autosaveScheduleSave() {
   _autosaveTimer = setTimeout(autosaveNow, 2000);
 }
 
+// Shared payload builder used by BOTH autosaveNow() and sessionExport() so the
+// two paths can never drift apart. Includes the program + current LV (as
+// before) plus user-created LIBRARY content that previously wasn't captured:
+// saved vehicles (userLVs), user stage-library entries (userStagesByCategory),
+// user orbit-library entries (userOrbitsByCategory). NOTE: the SC stage
+// library (_scStageLib) is deliberately NOT duplicated here — it already
+// travels inside buildProgramObject().scStageLib (see 450).
+// Deep-copied via JSON so later in-app mutation can't leak back into the blob.
+function _buildSessionObject() {
+  const safeCopy = v => { try { return JSON.parse(JSON.stringify(v)); } catch (err) { return null; } };
+  return {
+    savedAt: new Date().toISOString(),
+    program: (typeof buildProgramObject === 'function') ? buildProgramObject() : null,
+    lv: (typeof buildLVObject === 'function') ? buildLVObject((typeof loadedVehicleName !== 'undefined' ? loadedVehicleName : '') || '', '') : null,
+    userLVs: (typeof userLVs !== 'undefined') ? safeCopy(userLVs) : null,
+    userStagesByCategory: (typeof userStagesByCategory !== 'undefined') ? safeCopy(userStagesByCategory) : null,
+    userOrbitsByCategory: (typeof userOrbitsByCategory !== 'undefined') ? safeCopy(userOrbitsByCategory) : null,
+  };
+}
+
 function autosaveNow() {
   if (_autosaveDisabled || _autosaveSuspended) return;
   try {
-    const blob = {
-      savedAt: new Date().toISOString(),
-      program: (typeof buildProgramObject === 'function') ? buildProgramObject() : null,
-      lv: (typeof buildLVObject === 'function') ? buildLVObject((typeof loadedVehicleName !== 'undefined' ? loadedVehicleName : '') || '', '') : null,
-    };
+    const blob = _buildSessionObject();
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(blob));
   } catch (err) {
     _autosaveDisabled = true;
@@ -41,6 +57,42 @@ function autosaveNow() {
 
 function autosaveClear() {
   try { localStorage.removeItem(AUTOSAVE_KEY); } catch (err) { /* ignore */ }
+}
+
+// Shared restore/apply path used by BOTH autosaveRestore() and sessionImport().
+// Library content is restored BEFORE program/LV apply since missions/vehicles
+// may reference library entries. All fields are optional/guarded so OLD blobs
+// (format without the library fields) still restore cleanly.
+function _applySessionObject(blob) {
+  if (!blob) return false;
+  _autosaveSuspended = true;
+  try {
+    // ── User library content (restore first — may be referenced below) ──
+    if (Array.isArray(blob.userLVs) && typeof userLVs !== 'undefined') {
+      userLVs = blob.userLVs;
+      if (typeof buildPresets === 'function') buildPresets();
+    }
+    if (blob.userStagesByCategory && typeof userStagesByCategory !== 'undefined') {
+      userStagesByCategory = blob.userStagesByCategory;
+      if (typeof buildStageLibrary === 'function') buildStageLibrary();
+    }
+    if (blob.userOrbitsByCategory && typeof userOrbitsByCategory !== 'undefined') {
+      userOrbitsByCategory = blob.userOrbitsByCategory;
+      if (typeof buildOrbitCategories === 'function') buildOrbitCategories();
+    }
+    // ── Program + current LV ──
+    if (blob.program && typeof applyProgramObject === 'function') {
+      applyProgramObject(blob.program);
+    }
+    if (blob.lv && typeof applyLVObject === 'function') {
+      applyLVObject(blob.lv);
+    }
+  } catch (err) {
+    console.warn('Session restore failed partway through:', err);
+  } finally {
+    _autosaveSuspended = false;
+  }
+  return true;
 }
 
 function autosaveRestore() {
@@ -53,20 +105,48 @@ function autosaveRestore() {
     return false; // corrupt data — bail silently
   }
   if (!blob) return false;
-  _autosaveSuspended = true;
+  return _applySessionObject(blob);
+}
+
+// ── Session download / upload ───────────────────────────────────────────────
+// Same payload shape as autosave, plus a 'kind'/'formatVersion' envelope so
+// imports can be validated. Uses the shared builder/applier above so this can
+// never drift from autosave's own save/restore behavior.
+
+function sessionExport() {
   try {
-    if (blob.program && typeof applyProgramObject === 'function') {
-      applyProgramObject(blob.program);
-    }
-    if (blob.lv && typeof applyLVObject === 'function') {
-      applyLVObject(blob.lv);
+    const obj = Object.assign({ kind: 'rocket-playground-session', formatVersion: 1 }, _buildSessionObject());
+    const base = (typeof PROG_ACTIVE_PROGRAM !== 'undefined' && PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name
+      ? PROG_ACTIVE_PROGRAM.name : 'session').replace(/[^a-z0-9_-]/gi, '_').toLowerCase() || 'session';
+    if (typeof downloadJSON === 'function') {
+      downloadJSON(obj, base + '-session.json');
     }
   } catch (err) {
-    console.warn('Autosave restore failed partway through:', err);
-  } finally {
-    _autosaveSuspended = false;
+    console.warn('Session export failed:', err);
+    if (typeof showAlert === 'function') showAlert('Session export failed: ' + err.message, 'Export Error');
   }
-  return true;
+}
+
+function sessionImport(input) {
+  const file = input && input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let obj;
+    try { obj = JSON.parse(e.target.result); }
+    catch (err) {
+      if (typeof showAlert === 'function') showAlert('Invalid session file: ' + err.message, 'Invalid File');
+      input.value = ''; return;
+    }
+    if (!obj || obj.kind !== 'rocket-playground-session') {
+      if (typeof showAlert === 'function') showAlert('This file is not a Rocket Playground session file.', 'Invalid File');
+      input.value = ''; return;
+    }
+    _applySessionObject(obj);
+    autosaveNow(); // imported session becomes the new autosave
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ── Restore banner ──────────────────────────────────────────────────────────
