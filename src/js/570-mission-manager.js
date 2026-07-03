@@ -213,8 +213,7 @@ function missionNmPanEnd() {
 function missionToggleOrbitPalette(id) {
   _missionOrbitPaletteOpen = !_missionOrbitPaletteOpen;
   const m = _missionGet(id);
-  const ft = document.querySelector('.mcc-footer');
-  if (ft && m) ft.innerHTML = _missionFooterHTML(m);
+  if (m) missionRenderDetail();
 }
 
 function _missionMake(name) {
@@ -351,33 +350,43 @@ function missionRenderDetail() {
     ? `<div class="mcc-evt-filterbar">${typeSel}${vehIds.length > 1 || effVeh !== 'ALL' ? vehSelF : ''}</div>`
     : '';
 
-  // ── center content (view only — orbit catalog now lives in the footer) ──
+  // ── center content ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
 
+  // ── topbar mission switcher (select + name + new + delete) ──
+  const missionOpts = _missions.map(mi => `<option value="${mi.missionId}"${mi.missionId===_missionSel?' selected':''}>${mi.name}</option>`).join('');
+  const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
+
   cc.innerHTML = `
-    <!-- TOP BAR — current mission name + view toggle -->
+    <!-- TOP BAR — mission switcher + view toggle moved into view + File menu -->
     <div class="mcc-topbar">
       <div class="mcc-topbar-group mcc-topbar-title">
-        <span class="sl" style="margin:0;">Mission</span>
+        <select class="mcc-mission-select" title="Switch mission" onchange="missionSelect(this.value)">${missionOpts}</select>
         <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
           oninput="missionRename('${id}',this.value)">
+        <button class="act-btn" onclick="missionNew()" title="New mission">＋</button>
+        <button class="act-btn" onclick="_missionConfirmDelete('${id}')" title="Delete this mission">✕</button>
       </div>
-      <div class="mcc-topbar-group mcc-topbar-undoredo">
+      <div class="mcc-topbar-group mcc-topbar-undoredo" style="margin-left:auto;">
         <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
         <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
       </div>
-      <div class="mcc-topbar-group mcc-topbar-viewtoggle">
-        <div class="seg">
-          <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
-          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
-        </div>
-      </div>
       <div class="mcc-topbar-group mcc-export-wrap">
-        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="Export &amp; reset options">Export &#x25BE;</button>
+        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="File options">File &#x25BE;</button>
         <div class="mcc-export-menu" id="mcc-export-menu">
+          <div class="mcc-export-progrow" onclick="event.stopPropagation();">
+            <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
+              onclick="event.stopPropagation();" oninput="event.stopPropagation();_missionProgramRename(this.value)" title="Program name">
+          </div>
+          <button class="mcc-export-item" onclick="_missionCloseExportMenu();saveProgramFile()">&#x1F4BE; Save Program</button>
+          <label class="mcc-export-item" style="cursor:pointer;" title="Load a .program file" onclick="_missionCloseExportMenu();">&#x1F4C2; Load Program
+            <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
+          </label>
+          <div class="mcc-export-sep"></div>
           <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportReport('${id}')">&#x2398; Report</button>
           <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportPNG('${id}')">&#x2B07; PNG</button>
-          ${m.log.length ? `<div class="mcc-export-sep"></div><button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
+          <div class="mcc-export-sep"></div>
+          ${m.log.length ? `<button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
         </div>
       </div>
     </div>
@@ -397,7 +406,13 @@ function missionRenderDetail() {
       </div>
 
       <!-- CENTER COLUMN — node map / band view -->
-      <div class="mcc-center-col"><div class="mcc-view-area">${view}</div></div>
+      <div class="mcc-center-col"><div class="mcc-view-area">
+        <div class="mcc-view-toggle-float seg">
+          <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
+          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
+        </div>
+        ${view}
+      </div></div>
 
       <!-- RIGHT COLUMN — events (list on top, Add Event docked at the bottom) -->
       <div class="mcc-right-col">
@@ -411,9 +426,6 @@ function missionRenderDetail() {
         <div class="mcc-panel-pad mcc-addevt-dock${_missionAddEvt != null ? ' open' : ''}" style="flex-shrink:0;">${_missionAddEventHTML(m)}</div>
       </div>
     </div>
-
-    <!-- FOOTER — missions sidebar (program row + mission switcher) -->
-    <div class="mcc-footer">${_missionFooterHTML(m)}</div>
   `;
   if (m.vehicleId) setTimeout(() => missionBurnPreview(m.missionId), 0);
   if (_missionViewMode === 'nodemap') _missionCenterNmEarth();
@@ -710,6 +722,12 @@ function _missionConfirmReset(id) {
   const m = _missionGet(id);
   const label = m ? m.name : 'this mission';
   showConfirm('Reset Mission', `Clear all events for "${label}"? This cannot be undone.`, () => missionResetLaunch(id), 'Reset');
+}
+
+function _missionConfirmDelete(id) {
+  const m = _missionGet(id);
+  const label = m ? m.name : 'this mission';
+  showConfirm('Delete Mission', `Delete "${label}"? This cannot be undone.`, () => missionDelete(id), 'Delete');
 }
 
 // ── Export menu (topbar "Export ▾") — tiny module-scoped open/close handler ──
@@ -3798,42 +3816,6 @@ function _missionNmLayout() {
   });
 
   return { worldW, worldH: WORLD_H, blobs, pos, bodyCol };
-}
-
-// Footer = scrollable missions list (left) + orbit catalog dock (right).
-function _missionFooterHTML(m) {
-  // The orbit catalog now lives in the Orbit Map's left panel (not the footer).
-  return _missionMissionsPanelHTML(m);
-}
-
-// Compact scrollable list of all missions (users rarely make more than ~10).
-function _missionMissionsPanelHTML(m) {
-  const cards = _missions.map(mi => {
-    const sel = mi.missionId === _missionSel;
-    return `<div class="mcc-mission-card${sel ? ' sel' : ''}" onclick="missionSelect('${mi.missionId}')">
-      <div class="mcc-mission-meta">
-        <span class="mcc-mission-name">${mi.name}</span>
-        <span class="mcc-mission-sub">${mi.log.length ? mi.log.length + ' event' + (mi.log.length !== 1 ? 's' : '') : 'No events'}</span>
-      </div>
-      <button class="act-btn mevt-ctl" onclick="event.stopPropagation();missionDelete('${mi.missionId}')" title="Delete mission">✕</button>
-    </div>`;
-  }).join('');
-  const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
-  return `<div class="mcc-missions">
-    <div class="mcc-program-row">
-      <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
-        oninput="_missionProgramRename(this.value)" title="Program name">
-      <button class="act-btn" style="padding:2px 7px;font-size:9px;" onclick="saveProgramFile()" title="Save the whole program (spacecraft, fleet &amp; missions) to a .program file">Save</button>
-      <label class="act-btn" style="padding:2px 7px;font-size:9px;cursor:pointer;" title="Load a .program file">Load
-        <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
-      </label>
-    </div>
-    <div class="mcc-missions-hdr">
-      <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">MISSIONS</span>
-      <button class="act-btn" style="margin-left:auto;padding:1px 8px;font-size:10px;" onclick="missionNew()">+ New</button>
-    </div>
-    <div class="mcc-missions-list">${cards}</div>
-  </div>`;
 }
 
 // ORBITS panel = the LV-calculator's orbit catalog (ORBIT_CATEGORIES), the same

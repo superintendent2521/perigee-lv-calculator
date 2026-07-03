@@ -41,6 +41,16 @@ header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;alig
 .orbit-scroll::-webkit-scrollbar{width:5px;}
 .orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
 
+/* ── ORBITS PAGE: two-column layout (Destinations+Performance left, Define-an-Orbit right) ── */
+.orb-layout{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start;}
+.orb-col-left{min-width:0;display:flex;flex-direction:column;}
+.orb-col-right{min-width:0;}
+.orb-define-inner{display:flex;flex-direction:column;gap:12px;}
+.cfg-row-stacked{flex-direction:column;align-items:stretch;gap:10px;}
+.cfg-row-stacked .cfg-item{width:100%;}
+.cfg-row-stacked .cfg-item .field{width:100%;box-sizing:border-box;}
+@media(max-width:1000px){.orb-layout{grid-template-columns:1fr;}}
+
 /* ── DESTINATIONS: horizontal compact row (Orbits page redesign) ── */
 .orb-dest-panel{background:var(--panel);border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;}
 .orbit-scroll-h{display:flex;flex-direction:row;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;align-items:flex-start;}
@@ -192,19 +202,21 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 .mcc-topbar-title{flex:1;min-width:0;max-width:400px;}
 .mcc-mission-name-input{background:transparent;border:none;border-bottom:1px solid var(--border-bright);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);font-family:var(--sans);font-size:15px;font-weight:600;padding:3px 4px;flex:1;min-width:0;outline:none;}
 .mcc-mission-name-input:focus{border-bottom-color:var(--accent);}
-.mcc-topbar-viewtoggle{margin-left:auto;}
+.mcc-mission-select{background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 6px;max-width:150px;}
 .mcc-topbar-undoredo{display:inline-flex;border:1px solid var(--border-bright);}
 .mcc-topbar-undoredo .act-btn{border:none;border-right:1px solid var(--border-bright);}
 .mcc-topbar-undoredo .act-btn:last-child{border-right:none;}
 .mcc-export-wrap{position:relative;}
-.mcc-export-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:160px;background:var(--panel);border:1px solid var(--border-bright);z-index:50;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.4);}
+.mcc-export-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:200px;background:var(--panel);border:1px solid var(--border-bright);z-index:50;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.4);}
 .mcc-export-menu.open{display:flex;}
-.mcc-export-item{background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:9px 12px;cursor:pointer;text-align:left;width:100%;}
+.mcc-export-progrow{padding:8px 12px;border-bottom:1px solid var(--border);}
+.mcc-export-item{background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:9px 12px;cursor:pointer;text-align:left;width:100%;display:block;}
 .mcc-export-item:hover{background:rgba(255,255,255,.05);color:var(--text-bright);}
 .mcc-export-sep{height:1px;background:var(--border);margin:2px 0;}
 .mcc-export-danger{color:var(--accent2);}
 .mcc-export-danger:hover{background:rgba(198,160,87,.12);color:var(--accent2);}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.mcc-view-toggle-float{position:absolute;top:8px;left:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);}
 .mcc-left-col{width:260px;min-width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .mcc-left-budget{flex-shrink:0;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);margin-top:auto;}
 .mcc-center-col{flex:1;min-width:0;position:relative;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;}
@@ -279,23 +291,10 @@ select option,select optgroup{background:var(--input);color:var(--text-bright);}
 .msep-grip{pointer-events:none;}
 .msep-summary{font-family:var(--mono);font-size:9px;color:var(--text-bright);margin-top:8px;line-height:1.7;}
 
-/* command-center footer: missions list (left) + orbit catalog (right) */
-.mcc-footer{display:flex;flex-shrink:0;border-top:1px solid var(--border);background:rgba(0,0,0,.22);}
-.mcc-missions{width:220px;min-width:200px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-.mcc-program-row{display:flex;align-items:center;gap:4px;padding:5px 8px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.15);}
 .mcc-program-name-input{flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--border-bright);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 2px;outline:none;}
 .mcc-program-name-input:focus{border-bottom-color:var(--accent);}
-.mcc-missions-hdr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.mcc-missions-list{overflow-y:auto;max-height:150px;padding:6px;}
-.mcc-mission-card{display:flex;align-items:center;gap:6px;padding:4px 6px;margin-bottom:4px;border:1px solid var(--border);border-left-width:3px;border-left-color:var(--border);background:var(--input);cursor:pointer;}
-.mcc-mission-card:hover{background:var(--panel);}
-.mcc-mission-card.sel{border-left-color:var(--accent);background:rgba(136,198,87,.14);}
-.mcc-mission-meta{display:flex;flex-direction:column;flex:1;min-width:0;}
-.mcc-mission-name{font-family:var(--mono);font-size:11px;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.mcc-mission-card.sel .mcc-mission-name{color:var(--accent3);}
-.mcc-mission-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);}
 
-/* node-map orbit catalog dock (right half of footer) */
+/* node-map orbit catalog dock */
 .nm-orbit-dock{flex:1;min-width:0;display:flex;flex-direction:column;}
 /* ORBITS catalog fills the whole Orbit-Map sidebar, darker, scrolls fully */
 .mcc-orbit-cat{flex:1;min-height:0;display:flex;background:var(--panel2);}
@@ -359,7 +358,7 @@ header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spac
 /* ── SECTION LABEL ── */
 .sl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .sl::after{content:'';flex:1;height:1px;background:var(--border);}
-#orbit-diagram{display:block;flex:0 0 auto;align-self:flex-start;width:min(50%,260px);aspect-ratio:1/1;border:1px solid var(--border);box-sizing:border-box;}
+#orbit-diagram{display:block;flex:0 0 auto;align-self:flex-start;width:100%;max-width:320px;aspect-ratio:1/1;border:1px solid var(--border);box-sizing:border-box;}
 
 /* ── PANEL ── */
 .panel{background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:12px;overflow:hidden;}
@@ -520,8 +519,7 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
 .vp-spec-tbl th.vp-col-veh,.vp-spec-tbl td.vp-col-veh{border-left:1px solid var(--border);color:var(--text-bright);font-weight:600;}
 .vp-dv-cellbar{display:block;padding:1px 4px;border-radius:1px;}
-/* expanded launch-site subsection: cap height so the composition card doesn't tower over the library */
-#panel-launch-site{max-height:440px;overflow-y:auto;}
+/* expanded launch-site subsection: full natural height (library card stretches to match, see #veh-lib-panel) */
 /* ── Web Lookup modal ── */
 #modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
 #lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
@@ -560,6 +558,12 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .lib-toggle-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
 .lib-toggle-arrow.open{transform:rotate(90deg);}
 .lib-body{margin-top:10px;}
+/* Vehicles-page library card: stretch to match the composition card's height (see #vehicles-beginner
+   align-items:stretch), and let the inner browsing list absorb the extra height by scrolling —
+   scoped to this card only since .lib-panel/.lib-body are shared by other (non-stretching) cards. */
+#veh-lib-panel{display:flex;flex-direction:column;min-height:0;}
+#veh-lib-panel #lib-body{display:flex;flex-direction:column;flex:1;min-height:0;}
+#veh-lib-panel #lib-browser-body{flex:1;min-height:0;max-height:none;overflow-y:auto;}
 .lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
 .lib-search:focus{outline:none;border-color:var(--accent);}
 .lib-cat{margin-bottom:8px;}
@@ -909,7 +913,8 @@ button,input,select,textarea{font-family:inherit;}
 .lib-filtergrp{margin-bottom:8px;}
 .lib-filtergrp:last-child{margin-bottom:0;}
 .lib-filtergrp-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
-/* cap the browser height → scrollable list (≈ the vehicle menu size) */
+/* default cap for other .lib-panel instances (fleet/spacecraft lists etc.) — overridden inside
+   #veh-lib-panel above, where the card stretches to match Stage Composition's height instead */
 #lib-browser-body{max-height:460px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
 #lib-browser-body::-webkit-scrollbar{width:8px;}
 #lib-browser-body::-webkit-scrollbar-thumb{background:var(--border-bright);}
@@ -962,7 +967,7 @@ button,input,select,textarea{font-family:inherit;}
 <div id="page-vehicles" class="page active">
 
   <!-- BEGINNER VIEW: Composition + Library -->
-  <div id="vehicles-beginner" style="display:grid;grid-template-columns:2fr 2fr;gap:14px;align-items:start;margin-bottom:14px;">
+  <div id="vehicles-beginner" style="display:grid;grid-template-columns:2fr 2fr;gap:14px;align-items:stretch;margin-bottom:14px;">
 
     <!-- ART PANEL: rocket canvas — hidden for now -->
     <div class="lib-panel" id="veh-art-panel" style="display:none;margin-top:0;min-width:0;padding:10px;flex-direction:column;">
@@ -1082,8 +1087,8 @@ button,input,select,textarea{font-family:inherit;}
     </div>
 
     <!-- RIGHT: Stage Library, same height cap -->
-    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
-      <div class="lib-toggle" onclick="toggleLibrary()">
+    <div class="lib-panel" id="veh-lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div class="lib-toggle" onclick="toggleLibrary()" style="flex-shrink:0;">
         <span class="sl" style="margin-bottom:0;flex:1;">Library
           <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
             <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
@@ -1095,11 +1100,11 @@ button,input,select,textarea{font-family:inherit;}
         <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
       </div>
       <div class="lib-body" id="lib-body">
-        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;">
+        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;flex-shrink:0;">
           <button class="active" onclick="libSetMode('veh')">▮ Vehicles</button>
           <button onclick="libSetMode('stg')">▤ Stages</button>
         </div>
-        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;flex-shrink:0;">
           <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
           <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
           <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
@@ -1197,29 +1202,75 @@ button,input,select,textarea{font-family:inherit;}
 <div id="page-orbits" class="page">
   <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
 
-  <!-- DESTINATIONS: compact horizontal picker -->
-  <div class="orb-dest-panel">
-    <div class="sl">Destinations</div>
-    <div class="act-row" style="margin-bottom:8px;">
-      <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-      <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
-      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
-    </div>
-    <div class="orbit-scroll-h" id="orbit-categories"></div>
-  </div>
+  <div class="orb-layout">
 
-  <!-- DEFINE AN ORBIT (with diagram) -->
-  <div class="left-section" id="sec-orbit">
-    <div class="sl">Define an Orbit</div>
-    <div class="panel" id="panel-define-orbit">
-      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
-        <div style="flex:1 1 220px;min-width:180px;">
+    <!-- LEFT COLUMN: Destinations + Performance -->
+    <div class="orb-col-left">
+
+      <!-- DESTINATIONS: compact horizontal picker -->
+      <div class="orb-dest-panel">
+        <div class="sl">Destinations</div>
+        <div class="act-row" style="margin-bottom:8px;">
+          <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+          <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+          <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
+        </div>
+        <div class="orbit-scroll-h" id="orbit-categories"></div>
+      </div>
+
+      <!-- PERFORMANCE (boxed results area) -->
+      <div class="lib-panel" id="orb-performance-panel">
+        <div class="sl">Performance</div>
+        <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
+        <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
+          <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
+          <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+            style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
+        </div>
+        <div class="results-layout">
+
+          <!-- LEFT: Cases panel (collapsed by default, toggled) -->
+          <div class="cases-panel">
+            <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+              <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
+            </div>
+            <div id="cases-panel-body" style="display:none;">
+              <div class="act-row" style="margin-bottom:8px;">
+                <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+              </div>
+              <div id="case-list">
+                <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+              </div>
+              <div class="case-actions">
+                <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Results display -->
+          <div>
+            <div class="sl">Results</div>
+            <div class="results-panel" id="results-panel">
+              <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /orb-col-left -->
+
+    <!-- RIGHT COLUMN: Define an Orbit (squished vertical panel) -->
+    <div class="orb-col-right left-section" id="sec-orbit">
+      <div class="sl">Define an Orbit</div>
+      <div class="panel" id="panel-define-orbit">
+        <div class="orb-define-inner">
           <div class="mode-tog" style="margin-bottom:10px;">
             <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
             <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
           </div>
           <div id="dest-orbit">
-            <div class="cfg-row">
+            <div class="cfg-row cfg-row-stacked">
               <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
@@ -1235,58 +1286,19 @@ button,input,select,textarea{font-family:inherit;}
             </div>
           </div>
           <div id="dest-escape" style="display:none;">
-            <div class="cfg-row">
+            <div class="cfg-row cfg-row-stacked">
               <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
               <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
             </div>
             <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
           </div>
-        </div>
-        <canvas id="orbit-diagram"></canvas>
-      </div>
-    </div>
-  </div><!-- /left-section define-orbit -->
-
-  <!-- PERFORMANCE (boxed results area) -->
-  <div class="lib-panel" id="orb-performance-panel">
-    <div class="sl">Performance</div>
-    <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
-    <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
-      <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-      <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
-        style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
-    </div>
-    <div class="results-layout">
-
-      <!-- LEFT: Cases panel (collapsed by default, toggled) -->
-      <div class="cases-panel">
-        <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
-          <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
-        </div>
-        <div id="cases-panel-body" style="display:none;">
-          <div class="act-row" style="margin-bottom:8px;">
-            <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-          </div>
-          <div id="case-list">
-            <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-          </div>
-          <div class="case-actions">
-            <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
-          </div>
+          <canvas id="orbit-diagram"></canvas>
         </div>
       </div>
+    </div><!-- /orb-col-right define-orbit -->
 
-      <!-- RIGHT: Results display -->
-      <div>
-        <div class="sl">Results</div>
-        <div class="results-panel" id="results-panel">
-          <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
+  </div><!-- /orb-layout -->
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: TRADE STUDIES -->
@@ -12670,8 +12682,7 @@ function missionNmPanEnd() {
 function missionToggleOrbitPalette(id) {
   _missionOrbitPaletteOpen = !_missionOrbitPaletteOpen;
   const m = _missionGet(id);
-  const ft = document.querySelector('.mcc-footer');
-  if (ft && m) ft.innerHTML = _missionFooterHTML(m);
+  if (m) missionRenderDetail();
 }
 
 function _missionMake(name) {
@@ -12808,33 +12819,43 @@ function missionRenderDetail() {
     ? `<div class="mcc-evt-filterbar">${typeSel}${vehIds.length > 1 || effVeh !== 'ALL' ? vehSelF : ''}</div>`
     : '';
 
-  // ── center content (view only — orbit catalog now lives in the footer) ──
+  // ── center content ──
   const view = _missionViewMode === 'nodemap' ? _missionNodeMapHTML(m) : _missionBandViewHTML(m);
 
+  // ── topbar mission switcher (select + name + new + delete) ──
+  const missionOpts = _missions.map(mi => `<option value="${mi.missionId}"${mi.missionId===_missionSel?' selected':''}>${mi.name}</option>`).join('');
+  const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
+
   cc.innerHTML = `
-    <!-- TOP BAR — current mission name + view toggle -->
+    <!-- TOP BAR — mission switcher + view toggle moved into view + File menu -->
     <div class="mcc-topbar">
       <div class="mcc-topbar-group mcc-topbar-title">
-        <span class="sl" style="margin:0;">Mission</span>
+        <select class="mcc-mission-select" title="Switch mission" onchange="missionSelect(this.value)">${missionOpts}</select>
         <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
           oninput="missionRename('${id}',this.value)">
+        <button class="act-btn" onclick="missionNew()" title="New mission">＋</button>
+        <button class="act-btn" onclick="_missionConfirmDelete('${id}')" title="Delete this mission">✕</button>
       </div>
-      <div class="mcc-topbar-group mcc-topbar-undoredo">
+      <div class="mcc-topbar-group mcc-topbar-undoredo" style="margin-left:auto;">
         <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
         <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
       </div>
-      <div class="mcc-topbar-group mcc-topbar-viewtoggle">
-        <div class="seg">
-          <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
-          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
-        </div>
-      </div>
       <div class="mcc-topbar-group mcc-export-wrap">
-        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="Export &amp; reset options">Export &#x25BE;</button>
+        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="File options">File &#x25BE;</button>
         <div class="mcc-export-menu" id="mcc-export-menu">
+          <div class="mcc-export-progrow" onclick="event.stopPropagation();">
+            <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
+              onclick="event.stopPropagation();" oninput="event.stopPropagation();_missionProgramRename(this.value)" title="Program name">
+          </div>
+          <button class="mcc-export-item" onclick="_missionCloseExportMenu();saveProgramFile()">&#x1F4BE; Save Program</button>
+          <label class="mcc-export-item" style="cursor:pointer;" title="Load a .program file" onclick="_missionCloseExportMenu();">&#x1F4C2; Load Program
+            <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
+          </label>
+          <div class="mcc-export-sep"></div>
           <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportReport('${id}')">&#x2398; Report</button>
           <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportPNG('${id}')">&#x2B07; PNG</button>
-          ${m.log.length ? `<div class="mcc-export-sep"></div><button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
+          <div class="mcc-export-sep"></div>
+          ${m.log.length ? `<button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
         </div>
       </div>
     </div>
@@ -12854,7 +12875,13 @@ function missionRenderDetail() {
       </div>
 
       <!-- CENTER COLUMN — node map / band view -->
-      <div class="mcc-center-col"><div class="mcc-view-area">${view}</div></div>
+      <div class="mcc-center-col"><div class="mcc-view-area">
+        <div class="mcc-view-toggle-float seg">
+          <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
+          <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
+        </div>
+        ${view}
+      </div></div>
 
       <!-- RIGHT COLUMN — events (list on top, Add Event docked at the bottom) -->
       <div class="mcc-right-col">
@@ -12868,9 +12895,6 @@ function missionRenderDetail() {
         <div class="mcc-panel-pad mcc-addevt-dock${_missionAddEvt != null ? ' open' : ''}" style="flex-shrink:0;">${_missionAddEventHTML(m)}</div>
       </div>
     </div>
-
-    <!-- FOOTER — missions sidebar (program row + mission switcher) -->
-    <div class="mcc-footer">${_missionFooterHTML(m)}</div>
   `;
   if (m.vehicleId) setTimeout(() => missionBurnPreview(m.missionId), 0);
   if (_missionViewMode === 'nodemap') _missionCenterNmEarth();
@@ -13167,6 +13191,12 @@ function _missionConfirmReset(id) {
   const m = _missionGet(id);
   const label = m ? m.name : 'this mission';
   showConfirm('Reset Mission', `Clear all events for "${label}"? This cannot be undone.`, () => missionResetLaunch(id), 'Reset');
+}
+
+function _missionConfirmDelete(id) {
+  const m = _missionGet(id);
+  const label = m ? m.name : 'this mission';
+  showConfirm('Delete Mission', `Delete "${label}"? This cannot be undone.`, () => missionDelete(id), 'Delete');
 }
 
 // ── Export menu (topbar "Export ▾") — tiny module-scoped open/close handler ──
@@ -16255,42 +16285,6 @@ function _missionNmLayout() {
   });
 
   return { worldW, worldH: WORLD_H, blobs, pos, bodyCol };
-}
-
-// Footer = scrollable missions list (left) + orbit catalog dock (right).
-function _missionFooterHTML(m) {
-  // The orbit catalog now lives in the Orbit Map's left panel (not the footer).
-  return _missionMissionsPanelHTML(m);
-}
-
-// Compact scrollable list of all missions (users rarely make more than ~10).
-function _missionMissionsPanelHTML(m) {
-  const cards = _missions.map(mi => {
-    const sel = mi.missionId === _missionSel;
-    return `<div class="mcc-mission-card${sel ? ' sel' : ''}" onclick="missionSelect('${mi.missionId}')">
-      <div class="mcc-mission-meta">
-        <span class="mcc-mission-name">${mi.name}</span>
-        <span class="mcc-mission-sub">${mi.log.length ? mi.log.length + ' event' + (mi.log.length !== 1 ? 's' : '') : 'No events'}</span>
-      </div>
-      <button class="act-btn mevt-ctl" onclick="event.stopPropagation();missionDelete('${mi.missionId}')" title="Delete mission">✕</button>
-    </div>`;
-  }).join('');
-  const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
-  return `<div class="mcc-missions">
-    <div class="mcc-program-row">
-      <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
-        oninput="_missionProgramRename(this.value)" title="Program name">
-      <button class="act-btn" style="padding:2px 7px;font-size:9px;" onclick="saveProgramFile()" title="Save the whole program (spacecraft, fleet &amp; missions) to a .program file">Save</button>
-      <label class="act-btn" style="padding:2px 7px;font-size:9px;cursor:pointer;" title="Load a .program file">Load
-        <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
-      </label>
-    </div>
-    <div class="mcc-missions-hdr">
-      <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">MISSIONS</span>
-      <button class="act-btn" style="margin-left:auto;padding:1px 8px;font-size:10px;" onclick="missionNew()">+ New</button>
-    </div>
-    <div class="mcc-missions-list">${cards}</div>
-  </div>`;
 }
 
 // ORBITS panel = the LV-calculator's orbit catalog (ORBIT_CATEGORIES), the same

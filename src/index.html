@@ -44,7 +44,7 @@
 <div id="page-vehicles" class="page active">
 
   <!-- BEGINNER VIEW: Composition + Library -->
-  <div id="vehicles-beginner" style="display:grid;grid-template-columns:2fr 2fr;gap:14px;align-items:start;margin-bottom:14px;">
+  <div id="vehicles-beginner" style="display:grid;grid-template-columns:2fr 2fr;gap:14px;align-items:stretch;margin-bottom:14px;">
 
     <!-- ART PANEL: rocket canvas — hidden for now -->
     <div class="lib-panel" id="veh-art-panel" style="display:none;margin-top:0;min-width:0;padding:10px;flex-direction:column;">
@@ -164,8 +164,8 @@
     </div>
 
     <!-- RIGHT: Stage Library, same height cap -->
-    <div class="lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
-      <div class="lib-toggle" onclick="toggleLibrary()">
+    <div class="lib-panel" id="veh-lib-panel" style="margin-top:0;min-width:0;display:flex;flex-direction:column;">
+      <div class="lib-toggle" onclick="toggleLibrary()" style="flex-shrink:0;">
         <span class="sl" style="margin-bottom:0;flex:1;">Library
           <span class="info-tip" onclick="event.stopPropagation()" style="margin-left:7px;">i
             <span class="tip-text" style="white-space:normal;max-width:280px;line-height:1.6;">
@@ -177,11 +177,11 @@
         <span class="lib-toggle-arrow open" id="lib-arrow">▶</span>
       </div>
       <div class="lib-body" id="lib-body">
-        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;">
+        <div class="seg" id="lib-mode-seg" style="margin-bottom:8px;flex-shrink:0;">
           <button class="active" onclick="libSetMode('veh')">▮ Vehicles</button>
           <button onclick="libSetMode('stg')">▤ Stages</button>
         </div>
-        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;flex-shrink:0;">
           <input class="lib-search" type="text" id="lib-search" placeholder="Search vehicles…" oninput="libSearch(this.value)" style="flex:1;min-width:120px;margin-bottom:0;">
           <span id="lib-action-slot" style="display:flex;gap:5px;"></span>
           <label style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;cursor:pointer;white-space:nowrap;">
@@ -279,29 +279,75 @@
 <div id="page-orbits" class="page">
   <div class="vp-header">Orbits <span class="vp-header-sub">Single-vehicle performance to a destination</span></div>
 
-  <!-- DESTINATIONS: compact horizontal picker -->
-  <div class="orb-dest-panel">
-    <div class="sl">Destinations</div>
-    <div class="act-row" style="margin-bottom:8px;">
-      <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
-      <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
-      <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
-    </div>
-    <div class="orbit-scroll-h" id="orbit-categories"></div>
-  </div>
+  <div class="orb-layout">
 
-  <!-- DEFINE AN ORBIT (with diagram) -->
-  <div class="left-section" id="sec-orbit">
-    <div class="sl">Define an Orbit</div>
-    <div class="panel" id="panel-define-orbit">
-      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
-        <div style="flex:1 1 220px;min-width:180px;">
+    <!-- LEFT COLUMN: Destinations + Performance -->
+    <div class="orb-col-left">
+
+      <!-- DESTINATIONS: compact horizontal picker -->
+      <div class="orb-dest-panel">
+        <div class="sl">Destinations</div>
+        <div class="act-row" style="margin-bottom:8px;">
+          <button class="act-btn green" onclick="saveUserOrbit()">SAVE Current Orbit</button>
+          <label class="act-btn" style="cursor:pointer;">LOAD ORBIT<input type="file" accept=".orbit,.json" style="display:none" onchange="loadOrbitFile(this)"></label>
+          <input class="search-bar" type="text" id="orbit-search" placeholder="Search orbits..." oninput="buildOrbitCategories()" style="margin-bottom:0;flex:1;min-width:160px;">
+        </div>
+        <div class="orbit-scroll-h" id="orbit-categories"></div>
+      </div>
+
+      <!-- PERFORMANCE (boxed results area) -->
+      <div class="lib-panel" id="orb-performance-panel">
+        <div class="sl">Performance</div>
+        <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
+        <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
+          <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
+          <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
+            style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
+        </div>
+        <div class="results-layout">
+
+          <!-- LEFT: Cases panel (collapsed by default, toggled) -->
+          <div class="cases-panel">
+            <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
+              <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
+            </div>
+            <div id="cases-panel-body" style="display:none;">
+              <div class="act-row" style="margin-bottom:8px;">
+                <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
+              </div>
+              <div id="case-list">
+                <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
+              </div>
+              <div class="case-actions">
+                <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Results display -->
+          <div>
+            <div class="sl">Results</div>
+            <div class="results-panel" id="results-panel">
+              <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /orb-col-left -->
+
+    <!-- RIGHT COLUMN: Define an Orbit (squished vertical panel) -->
+    <div class="orb-col-right left-section" id="sec-orbit">
+      <div class="sl">Define an Orbit</div>
+      <div class="panel" id="panel-define-orbit">
+        <div class="orb-define-inner">
           <div class="mode-tog" style="margin-bottom:10px;">
             <button class="active" id="mode-orbit-btn" onclick="setDestMode('orbit')">⊙ Earth Orbit</button>
             <button id="mode-escape-btn" onclick="setDestMode('escape')">↗ Escape / Interplanetary (C3)</button>
           </div>
           <div id="dest-orbit">
-            <div class="cfg-row">
+            <div class="cfg-row cfg-row-stacked">
               <div class="cfg-item"><label>Apogee (km)</label><input type="number" class="field" id="apogee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Perigee (km)</label><input type="number" class="field" id="perigee" value="400" min="100" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Inclination (°)</label><input type="number" class="field" id="inclination" value="28.5" min="0" max="180" step="0.1" oninput="markOrbitUserDefined()"></div>
@@ -317,58 +363,19 @@
             </div>
           </div>
           <div id="dest-escape" style="display:none;">
-            <div class="cfg-row">
+            <div class="cfg-row cfg-row-stacked">
               <div class="cfg-item"><label>C3 (km²/s²)</label><input type="number" class="field" id="c3" value="0" step="0.1" oninput="markOrbitUserDefined();drawOrbitDiagram()"></div>
               <div class="cfg-item"><label>Departure Decl (deg)</label><input type="number" class="field" id="decl" value="28.5" min="-90" max="90" step="0.1" oninput="markOrbitUserDefined()"></div>
               <div class="cfg-item"><label>Parking Perigee (km)</label><input type="number" class="field" id="escape-perigee" value="185" min="100" oninput="drawOrbitDiagram()"></div>
             </div>
             <div class="note" style="margin-top:4px;">C3 = v∞² relative to Earth. Vis-viva: Vinj = √(Vesc² + C3). TLI≈−1.9, escape=0, Mars≈8.7, Jupiter≈80.</div>
           </div>
-        </div>
-        <canvas id="orbit-diagram"></canvas>
-      </div>
-    </div>
-  </div><!-- /left-section define-orbit -->
-
-  <!-- PERFORMANCE (boxed results area) -->
-  <div class="lib-panel" id="orb-performance-panel">
-    <div class="sl">Performance</div>
-    <div id="orb-veh-selector-bar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px;"></div>
-    <div style="display:flex;gap:8px;margin:0 0 10px;align-items:center;">
-      <button class="calc-btn" onclick="calculateWithS15()" style="margin-bottom:0;flex:1;">▶  CALCULATE PERFORMANCE</button>
-      <button id="orb-use-in-program-btn" onclick="progUseCurrentVehicle()" title="Load this vehicle into the active Program as a VehicleDefinition"
-        style="font-family:var(--mono);font-size:10px;background:rgba(136,198,87,.08);border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;">Use in Program ▶</button>
-    </div>
-    <div class="results-layout">
-
-      <!-- LEFT: Cases panel (collapsed by default, toggled) -->
-      <div class="cases-panel">
-        <div class="cases-header" style="cursor:pointer;" onclick="casesPanelToggle()">
-          <span>Performance Cases <span id="cases-toggle-caret">▸</span></span>
-        </div>
-        <div id="cases-panel-body" style="display:none;">
-          <div class="act-row" style="margin-bottom:8px;">
-            <button class="act-btn green" id="save-case-btn" onclick="openSaveCaseModal()" disabled style="flex:1;">+ Save Case</button>
-          </div>
-          <div id="case-list">
-            <div class="cases-empty">// No cases saved yet.<br>Calculate then save.</div>
-          </div>
-          <div class="case-actions">
-            <button class="act-btn" onclick="downloadAllCases()" id="download-cases-btn" disabled style="width:100%;box-sizing:border-box;">Download All Cases</button>
-          </div>
+          <canvas id="orbit-diagram"></canvas>
         </div>
       </div>
+    </div><!-- /orb-col-right define-orbit -->
 
-      <!-- RIGHT: Results display -->
-      <div>
-        <div class="sl">Results</div>
-        <div class="results-panel" id="results-panel">
-          <div class="placeholder-msg">// Configure vehicle on the Vehicles page, select target above, then calculate.</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
+  </div><!-- /orb-layout -->
 </div>
 
 <!-- ═══════════════════════════════════════════════ PAGE: TRADE STUDIES -->

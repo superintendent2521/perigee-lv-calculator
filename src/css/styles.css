@@ -34,6 +34,16 @@ header{border-bottom:1px solid var(--border);padding:10px 16px;display:flex;alig
 .orbit-scroll::-webkit-scrollbar{width:5px;}
 .orbit-scroll::-webkit-scrollbar-thumb{background:var(--border-bright);}
 
+/* ── ORBITS PAGE: two-column layout (Destinations+Performance left, Define-an-Orbit right) ── */
+.orb-layout{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start;}
+.orb-col-left{min-width:0;display:flex;flex-direction:column;}
+.orb-col-right{min-width:0;}
+.orb-define-inner{display:flex;flex-direction:column;gap:12px;}
+.cfg-row-stacked{flex-direction:column;align-items:stretch;gap:10px;}
+.cfg-row-stacked .cfg-item{width:100%;}
+.cfg-row-stacked .cfg-item .field{width:100%;box-sizing:border-box;}
+@media(max-width:1000px){.orb-layout{grid-template-columns:1fr;}}
+
 /* ── DESTINATIONS: horizontal compact row (Orbits page redesign) ── */
 .orb-dest-panel{background:var(--panel);border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;}
 .orbit-scroll-h{display:flex;flex-direction:row;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;align-items:flex-start;}
@@ -185,19 +195,21 @@ td.ghost-cell input{color:var(--border)!important;background:transparent!importa
 .mcc-topbar-title{flex:1;min-width:0;max-width:400px;}
 .mcc-mission-name-input{background:transparent;border:none;border-bottom:1px solid var(--border-bright);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);font-family:var(--sans);font-size:15px;font-weight:600;padding:3px 4px;flex:1;min-width:0;outline:none;}
 .mcc-mission-name-input:focus{border-bottom-color:var(--accent);}
-.mcc-topbar-viewtoggle{margin-left:auto;}
+.mcc-mission-select{background:var(--input);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);border:1px solid var(--border);font-family:var(--mono);font-size:11px;padding:4px 6px;max-width:150px;}
 .mcc-topbar-undoredo{display:inline-flex;border:1px solid var(--border-bright);}
 .mcc-topbar-undoredo .act-btn{border:none;border-right:1px solid var(--border-bright);}
 .mcc-topbar-undoredo .act-btn:last-child{border-right:none;}
 .mcc-export-wrap{position:relative;}
-.mcc-export-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:160px;background:var(--panel);border:1px solid var(--border-bright);z-index:50;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.4);}
+.mcc-export-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:200px;background:var(--panel);border:1px solid var(--border-bright);z-index:50;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.4);}
 .mcc-export-menu.open{display:flex;}
-.mcc-export-item{background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:9px 12px;cursor:pointer;text-align:left;width:100%;}
+.mcc-export-progrow{padding:8px 12px;border-bottom:1px solid var(--border);}
+.mcc-export-item{background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:9px 12px;cursor:pointer;text-align:left;width:100%;display:block;}
 .mcc-export-item:hover{background:rgba(255,255,255,.05);color:var(--text-bright);}
 .mcc-export-sep{height:1px;background:var(--border);margin:2px 0;}
 .mcc-export-danger{color:var(--accent2);}
 .mcc-export-danger:hover{background:rgba(198,160,87,.12);color:var(--accent2);}
 .mcc-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.mcc-view-toggle-float{position:absolute;top:8px;left:8px;z-index:20;background:var(--panel);border:1px solid var(--border-bright);box-shadow:0 4px 12px rgba(0,0,0,.35);}
 .mcc-left-col{width:260px;min-width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .mcc-left-budget{flex-shrink:0;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);margin-top:auto;}
 .mcc-center-col{flex:1;min-width:0;position:relative;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;}
@@ -272,23 +284,10 @@ select option,select optgroup{background:var(--input);color:var(--text-bright);}
 .msep-grip{pointer-events:none;}
 .msep-summary{font-family:var(--mono);font-size:9px;color:var(--text-bright);margin-top:8px;line-height:1.7;}
 
-/* command-center footer: missions list (left) + orbit catalog (right) */
-.mcc-footer{display:flex;flex-shrink:0;border-top:1px solid var(--border);background:rgba(0,0,0,.22);}
-.mcc-missions{width:220px;min-width:200px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-.mcc-program-row{display:flex;align-items:center;gap:4px;padding:5px 8px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.15);}
 .mcc-program-name-input{flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--border-bright);color:var(--text-bright);-webkit-text-fill-color:var(--text-bright);font-family:var(--mono);font-size:10px;padding:3px 2px;outline:none;}
 .mcc-program-name-input:focus{border-bottom-color:var(--accent);}
-.mcc-missions-hdr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.mcc-missions-list{overflow-y:auto;max-height:150px;padding:6px;}
-.mcc-mission-card{display:flex;align-items:center;gap:6px;padding:4px 6px;margin-bottom:4px;border:1px solid var(--border);border-left-width:3px;border-left-color:var(--border);background:var(--input);cursor:pointer;}
-.mcc-mission-card:hover{background:var(--panel);}
-.mcc-mission-card.sel{border-left-color:var(--accent);background:rgba(136,198,87,.14);}
-.mcc-mission-meta{display:flex;flex-direction:column;flex:1;min-width:0;}
-.mcc-mission-name{font-family:var(--mono);font-size:11px;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.mcc-mission-card.sel .mcc-mission-name{color:var(--accent3);}
-.mcc-mission-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);}
 
-/* node-map orbit catalog dock (right half of footer) */
+/* node-map orbit catalog dock */
 .nm-orbit-dock{flex:1;min-width:0;display:flex;flex-direction:column;}
 /* ORBITS catalog fills the whole Orbit-Map sidebar, darker, scrolls fully */
 .mcc-orbit-cat{flex:1;min-height:0;display:flex;background:var(--panel2);}
@@ -352,7 +351,7 @@ header h1{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spac
 /* ── SECTION LABEL ── */
 .sl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .sl::after{content:'';flex:1;height:1px;background:var(--border);}
-#orbit-diagram{display:block;flex:0 0 auto;align-self:flex-start;width:min(50%,260px);aspect-ratio:1/1;border:1px solid var(--border);box-sizing:border-box;}
+#orbit-diagram{display:block;flex:0 0 auto;align-self:flex-start;width:100%;max-width:320px;aspect-ratio:1/1;border:1px solid var(--border);box-sizing:border-box;}
 
 /* ── PANEL ── */
 .panel{background:var(--panel);border:1px solid var(--border);padding:14px;margin-bottom:12px;overflow:hidden;}
@@ -513,8 +512,7 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
 .vp-spec-tbl th.vp-col-veh,.vp-spec-tbl td.vp-col-veh{border-left:1px solid var(--border);color:var(--text-bright);font-weight:600;}
 .vp-dv-cellbar{display:block;padding:1px 4px;border-radius:1px;}
-/* expanded launch-site subsection: cap height so the composition card doesn't tower over the library */
-#panel-launch-site{max-height:440px;overflow-y:auto;}
+/* expanded launch-site subsection: full natural height (library card stretches to match, see #veh-lib-panel) */
 /* ── Web Lookup modal ── */
 #modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
 #lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
@@ -553,6 +551,12 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .lib-toggle-arrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);transition:transform .2s;}
 .lib-toggle-arrow.open{transform:rotate(90deg);}
 .lib-body{margin-top:10px;}
+/* Vehicles-page library card: stretch to match the composition card's height (see #vehicles-beginner
+   align-items:stretch), and let the inner browsing list absorb the extra height by scrolling —
+   scoped to this card only since .lib-panel/.lib-body are shared by other (non-stretching) cards. */
+#veh-lib-panel{display:flex;flex-direction:column;min-height:0;}
+#veh-lib-panel #lib-body{display:flex;flex-direction:column;flex:1;min-height:0;}
+#veh-lib-panel #lib-browser-body{flex:1;min-height:0;max-height:none;overflow-y:auto;}
 .lib-search{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border-bright);color:var(--text-bright);font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:8px;letter-spacing:.05em;}
 .lib-search:focus{outline:none;border-color:var(--accent);}
 .lib-cat{margin-bottom:8px;}
@@ -902,7 +906,8 @@ button,input,select,textarea{font-family:inherit;}
 .lib-filtergrp{margin-bottom:8px;}
 .lib-filtergrp:last-child{margin-bottom:0;}
 .lib-filtergrp-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
-/* cap the browser height → scrollable list (≈ the vehicle menu size) */
+/* default cap for other .lib-panel instances (fleet/spacecraft lists etc.) — overridden inside
+   #veh-lib-panel above, where the card stretches to match Stage Composition's height instead */
 #lib-browser-body{max-height:460px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--border);}
 #lib-browser-body::-webkit-scrollbar{width:8px;}
 #lib-browser-body::-webkit-scrollbar-thumb{background:var(--border-bright);}
