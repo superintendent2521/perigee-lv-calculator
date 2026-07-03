@@ -24,11 +24,9 @@ function showPage(p){
   const topBtn=document.getElementById('nav-'+target);
   if(topBtn) topBtn.classList.add('active');
 
-  // Program sub-tab bar + header Save/Load: only visible inside Program Manager
+  // Program sub-tab bar: only visible inside Program Manager
   const psub=document.getElementById('prog-subnav');
   if(psub) psub.style.display=(target==='program')?'flex':'none';
-  const pha=document.getElementById('prog-header-actions');
-  if(pha) pha.style.display=(target==='program')?'flex':'none';
 
   const vvw=document.getElementById('veh-view-wrap');
   if(vvw){vvw.style.display=(target==='vehicles')?'flex':'none';}

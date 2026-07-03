@@ -22,12 +22,6 @@
     <button class="lv-sub-btn active" data-prog="hangar" onclick="progShowTab('hangar')">Hangar</button>
     <button class="lv-sub-btn" data-prog="mission" onclick="progShowTab('mission')">Missions</button>
   </nav>
-  <div class="prog-header-actions" id="prog-header-actions" style="display:none;margin-left:auto;gap:8px;align-items:center;">
-    <button class="act-btn" onclick="saveProgramFile()" title="Save the whole program (spacecraft, fleet &amp; missions) to a .program file">Save Program</button>
-    <label class="act-btn" style="cursor:pointer;" title="Load a .program file">Load Program
-      <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
-    </label>
-  </div>
   <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
     <div class="theme-wrap" style="margin-left:0;">
       <a class="th-btn" href="https://github.com/rp1-lox/perigee-lv-calculator" target="_blank" rel="noopener" title="View source &amp; releases on GitHub">GitHub &#x2197;</a>
@@ -396,36 +390,38 @@
 
   <!-- Spacecraft panel -->
   <div id="prog-panel-sc" class="sc-ed-wrap">
-    <div class="sc-ed-list-col">
-      <input type="text" id="sc-ed-search" class="sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
+    <div class="lib-panel sc-ed-list-col">
+      <div class="sl">Spacecraft</div>
+      <input type="text" id="sc-ed-search" class="lib-search sc-ed-search" placeholder="Search spacecraft..." oninput="scEdRenderList()">
       <div id="sc-ed-list" class="sc-ed-list-inner lv-list"></div>
-      <div style="padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
-        <button class="act-btn" style="width:100%" onclick="scEdNew()">+ New Spacecraft</button>
-        <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Spacecraft
+      <div class="sc-ed-actions">
+        <button class="act-btn" onclick="scEdNew()">+ New Spacecraft</button>
+        <label class="act-btn sc-ed-file-btn">Load Spacecraft
           <input type="file" accept=".spacecraft,.json" style="display:none" onchange="scEdLoadJSON(this)">
         </label>
       </div>
     </div>
-    <div id="sc-ed-detail" class="sc-ed-main-col">
+    <div id="sc-ed-detail" class="lib-panel sc-ed-main-col">
       <div class="placeholder-msg">Select or create a spacecraft</div>
     </div>
   </div>
 
   <!-- Fleet panel -->
   <div id="prog-panel-fleet" class="sc-ed-wrap" style="display:none;">
-    <div class="sc-ed-list-col">
-      <input type="text" id="fleet-search" class="sc-ed-search" placeholder="Search fleet..." oninput="fleetRenderList()">
+    <div class="lib-panel sc-ed-list-col">
+      <div class="sl">Fleet</div>
+      <input type="text" id="fleet-search" class="lib-search sc-ed-search" placeholder="Search fleet..." oninput="fleetRenderList()">
       <div id="fleet-list" class="sc-ed-list-inner lv-list"></div>
       <div class="fleet-drop-zone" ondragover="fleetDragOver(event)" ondragleave="fleetDragLeave(event)" ondrop="fleetLibAddDrop(event)">&#x2295; Drop a vehicle here to add it to the fleet</div>
-      <div style="padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
-        <button class="act-btn" style="width:100%" onclick="fleetNew()">+ New Entry</button>
-        <button class="act-btn" style="width:100%" onclick="fleetOpenImportModal()">Import Vehicle</button>
-        <label class="act-btn" style="width:100%;cursor:pointer;text-align:center;">Load Vehicle
+      <div class="sc-ed-actions">
+        <button class="act-btn" onclick="fleetNew()">+ New Entry</button>
+        <button class="act-btn" onclick="fleetOpenImportModal()">Import Vehicle</button>
+        <label class="act-btn sc-ed-file-btn">Load Vehicle
           <input type="file" accept=".vehicle,.json" style="display:none" onchange="fleetLoadJSON(this)">
         </label>
       </div>
     </div>
-    <div id="fleet-detail" class="sc-ed-main-col">
+    <div id="fleet-detail" class="lib-panel sc-ed-main-col">
       <div class="placeholder-msg">Add or select a launch vehicle</div>
     </div>
   </div>

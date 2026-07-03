@@ -357,22 +357,28 @@ function missionRenderDetail() {
   cc.innerHTML = `
     <!-- TOP BAR — current mission name + view toggle -->
     <div class="mcc-topbar">
-      <span class="sl" style="margin:0;">Mission</span>
-      <input value="${m.name.replace(/"/g,'&quot;')}" class="sc-stage-name" style="font-size:13px;flex:1;max-width:340px;"
-        oninput="missionRename('${id}',this.value)">
-      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+      <div class="mcc-topbar-group mcc-topbar-title">
+        <span class="sl" style="margin:0;">Mission</span>
+        <input value="${m.name.replace(/"/g,'&quot;')}" class="mcc-mission-name-input"
+          oninput="missionRename('${id}',this.value)">
+      </div>
+      <div class="mcc-topbar-group mcc-topbar-undoredo">
         <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
         <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
-        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
-        <button class="act-btn" onclick="missionExportReport('${id}')" title="Printable mission report">&#x2398; Report</button>
-        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
+      </div>
+      <div class="mcc-topbar-group mcc-topbar-viewtoggle">
         <div class="seg">
           <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
           <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
         </div>
-        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
-        <button class="act-btn" onclick="missionExportPNG('${id}')" title="Save the current view as a PNG image">&#x2B07; PNG</button>
-        ${m.log.length ? `<button class="act-btn" onclick="missionResetLaunch('${id}')">Reset</button>` : ''}
+      </div>
+      <div class="mcc-topbar-group mcc-export-wrap">
+        <button class="act-btn" onclick="_missionToggleExportMenu(event)" title="Export &amp; reset options">Export &#x25BE;</button>
+        <div class="mcc-export-menu" id="mcc-export-menu">
+          <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportReport('${id}')">&#x2398; Report</button>
+          <button class="mcc-export-item" onclick="_missionCloseExportMenu();missionExportPNG('${id}')">&#x2B07; PNG</button>
+          ${m.log.length ? `<div class="mcc-export-sep"></div><button class="mcc-export-item mcc-export-danger" onclick="_missionCloseExportMenu();_missionConfirmReset('${id}')">&#x232B; Reset</button>` : ''}
+        </div>
       </div>
     </div>
 
@@ -398,13 +404,16 @@ function missionRenderDetail() {
         <div class="mcc-events-header" style="display:flex;align-items:center;gap:8px;">
           <span style="color:var(--accent3);">EVENTS</span>
           ${m.log.length ? `<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">${m.log.length}</span>` : ''}
-          ${m.log.length >= 1 ? `<button class="act-btn" style="margin-left:auto;padding:1px 8px;font-size:9px;${_missionGroupMode?'background:var(--accent);color:#000;':''}" onclick="missionToggleGroupMode('${id}')">${_missionGroupMode ? (_missionGroupStart==null?'⊞ pick start…':'⊞ pick end…') : '⊞ Loop'}</button>${_missionGroupMode?`<button class="act-btn" style="padding:1px 8px;font-size:9px;" onclick="missionToggleGroupMode('${id}')">✕</button>`:''}` : ''}
+          ${m.log.length >= 1 ? `<button class="act-btn mcc-loop-btn${_missionGroupMode?' active':''}" onclick="missionToggleGroupMode('${id}')">${_missionGroupMode ? (_missionGroupStart==null?'⊞ pick start…':'⊞ pick end…') : '⊞ Loop'}</button>${_missionGroupMode?`<button class="act-btn mcc-loop-cancel" onclick="missionToggleGroupMode('${id}')">✕</button>`:''}` : ''}
         </div>
         ${filterRow}
         <div class="mcc-events-list">${logHTML}</div>
         <div class="mcc-panel-pad mcc-addevt-dock${_missionAddEvt != null ? ' open' : ''}" style="flex-shrink:0;">${_missionAddEventHTML(m)}</div>
       </div>
     </div>
+
+    <!-- FOOTER — missions sidebar (program row + mission switcher) -->
+    <div class="mcc-footer">${_missionFooterHTML(m)}</div>
   `;
   if (m.vehicleId) setTimeout(() => missionBurnPreview(m.missionId), 0);
   if (_missionViewMode === 'nodemap') _missionCenterNmEarth();
@@ -423,6 +432,12 @@ function _missionCenterNmEarth() {
 function missionRename(id, val) {
   const m = _missionGet(id);
   if (m) { m.name = val; missionRenderList(); }
+}
+
+function _missionProgramRename(val) {
+  if (!PROG_ACTIVE_PROGRAM) return;
+  PROG_ACTIVE_PROGRAM.name = val;
+  if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave();
 }
 
 function missionSetFleet(id, fleetId) {
@@ -689,6 +704,35 @@ function missionResetLaunch(id) {
   m.vehicleIds = [];
   missionRecompute(m);
   missionRenderDetail();
+}
+
+function _missionConfirmReset(id) {
+  const m = _missionGet(id);
+  const label = m ? m.name : 'this mission';
+  showConfirm('Reset Mission', `Clear all events for "${label}"? This cannot be undone.`, () => missionResetLaunch(id), 'Reset');
+}
+
+// ── Export menu (topbar "Export ▾") — tiny module-scoped open/close handler ──
+let _missionExportMenuOpen = false;
+function _missionToggleExportMenu(evt) {
+  if (evt) evt.stopPropagation();
+  _missionExportMenuOpen ? _missionCloseExportMenu() : _missionOpenExportMenu();
+}
+function _missionOpenExportMenu() {
+  _missionExportMenuOpen = true;
+  const menu = document.getElementById('mcc-export-menu');
+  if (menu) menu.classList.add('open');
+  document.addEventListener('click', _missionExportMenuOutsideClick);
+}
+function _missionCloseExportMenu() {
+  _missionExportMenuOpen = false;
+  const menu = document.getElementById('mcc-export-menu');
+  if (menu) menu.classList.remove('open');
+  document.removeEventListener('click', _missionExportMenuOutsideClick);
+}
+function _missionExportMenuOutsideClick(e) {
+  const wrap = document.querySelector('.mcc-export-wrap');
+  if (wrap && !wrap.contains(e.target)) _missionCloseExportMenu();
 }
 
 function _missionLogCardHTML(entry, id, idx) {
@@ -3774,7 +3818,16 @@ function _missionMissionsPanelHTML(m) {
       <button class="act-btn mevt-ctl" onclick="event.stopPropagation();missionDelete('${mi.missionId}')" title="Delete mission">✕</button>
     </div>`;
   }).join('');
+  const progName = (PROG_ACTIVE_PROGRAM && PROG_ACTIVE_PROGRAM.name) || '';
   return `<div class="mcc-missions">
+    <div class="mcc-program-row">
+      <input class="mcc-program-name-input" value="${progName.replace(/"/g,'&quot;')}"
+        oninput="_missionProgramRename(this.value)" title="Program name">
+      <button class="act-btn" style="padding:2px 7px;font-size:9px;" onclick="saveProgramFile()" title="Save the whole program (spacecraft, fleet &amp; missions) to a .program file">Save</button>
+      <label class="act-btn" style="padding:2px 7px;font-size:9px;cursor:pointer;" title="Load a .program file">Load
+        <input type="file" accept=".program,.json" style="display:none" onchange="loadProgramFile(this)">
+      </label>
+    </div>
     <div class="mcc-missions-hdr">
       <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);">MISSIONS</span>
       <button class="act-btn" style="margin-left:auto;padding:1px 8px;font-size:10px;" onclick="missionNew()">+ New</button>
