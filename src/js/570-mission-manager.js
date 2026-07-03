@@ -3464,7 +3464,7 @@ function _missionBandViewHTML(m) {
   scrubberHTML += `<text x="${scrubX}" y="${topPad - 9}" text-anchor="middle" font-family="var(--mono)" font-size="8px" fill="var(--accent)">${scrubEv ? scrubEv.label : ''}</text>`;
 
   // controls (spacing) + legend
-  let legendHTML = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;align-items:center;">';
+  let legendHTML = '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 10px 6px;">';
   legendHTML += `<span style="display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--text-dim);">spacing
     <button class="act-btn" style="padding:0 7px;" onclick="missionBandSpacing('${id}',-1)">−</button>
     <button class="act-btn" style="padding:0 7px;" onclick="missionBandSpacing('${id}',1)">+</button></span>`;
