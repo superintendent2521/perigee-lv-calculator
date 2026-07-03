@@ -1706,15 +1706,17 @@ const APP_VERSION='2.0.0';
 const APP_REPO_URL='https://github.com/rp1-lox/perigee-lv-calculator';
 const APP_CHANGELOG=[
   {v:'2.0.0', title:'Integral', date:'2026-07-03', notes:[
-    'The whole app has one flat nav now — Vehicles | Orbits | Trade Studies | Spacecraft | Mission. No more mode-switching, no more sub-menus hiding half the tool.',
-    'NEW Trade Studies page, and it\'s the centerpiece: destination sweeps by default (a real user\'s-guide-style payload table for LEO/SSO/GTO/TLI/C3 and beyond), pick your metric (max payload, ΔV margin, payload fraction, total ΔV, burn time, liftoff T:W), compare up to 5 vehicles, and — my favorite — a tornado sensitivity chart that shows which parameter your design actually lives or dies by (spoiler: it\'s Isp). Charts, tables, CSV export.',
-    'The Program section grew up: one mission per program, no more Hangar maze. The Spacecraft editor is its own page now, the mission command center IS the Mission page, and you pick launch vehicles straight from your library — the fleet bookkeeping happens invisibly (residuals and remaining propellant carry through exactly as before).',
-    'Mission view got honest: separated spacecraft stages finally get their own names and tracks (your LM ascent/descent are "Ascent Stage" and "Descent Stage" now, not "#1" and "#2"), and clicking any event rewinds the Vehicles & Mission State panel to that exact moment.',
-    'Orbits page rebuilt: destination picker + boxed Performance panel on the left, Define-an-Orbit on the right, a clear highlight on whichever orbit you\'ve targeted, and a page-local vehicle selector so you can evaluate any library vehicle without disturbing your worksheet.',
+    'Version 2.0 of the Rocket Playground focuses primarily on integrating old elements together cohesively and fleshing out previous capabilities.',
+    'One, flat, modeless menu: Go from one menu to the next, automatically taking your vehicles with you.',
     'Vehicles page: Launch Site lives inside the Stage Composition card and saves with the vehicle; ΔV Budget and Vehicle Summary folded into one Stage Specifications table with a whole-vehicle column.',
-    'Autosave — your whole session (worksheet, spacecraft, mission) persists in the browser with a restore banner. Plus mission undo/redo (Ctrl+Z/Y) and a printable mission report.',
-    'Bug hunt: five built-in vehicles were flying phantom zero-mass stages due to library name mismatches (that "S-IVB in orbit next to the S-II" weirdness — fixed, and now impossible to reintroduce). Stage-and-a-half vehicles are now BECO-split correctly everywhere, not just in the calculator.',
-    'Under the hood: every build runs a 46-check physics regression suite pinned to the calculator\'s exact outputs. If the math drifts, the build fails. Sleep easy.',
+    'Rebuilt orbits page: destination picker, old "performance calculator", and Define-an-Orbit in one menu with a clear highlight on whichever orbit you\'ve targeted without overwriting anything in your vehicles page.',
+    'Greatly improved Mission View auto-naming for vehicles, along with new, dedicated undo/redo buttons, alongside a greatly simplified UI.',
+    'NEW Trade Studies page - sweep by destination, payload mass, parking orbit, and analyze rocket sensitivity to different vehicle parameters, compare vehicles, and generate charts to understand your architecture\'s sensitivities better in real-time.',
+    'Program Mode is no more - The former "Fleet" page has been integrated into the regular vehicle creator, meaning you can draw from existing work with no compromises. The Spacecraft Editor is now its own page, with updates to come to it in short order.',
+    'Program Mode\'s mission feature is now present in a tab labeled Mission, and has greatly simplified stage naming and management so you can handle events better.',
+    'Autosave now exists!',
+    'Download or upload your entire session — worksheet, vehicles, spacecraft, and mission — as a single file.',
+    'Performance is better - a really stupid way of rebuilding the database no longer exists, so things should be lighter (but this is like a one megabyte HTML file anyway, so...)',
   ]},
   {v:'1.1.1', title:'Extended Math', date:'2026-07-01', notes:[
     'Added ability to do use equations in stage and vehicle information boxes.',
