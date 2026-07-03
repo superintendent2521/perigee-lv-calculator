@@ -489,6 +489,8 @@ select.field:focus{outline:none;border-color:var(--accent);}
 .vp-col-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
 .vp-spec-tbl th.vp-col-veh,.vp-spec-tbl td.vp-col-veh{border-left:1px solid var(--border);color:var(--text-bright);font-weight:600;}
 .vp-dv-cellbar{display:block;padding:1px 4px;border-radius:1px;}
+/* expanded launch-site subsection: cap height so the composition card doesn't tower over the library */
+#panel-launch-site{max-height:440px;overflow-y:auto;}
 /* ── Web Lookup modal ── */
 #modal-lookup .modal{width:min(960px,97vw);max-height:92vh;}
 #lu-url-bar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;}
