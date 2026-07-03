@@ -2,9 +2,12 @@
 // ─── VERSION & CHANGELOG ──────────────────────
 // Single source of truth for the displayed version + patch notes (header button
 // opens #modal-patch-notes). Bump APP_VERSION and prepend an entry on release.
-const APP_VERSION='1.1.0A';
+const APP_VERSION='1.1.1';
 const APP_REPO_URL='https://github.com/rp1-lox/perigee-lv-calculator';
 const APP_CHANGELOG=[
+  {v:'1.1.1', title:'Extended Math', date:'2026-07-01', notes:[
+    'Added ability to do use equations in stage and vehicle information boxes.',
+  ]},
   {v:'1.1.0A', title:'Unified Library', date:'2026-06-21', notes:[
     'An all-new unified stages & vehicles panel across both Program and Calculator mode — designed to increase UI cohesion and discoverability. Vehicles and stages are now sorted directly by their characteristics, while keeping the earlier search capability.',
     'Tags are now simpler. (This mostly makes my life easier.)',

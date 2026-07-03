@@ -133,9 +133,31 @@ function libSpotlightNode(){
   const sub=_libMode==='veh' ? ((it.stageNames||[]).join(' + ')||it.note||'') : `from ${it.vehicle||'—'} · ${it.thrust||'?'} kN · ${it.isp||'?'} s`;
   const cls=_libMode==='stg' ? (libResolveTags(it,'cls','stg').filter(v=>v!=='Unspecified')[0]||'') : '';
   const sp=document.createElement('div'); sp.className='lib-spotlight';
+  sp.draggable=true;
   sp.innerHTML=`<div class="lib-spotlight-lbl">Spotlight${cls?' · '+cls:''}</div><div class="lib-spotlight-name">${it.name||''}</div><div class="lib-spotlight-sub">${sub}</div>`;
+  sp.querySelectorAll('img').forEach(img=>{img.draggable=false;});
   const rr=document.createElement('button'); rr.className='lib-spotlight-reroll'; rr.textContent='⟳ discover'; rr.onclick=e=>{e.stopPropagation();libReroll();}; sp.appendChild(rr);
-  sp.onclick=()=>{ if(_libMode==='veh'){ _libSpot.user?loadPreset(it,_libSpot.key):(openVehicleModal&&openVehicleModal(it)); } else if(typeof openStageModal==='function'){ openStageModal(it); } };
+  // Drag (same payload shape as libMakeVehicleCard / makeCard) — separate from click via _didDrag flag.
+  sp.addEventListener('dragstart',e=>{
+    _didDrag=true;
+    if(_libMode==='veh'){
+      _draggingStage={_isVehicle:true,_preset:it,name:it.name};
+      e.dataTransfer.setData('text/plain',JSON.stringify({_isVehicle:true,name:it.name}));
+    } else {
+      _draggingStage={...it,_cat:_libSpot.cat};
+      e.dataTransfer.setData('text/plain',JSON.stringify(_draggingStage));
+    }
+    e.dataTransfer.effectAllowed='copy';
+    setTimeout(()=>sp.classList.add('dragging'),0);
+  });
+  sp.addEventListener('dragend',()=>{
+    sp.classList.remove('dragging');_draggingStage=null;
+    setTimeout(()=>{_didDrag=false;},80);
+  });
+  sp.onclick=e=>{
+    e.stopPropagation(); if(_didDrag)return;
+    if(_libMode==='veh'){ _libSpot.user?loadPreset(it,_libSpot.key):(openVehicleModal&&openVehicleModal(it)); } else if(typeof openStageModal==='function'){ openStageModal(it); }
+  };
   return sp;
 }
 
@@ -258,20 +280,19 @@ function libRenderActions(){
   const slot=document.getElementById('lib-action-slot'); if(!slot)return;
   slot.innerHTML='';
   if(_libMode==='stg'){
-    const mk=document.createElement('button'); mk.className='act-btn green'; mk.textContent='Make Stage';
+    // stg mode: [Save Stage] + [⇣ Import] (accepts .stage files AND library bundles)
+    const mk=document.createElement('button'); mk.className='act-btn green'; mk.textContent='Save Stage';
     mk.onclick=()=>{ if(typeof openAddStageModal==='function')openAddStageModal(); };
     slot.appendChild(mk);
+    const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a stage file or a Perigee library export'; imp.textContent='⇣ Import';
+    const fin=document.createElement('input'); fin.type='file'; fin.accept='.stage,.json'; fin.style.display='none';
+    fin.onchange=function(){ if(typeof loadUserStageFile==='function')loadUserStageFile(this); }; imp.appendChild(fin); slot.appendChild(imp);
   } else {
-    const sv=document.createElement('button'); sv.className='act-btn green'; sv.textContent='Save LV';
-    sv.onclick=()=>{ if(typeof openSaveLVModal==='function')openSaveLVModal(); };
-    slot.appendChild(sv);
+    // veh mode: single [⇣ Load] — accepts .vehicle/.json single vehicles AND library bundles
+    const ld=document.createElement('label'); ld.className='act-btn'; ld.style.cursor='pointer'; ld.title='Load a saved vehicle or a Perigee library export'; ld.textContent='⇣ Load';
+    const fin=document.createElement('input'); fin.type='file'; fin.accept='.vehicle,.json'; fin.style.display='none';
+    fin.onchange=function(){ if(typeof libLoadVehicleFile==='function')libLoadVehicleFile(this); }; ld.appendChild(fin); slot.appendChild(ld);
   }
-  // Export / import the whole user library (vehicles + stages) in one file
-  const exp=document.createElement('button'); exp.className='act-btn'; exp.textContent='⇡ Export'; exp.title='Export all your saved vehicles + stages to one file';
-  exp.onclick=()=>{ if(typeof libExportMine==='function')libExportMine(); }; slot.appendChild(exp);
-  const imp=document.createElement('label'); imp.className='act-btn'; imp.style.cursor='pointer'; imp.title='Import a Perigee library file'; imp.textContent='⇣ Import';
-  const fin=document.createElement('input'); fin.type='file'; fin.accept='.json'; fin.style.display='none';
-  fin.onchange=function(){ if(typeof libImportMine==='function')libImportMine(this); }; imp.appendChild(fin); slot.appendChild(imp);
 }
 
 // ── master render + state transitions ──

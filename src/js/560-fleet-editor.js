@@ -304,7 +304,7 @@ function _fleetGet(id) {
   return _fleetEntries.find(e => e.fleetId === (id ?? _fleetSel)) ?? null;
 }
 
-function fleetRender() { fleetRenderList(); fleetRenderDetail(); }
+function fleetRender() { fleetRenderList(); fleetRenderDetail(); if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave(); }
 
 function fleetRenderList() {
   const el = document.getElementById('fleet-list');

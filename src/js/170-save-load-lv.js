@@ -51,15 +51,51 @@ function doSaveLV(){
   const name=document.getElementById('lv-save-name').value.trim()||'LV';
   const note=document.getElementById('lv-save-note').value.trim();
   const obj=buildLVObject(name,note);
-  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.vehicle');
   obj._sessionId=Date.now();userLVs.push(obj);buildPresets();closeModal('modal-save-lv');
+  showAlert('Saved "'+obj.name+'" to your library (My Stuff).','Vehicle Saved');
+}
+// Secondary action in the Save LV modal: download the current vehicle as a standalone .vehicle JSON,
+// without touching the in-app library. Does NOT close the modal.
+function downloadLVAsJSON(){
+  const name=(document.getElementById('lv-save-name')?.value.trim())||'LV';
+  const note=document.getElementById('lv-save-note')?.value.trim()||'';
+  const obj=buildLVObject(name,note);
+  downloadJSON(obj,name.replace(/[^a-z0-9_-]/gi,'_').toLowerCase()+'.vehicle');
 }
 function savePerformance(){openSaveCaseModal();} // legacy alias
+// Shared apply path for a single-vehicle object, used by loadLVFile and the
+// consolidated library Load button's routing.
+function applyLVFileObject(obj){
+  applyLVObject(obj);
+  if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){
+    obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();
+  }
+}
 function loadLVFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVObject(obj);if(!userLVs.find(lv=>lv.name===obj.name&&lv._sessionId===obj._sessionId)){obj._sessionId=obj._sessionId||Date.now();userLVs.push(obj);buildPresets();}}catch(err){showAlert('Invalid LV JSON: '+err.message,'Invalid File');}};
+  reader.onload=e=>{try{const obj=JSON.parse(e.target.result);applyLVFileObject(obj);}catch(err){showAlert('Invalid LV JSON: '+err.message,'Invalid File');}};
   reader.readAsText(file);input.value='';
+}
+// Consolidated library "Load" button (veh mode). Routes by content:
+//  - a library bundle (schema 'perigee-lib-v1') -> libImportMine's object path
+//  - a single vehicle (.vehicle/.json export)   -> applyLVFileObject
+function libLoadVehicleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let obj;
+    try{obj=JSON.parse(e.target.result);}catch(err){showAlert('Invalid file: '+err.message,'Invalid File');input.value='';return;}
+    if(obj&&obj.schema==='perigee-lib-v1'){
+      if(typeof libImportLibraryObject==='function')libImportLibraryObject(obj);
+    } else if(obj&&obj.name!==undefined&&(obj.stageData||obj.stageNames||obj.stages!==undefined)){
+      applyLVFileObject(obj);
+    } else {
+      showAlert('Unrecognized file — expected a saved vehicle (.vehicle/.json) or a Perigee library export.','Invalid File');
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
 }
 function applyLVObject(obj){
   currentStageNames=new Array(15).fill(null);

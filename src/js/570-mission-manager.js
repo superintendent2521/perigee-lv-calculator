@@ -361,6 +361,11 @@ function missionRenderDetail() {
       <input value="${m.name.replace(/"/g,'&quot;')}" class="sc-stage-name" style="font-size:13px;flex:1;max-width:340px;"
         oninput="missionRename('${id}',this.value)">
       <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button class="act-btn" onclick="missionUndo()" title="Undo (Ctrl+Z)"${(typeof _missionUndoCanUndo==='function'&&_missionUndoCanUndo())?'':' disabled'}>&#x21B6;</button>
+        <button class="act-btn" onclick="missionRedo()" title="Redo (Ctrl+Y)"${(typeof _missionUndoCanRedo==='function'&&_missionUndoCanRedo())?'':' disabled'}>&#x21B7;</button>
+        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
+        <button class="act-btn" onclick="missionExportReport('${id}')" title="Printable mission report">&#x2398; Report</button>
+        <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
         <div class="seg">
           <button class="${_missionViewMode === 'band' ? 'active' : ''}" onclick="missionSetView('${id}','band')">Band</button>
           <button class="${_missionViewMode === 'nodemap' ? 'active' : ''}" onclick="missionSetView('${id}','nodemap')">Orbit Map</button>
@@ -1777,6 +1782,8 @@ function missionRecompute(m) {
 
   m.vehicleIds = live.map(v => v.vehicleId);
   m.vehicleId = active ? active.vehicleId : (m.vehicleIds[0] || null);
+  if (typeof autosaveScheduleSave === 'function') autosaveScheduleSave();
+  if (typeof missionUndoCapture === 'function') missionUndoCapture(m);
 }
 
 // Rename an on-orbit vehicle via an in-app modal (no browser prompt). Persists by

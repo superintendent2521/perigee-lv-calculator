@@ -115,19 +115,26 @@ function doAddStage(andSave){
   buildStageLibrary();
 }
 
+// Consolidated stg-mode "Import" button. Routes by content:
+//  - a library bundle (schema 'perigee-lib-v1') -> libImportMine's object path
+//  - a single stage (.stage/.json export)        -> original apply-in-place path
 function loadUserStageFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    try{
-      const s=JSON.parse(e.target.result);
-      if(!s.name||s.dry===undefined){showAlert('Invalid stage file: missing name or dry mass.','Invalid File');return;}
-      s._userGenerated=true; // mark as user content on import
-      const cat=s._category||'Custom';
-      if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
-      userStagesByCategory[cat].unshift(s); // prepend so it appears first
-      buildStageLibrary();
-    }catch(err){showAlert('Invalid stage JSON: '+err.message,'Invalid File');}
+    let s;
+    try{s=JSON.parse(e.target.result);}catch(err){showAlert('Invalid stage JSON: '+err.message,'Invalid File');input.value='';return;}
+    if(s&&s.schema==='perigee-lib-v1'){
+      if(typeof libImportLibraryObject==='function')libImportLibraryObject(s);
+      input.value='';return;
+    }
+    if(!s.name||s.dry===undefined){showAlert('Invalid stage file: missing name or dry mass.','Invalid File');input.value='';return;}
+    s._userGenerated=true; // mark as user content on import
+    const cat=s._category||'Custom';
+    if(!userStagesByCategory[cat])userStagesByCategory[cat]=[];
+    userStagesByCategory[cat].unshift(s); // prepend so it appears first
+    buildStageLibrary();
+    input.value='';
   };
-  reader.readAsText(file);input.value='';
+  reader.readAsText(file);
 }

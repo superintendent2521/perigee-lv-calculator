@@ -87,7 +87,7 @@ function progMakeProgram(name) {
     nodeMapCustomNodes:    [],       // user-added nodes (Phase 8)
     nodeMapCustomEdges:    [],       // user-added edges between custom nodes
     nodeMapNodePos:        {},       // nodeId → {cx,cy} position overrides (drag-to-move)
-    nodeMapActiveNodes:    PROG_NM_NODES.filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
+    nodeMapActiveNodes:    (typeof PROG_NM_NODES !== 'undefined' ? PROG_NM_NODES : []).filter(n => n.zone === 'earth' && n.orbit?.type !== 'surface').map(n => n.id), // earth orbitals on by default; surface nodes tied to planet discs
     performanceCases:      [],       // archived perf cases (Phase 10)
     warnings:              [],
   };

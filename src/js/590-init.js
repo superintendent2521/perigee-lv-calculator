@@ -28,6 +28,7 @@ missionInit();
 })();
 
 // Delegated listeners for user-defined tracking
+let _stageCompDebounce=null;
 document.getElementById('stage-tbody').addEventListener('input',e=>{
   if(_suppressUD)return;
   // Clear the library name for the column being manually edited
@@ -36,7 +37,8 @@ document.getElementById('stage-tbody').addEventListener('input',e=>{
   if(td&&tr){
     const colIdx=[...tr.cells].indexOf(td)-1; // -1 for label column
     if(colIdx>=0&&colIdx<15){currentStageNames[colIdx]=null;stageSaved[colIdx]=false;}
-    buildStageComposition();
+    clearTimeout(_stageCompDebounce);
+    _stageCompDebounce=setTimeout(buildStageComposition,200);
   }
   markLVUserDefined();
 });

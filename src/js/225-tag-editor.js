@@ -57,18 +57,24 @@ function libExportMine(){
   if(!vehicles.length && !Object.keys(stages).length){ showAlert('No saved vehicles or stages to export yet. Save some first.','Nothing to Export'); return; }
   downloadJSON({schema:'perigee-lib-v1', exported:new Date().toISOString(), vehicles, stages}, 'my-library.json');
 }
+// Shared object-import path (bundle already parsed) — used by libImportMine
+// and by the consolidated Load/Import buttons that need to route a parsed
+// file to the library-bundle path after sniffing its schema.
+function libImportLibraryObject(o){
+  if(!o||o.schema!=='perigee-lib-v1'){ showAlert('Not a Perigee library export (.json with schema "perigee-lib-v1").','Invalid File'); return; }
+  let nv=0, ns=0;
+  (o.vehicles||[]).forEach(v=>{ if(!userLVs.find(x=>x.name===v.name)){ v._sessionId=v._sessionId||Date.now(); userLVs.push(v); nv++; } });
+  Object.entries(o.stages||{}).forEach(([c,arr])=>{ if(!userStagesByCategory[c])userStagesByCategory[c]=[];
+    (arr||[]).forEach(s=>{ if(!userStagesByCategory[c].find(x=>x.name===s.name)){ s._userGenerated=true; userStagesByCategory[c].unshift(s); ns++; } }); });
+  if(typeof libRender==='function')libRender();
+  showAlert(`Imported ${nv} vehicle(s) and ${ns} stage(s).`,'Library Imported');
+}
 function libImportMine(input){
   const f=input.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=e=>{ try{
     const o=JSON.parse(e.target.result);
-    if(o.schema!=='perigee-lib-v1'){ showAlert('Not a Perigee library export (.json with schema "perigee-lib-v1").','Invalid File'); return; }
-    let nv=0, ns=0;
-    (o.vehicles||[]).forEach(v=>{ if(!userLVs.find(x=>x.name===v.name)){ v._sessionId=v._sessionId||Date.now(); userLVs.push(v); nv++; } });
-    Object.entries(o.stages||{}).forEach(([c,arr])=>{ if(!userStagesByCategory[c])userStagesByCategory[c]=[];
-      (arr||[]).forEach(s=>{ if(!userStagesByCategory[c].find(x=>x.name===s.name)){ s._userGenerated=true; userStagesByCategory[c].unshift(s); ns++; } }); });
-    if(typeof libRender==='function')libRender();
-    showAlert(`Imported ${nv} vehicle(s) and ${ns} stage(s).`,'Library Imported');
+    libImportLibraryObject(o);
   }catch(err){ showAlert('Invalid library JSON: '+err.message,'Invalid File'); } };
   r.readAsText(f); input.value='';
 }

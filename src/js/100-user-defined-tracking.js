@@ -6,4 +6,5 @@ function markOrbitUserDefined(){
 }
 function markLVUserDefined(){
   if(!_suppressUD&&activePresetKey!=='user_defined'){activePresetKey='user_defined';userDefinedLV=true;buildPresets();}
+  if(typeof autosaveScheduleSave==='function')autosaveScheduleSave();
 }
