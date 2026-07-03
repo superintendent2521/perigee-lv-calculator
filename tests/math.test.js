@@ -250,6 +250,37 @@ approx('lvPerformance: booster single-object vs array-of-one margin equivalence'
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// preset integrity — every builtin preset's stageNames/boosterName must
+// resolve against STAGE_LIBRARY. A miss silently becomes a zero-mass ghost
+// stage ({dry:0,prop:0,...}) that "flies" to orbit alongside real stages
+// (caught live on Saturn V, 2026-07-03: 'Saturn V S-IVB' vs library name
+// 'Saturn 1B & V S-IVB').
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const psrc = ['src/js/020-state.js', 'src/js/040-builtin-art.js', 'src/js/210-stage-library.js', 'src/js/050-builtin-presets.js']
+    .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n');
+  const psb = { document: { getElementById: () => null }, console, window: {} };
+  vm.createContext(psb);
+  let loadOk = true;
+  try { vm.runInContext(psrc, psb); } catch (e) { loadOk = false; console.error('preset-module load error: ' + e.message); }
+  ok('preset modules load in vm', loadOk);
+  const lib = vm.runInContext('typeof STAGE_LIBRARY!=="undefined"?STAGE_LIBRARY:null', psb);
+  const presets = vm.runInContext('typeof BUILTIN_PRESETS!=="undefined"?BUILTIN_PRESETS:null', psb);
+  ok('STAGE_LIBRARY and BUILTIN_PRESETS present', !!lib && !!presets);
+  if (lib && presets) {
+    const names = new Set();
+    Object.values(lib).forEach(a => a.forEach(s => names.add(s.name)));
+    const missing = [];
+    presets.forEach(p => {
+      (p.stageNames || []).forEach(n => { if (!names.has(n)) missing.push(`${p.name} -> stage "${n}"`); });
+      if (p.boosterName && !names.has(p.boosterName)) missing.push(`${p.name} -> booster "${p.boosterName}"`);
+    });
+    ok(`all builtin preset stage/booster names resolve (${presets.length} presets)` +
+       (missing.length ? ' — MISSING: ' + missing.join('; ') : ''), missing.length === 0);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // summary
 // ═══════════════════════════════════════════════════════════════════════════
 

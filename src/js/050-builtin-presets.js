@@ -31,7 +31,7 @@ const BUILTIN_PRESETS=[
   },
   {
     name:'Thor-Able',
-    stageNames:['Thor DSV-2','Able (Thor-Able)'],
+    stageNames:['Thor DM-18','Able I (Thor)'],
     payload:90,
     fairingMass:0,
     fairingJettison:0,
@@ -45,7 +45,7 @@ const BUILTIN_PRESETS=[
   },
   {
     name:'Thor-Agena D',
-    stageNames:['Thor DSV-2','Agena D'],
+    stageNames:['Thor DM-21','Agena D'],
     payload:900,
     fairingMass:80,
     fairingJettison:2,
@@ -156,7 +156,7 @@ const BUILTIN_PRESETS=[
   },
   {
     name:'Saturn IB',
-    stageNames:['Saturn IB S-IB','Saturn IB S-IVB'],
+    stageNames:['Saturn IB S-IB','Saturn 1B & V S-IVB'],
     payload:21000,
     fairingMass:0,
     fairingJettison:0,
@@ -170,7 +170,7 @@ const BUILTIN_PRESETS=[
   },
   {
     name:'Saturn V',
-    stageNames:['Saturn V S-IC','Saturn V S-II','Saturn V S-IVB'],
+    stageNames:['Saturn V S-IC','Saturn V S-II','Saturn 1B & V S-IVB'],
     payload:118000,
     fairingMass:0,
     fairingJettison:0,
@@ -524,7 +524,7 @@ const BUILTIN_PRESETS=[
   },
   {
     name:'Molniya-M',
-    stageNames:['R-7 Blok A (core)','Soyuz Blok I','Blok L (kick)'],
+    stageNames:['R-7 Blok A (core)','Soyuz Blok I','Blok L (8S814)'],
     boosterName:'R-7 Blok B/V/G/D',
     boosterCount:4,
     payload:1900,
@@ -609,7 +609,7 @@ const BUILTIN_PRESETS=[
   {
     name:'Energia',
     stageNames:['Energia Blok Ts'],
-    boosterName:'Energia Zenit SRB',
+    boosterName:'Energia Zenit LRB',
     boosterCount:4,
     payload:100000,
     fairingMass:0,
