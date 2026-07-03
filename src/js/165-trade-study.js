@@ -6,10 +6,10 @@
 // deliberately not shared with calculate()'s local closure).
 let _tsRunToken=0;   // increments to cancel an in-flight chunked sweep
 let _tsResult=null;  // {xLabel,yLabel,xUnit,yUnit,series:[{name,points:[{x,y}]}],zeroLine}
-// Vehicle comparison selection: array of {kind:'builtin'|'user', idx, name}. Max 4.
-// The current DOM vehicle is always series 0 and is NOT stored in this array.
-let _tsCompareVehicles=[];
-const TS_MAX_COMPARE=4;
+// Vehicle comparison selection: array of {kind:'worksheet'|'builtin'|'user', idx, name}.
+// This array is now the ONLY source of sweep series — there is no implicit series 0.
+let _tsCompareVehicles=[{kind:'worksheet',idx:0,name:'Worksheet'}];
+const TS_MAX_COMPARE=5;
 const TS_SERIES_COLORS=['var(--accent)','var(--accent2)','var(--accent3)','var(--nm-earth)','var(--nm-lunar)'];
 
 // Trade Studies is now its own always-expanded page (#page-trades). Ensure the
@@ -54,11 +54,52 @@ function _tsOnOrbitDVCircular(parkingAlt,inc,siteLat){
 }
 
 const TS_VARS={
-  altitude:{label:'Parking Altitude',unit:'km',from:200,to:2000,dom:'parking-alt'},
+  destination:{label:'Destination',unit:'',from:0,to:0,dom:null},
+  altitude:{label:'Parking Altitude',unit:'km',from:200,to:10000,dom:'parking-alt'},
   inclination:{label:'Inclination',unit:'deg',from:0,to:90,dom:'inclination'},
   payload:{label:'Payload Mass',unit:'kg',from:0,to:20000,dom:'payload-mass'},
-  destination:{label:'Destination',unit:'',from:0,to:0,dom:null},
+  sensitivity:{label:'Sensitivity',unit:'',from:0,to:0,dom:null},
 };
+
+// ── Metric selector (y-axis) ──────────────────
+// Applies to numeric sweeps (altitude/inclination/payload), destination sweeps, and
+// the sensitivity/tornado sweep. 'maxpay' and 'payfrac' are disabled on the payload
+// sweep (x IS payload there — nonsensical) and auto-switch to 'margin'.
+const TS_METRICS={
+  maxpay:  {label:'Max Payload',unit:'kg',zeroLine:false},
+  margin:  {label:'ΔV Margin',unit:'m/s',zeroLine:true},
+  payfrac: {label:'Payload Fraction',unit:'%',zeroLine:false},
+  tdv:     {label:'Total ΔV',unit:'m/s',zeroLine:false},
+  tbt:     {label:'Total Burn Time',unit:'s',zeroLine:false},
+  tw:      {label:'Liftoff T:W',unit:'',zeroLine:false},
+};
+const TS_METRIC_ORDER=['maxpay','margin','payfrac','tdv','tbt','tw'];
+
+// Compute the chosen metric for a base vehicle at a given payload + orbit params.
+// onOrbitDV: fixed on-orbit ΔV to use (payload/altitude/inclination sweeps pass a
+// shared or per-point value; destination sweep passes the per-destination r.onOrbitDV).
+function _tsMetricAt(metric,base,payload,parkingAlt,onOrbitDV){
+  if(metric==='maxpay'){
+    const y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    return Number.isFinite(y)?y:0;
+  }
+  if(metric==='payfrac'){
+    const maxPay=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    if(!Number.isFinite(maxPay)||maxPay<=0)return 0;
+    const r=lvPerformance(base.stages,base.boosterArg,maxPay,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+    return r.tMas>0?(maxPay/r.tMas)*100:0;
+  }
+  const r=lvPerformance(base.stages,base.boosterArg,payload,base.fairingM,base.fairingJ,parkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+  if(metric==='margin')return Number.isFinite(r.margin)?r.margin:0;
+  if(metric==='tdv')return Number.isFinite(r.tDV)?r.tDV:0;
+  if(metric==='tbt')return Number.isFinite(r.tBT)?r.tBT:0;
+  if(metric==='tw')return r.A0>0?r.A0/G0:0;
+  return 0;
+}
+
+function _tsSelectedMetric(){
+  return document.getElementById('ts-metric')?.value||'maxpay';
+}
 
 // Destination sweep: which destinations are enabled. Keyed by `${planet}::${name}`.
 // Populated lazily on first render of the destination picker (Earth checked by default).
@@ -86,10 +127,17 @@ function tsRenderForm(){
         <div>
           <div class="sl" style="margin-bottom:4px;">Sweep Variable</div>
           <select id="ts-var" onchange="tsOnVarChange()" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;">
+            <option value="destination">Destination</option>
             <option value="altitude">Parking Altitude (km)</option>
             <option value="inclination">Inclination (deg)</option>
             <option value="payload">Payload Mass (kg)</option>
-            <option value="destination">Destination</option>
+            <option value="sensitivity">Sensitivity (tornado)</option>
+          </select>
+        </div>
+        <div id="ts-metric-field">
+          <div class="sl" style="margin-bottom:4px;">Metric</div>
+          <select id="ts-metric" onchange="tsOnMetricChange()" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;">
+            ${TS_METRIC_ORDER.map(k=>`<option value="${k}">${TS_METRICS[k].label}</option>`).join('')}
           </select>
         </div>
         <div id="ts-range-fields" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
@@ -97,12 +145,19 @@ function tsRenderForm(){
           <div><div class="sl" style="margin-bottom:4px;">To</div><input id="ts-to" type="number" style="width:90px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
           <div><div class="sl" style="margin-bottom:4px;">Steps</div><input id="ts-steps" type="number" value="20" min="2" max="60" style="width:70px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
         </div>
+        <div id="ts-sens-fields" style="display:none;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div>
+            <div class="sl" style="margin-bottom:4px;">Vehicle</div>
+            <select id="ts-sens-vehicle" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;max-width:220px;"></select>
+          </div>
+          <div><div class="sl" style="margin-bottom:4px;">Vary by ±%</div><input id="ts-sens-pct" type="number" value="10" min="1" max="90" style="width:70px;font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;"></div>
+        </div>
         <button class="act-btn green" onclick="tsRunSweep()">▶ Run Sweep</button>
         <button class="act-btn" id="ts-csv-btn" onclick="tsDownloadCSV()" disabled>Download CSV</button>
       </div>
       <div id="ts-dest-picker" style="display:none;border:1px solid var(--border);padding:8px 10px;margin-bottom:10px;max-height:220px;overflow:auto;"></div>
       <div style="border:1px solid var(--border);padding:8px 10px;margin-bottom:10px;">
-        <div class="sl" style="margin-bottom:6px;">Compare Vehicles <span style="color:var(--text-dim);font-weight:normal;">(current vehicle always included, up to ${TS_MAX_COMPARE} more)</span></div>
+        <div class="sl" style="margin-bottom:6px;">Compare Vehicles <span style="color:var(--text-dim);font-weight:normal;">(up to ${TS_MAX_COMPARE})</span></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
           <select id="ts-cmp-select" style="font-family:var(--mono);font-size:11px;background:var(--panel);color:var(--text-bright);border:1px solid var(--border-bright);padding:5px 8px;max-width:280px;">
             ${_tsCompareOptionsHTML()}
@@ -117,6 +172,7 @@ function tsRenderForm(){
       <div class="ts-chart-card" id="ts-chart-wrap"></div>
       <div id="ts-table-wrap" style="margin-top:10px;max-height:280px;overflow:auto;"></div>
     </div>`;
+  document.getElementById('ts-metric').value='maxpay';
   tsOnVarChange();
   tsRenderCompareChips();
 }
@@ -148,24 +204,32 @@ function tsToggleDest(key,on){
 // ── Vehicle comparison: selection UI ──────────
 
 function _tsCompareOptionsHTML(){
-  const opts=[];
+  const opts=[`<option value="worksheet:0">[Worksheet] Current Vehicles-page vehicle</option>`];
   (typeof BUILTIN_PRESETS!=='undefined'?BUILTIN_PRESETS:[]).forEach((p,i)=>{
     opts.push(`<option value="builtin:${i}">[Preset] ${_tsEsc(p.name)}</option>`);
   });
   (typeof userLVs!=='undefined'?userLVs:[]).forEach((v,i)=>{
     opts.push(`<option value="user:${i}">[My Stuff] ${_tsEsc(v.name)}</option>`);
   });
-  return opts.join('')||'<option disabled>No vehicles available</option>';
+  return opts.join('');
 }
 
 function _tsEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
+function _tsWorksheetLabel(){return (typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';}
+
 function tsAddCompareVehicle(){
   const sel=document.getElementById('ts-cmp-select');
   if(!sel||!sel.value)return;
-  if(_tsCompareVehicles.length>=TS_MAX_COMPARE){_tsSetError(`You can compare up to ${TS_MAX_COMPARE} additional vehicles.`);return;}
+  if(_tsCompareVehicles.length>=TS_MAX_COMPARE){_tsSetError(`You can compare up to ${TS_MAX_COMPARE} vehicles.`);return;}
   const [kind,idxStr]=sel.value.split(':');
   const idx=parseInt(idxStr);
+  if(kind==='worksheet'){
+    if(_tsCompareVehicles.some(cv=>cv.kind==='worksheet'))return;
+    _tsCompareVehicles.push({kind:'worksheet',idx:0,name:_tsWorksheetLabel()});
+    tsRenderCompareChips();
+    return;
+  }
   const src=kind==='builtin'?BUILTIN_PRESETS[idx]:userLVs[idx];
   if(!src)return;
   // Avoid duplicate entries
@@ -182,17 +246,37 @@ function tsRemoveCompareVehicle(i){
 function tsRenderCompareChips(){
   const wrap=document.getElementById('ts-cmp-chips');
   if(!wrap)return;
-  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
-  let html=`<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);border:1px solid var(--accent);padding:3px 8px;background:rgba(0,0,0,.2);">
-    <span style="width:9px;height:9px;background:${TS_SERIES_COLORS[0]};display:inline-block;"></span>Current: ${_tsEsc(curName)}</span>`;
+  let html='';
   _tsCompareVehicles.forEach((cv,i)=>{
-    const color=TS_SERIES_COLORS[(i+1)%TS_SERIES_COLORS.length];
+    const color=TS_SERIES_COLORS[i%TS_SERIES_COLORS.length];
+    const label=cv.kind==='worksheet'?_tsWorksheetLabel():cv.name;
     html+=`<span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-bright);border:1px solid var(--border-bright);padding:3px 8px;">
-      <span style="width:9px;height:9px;background:${color};display:inline-block;"></span>${_tsEsc(cv.name)}
+      <span style="width:9px;height:9px;background:${color};display:inline-block;"></span>${_tsEsc(label)}
       <span style="cursor:pointer;color:var(--text-dim);" onclick="tsRemoveCompareVehicle(${i})">✕</span></span>`;
   });
-  wrap.innerHTML=html;
+  wrap.innerHTML=html||'<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">No vehicles selected.</span>';
+  _tsRefreshSensVehicleOptions();
 }
+
+function _tsRefreshSensVehicleOptions(){
+  const sel=document.getElementById('ts-sens-vehicle');
+  if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML=_tsCompareVehicles.map((cv,i)=>{
+    const label=cv.kind==='worksheet'?_tsWorksheetLabel():cv.name;
+    return `<option value="${i}">${_tsEsc(label)}</option>`;
+  }).join('')||'<option disabled>No vehicles selected</option>';
+  if(prev!==''&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+}
+
+// Resolve a compare-list entry {kind,idx,name} to its base bundle. 'worksheet'
+// reads live DOM at run time (per the spec — must not be cached at selection time).
+function _tsResolveBase(cv){
+  if(cv.kind==='worksheet')return _tsCollectBase();
+  const src=cv.kind==='builtin'?BUILTIN_PRESETS[cv.idx]:userLVs[cv.idx];
+  return src?_tsVehicleToBase(src):null;
+}
+function _tsResolveLabel(cv){return cv.kind==='worksheet'?_tsWorksheetLabel():cv.name;}
 
 // Convert a saved/preset vehicle object (buildLVObject shape) into the same
 // {fairingM,fairingJ,siteLat,azMin,azMax,stages,boosterArg,parkingAlt,payload} bundle
@@ -221,20 +305,47 @@ function _tsVehicleToBase(vehObj){
 }
 
 function tsOnVarChange(){
-  const key=document.getElementById('ts-var')?.value||'altitude';
+  const key=document.getElementById('ts-var')?.value||'destination';
   const v=TS_VARS[key];
   const isDest=key==='destination';
+  const isSens=key==='sensitivity';
   const rangeEl=document.getElementById('ts-range-fields');
   const pickerEl=document.getElementById('ts-dest-picker');
-  if(rangeEl)rangeEl.style.display=isDest?'none':'flex';
+  const sensEl=document.getElementById('ts-sens-fields');
+  const metricSel=document.getElementById('ts-metric');
+  if(rangeEl)rangeEl.style.display=(isDest||isSens)?'none':'flex';
+  if(sensEl)sensEl.style.display=isSens?'flex':'none';
+  if(isSens)_tsRefreshSensVehicleOptions();
   if(pickerEl){
     pickerEl.style.display=isDest?'block':'none';
     if(isDest){_tsInitDestEnabled();pickerEl.innerHTML=_tsDestPickerHTML();}
   }
-  if(!isDest){
+  if(!isDest&&!isSens){
     const fromEl=document.getElementById('ts-from'),toEl=document.getElementById('ts-to');
     if(fromEl)fromEl.value=v.from;
     if(toEl)toEl.value=v.to;
+  }
+  // Payload sweep: maxpay/payfrac are nonsensical (x IS payload) — disable + auto-switch.
+  if(metricSel){
+    const maxOpt=metricSel.querySelector('option[value="maxpay"]');
+    const fracOpt=metricSel.querySelector('option[value="payfrac"]');
+    const disable=(key==='payload');
+    if(maxOpt)maxOpt.disabled=disable;
+    if(fracOpt)fracOpt.disabled=disable;
+    const noteEl=document.getElementById('ts-note');
+    if(disable&&(metricSel.value==='maxpay'||metricSel.value==='payfrac')){
+      metricSel.value='margin';
+      if(noteEl)noteEl.textContent='Max Payload / Payload Fraction are not meaningful on a payload-mass sweep (x is already payload) — switched to ΔV Margin.';
+    }
+  }
+}
+
+function tsOnMetricChange(){
+  const key=document.getElementById('ts-var')?.value||'destination';
+  const metricSel=document.getElementById('ts-metric');
+  if(key==='payload'&&metricSel&&(metricSel.value==='maxpay'||metricSel.value==='payfrac')){
+    _tsSetError('Max Payload / Payload Fraction are not meaningful on a payload-mass sweep.');
+    metricSel.value='margin';
   }
 }
 
@@ -245,8 +356,10 @@ function _tsSetError(msg){
 
 function tsRunSweep(){
   _tsSetError('');
-  const key=document.getElementById('ts-var')?.value||'altitude';
+  const key=document.getElementById('ts-var')?.value||'destination';
   if(key==='destination'){tsRunDestinationSweep();return;}
+  if(key==='sensitivity'){tsRunSensitivitySweep();return;}
+  if(!_tsCompareVehicles.length){_tsSetError('Add at least one vehicle.');return;}
   const v=TS_VARS[key];
   const from=parseFloat(document.getElementById('ts-from')?.value);
   const to=parseFloat(document.getElementById('ts-to')?.value);
@@ -255,14 +368,19 @@ function tsRunSweep(){
   if(from>=to){_tsSetError('From must be less than To.');return;}
   if(!Number.isFinite(steps)||steps<2||steps>60){_tsSetError('Steps must be an integer between 2 and 60.');return;}
 
-  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
-  // Series 0 = current DOM vehicle; series 1..N = selected comparison vehicles.
-  const seriesDefs=[{name:'Current: '+curName,base:_tsCollectBase(),isCurrent:true}];
-  _tsCompareVehicles.forEach(cv=>{
-    const src=cv.kind==='builtin'?BUILTIN_PRESETS[cv.idx]:userLVs[cv.idx];
-    if(!src)return;
-    seriesDefs.push({name:cv.name,base:_tsVehicleToBase(src),isCurrent:false});
-  });
+  let metric=_tsSelectedMetric();
+  if(key==='payload'&&(metric==='maxpay'||metric==='payfrac')){
+    metric='margin';
+    const metricSel=document.getElementById('ts-metric');
+    if(metricSel)metricSel.value='margin';
+  }
+  const metricDef=TS_METRICS[metric];
+
+  const seriesDefs=_tsCompareVehicles.map(cv=>{
+    const base=_tsResolveBase(cv);
+    return base?{name:_tsResolveLabel(cv),base}:null;
+  }).filter(Boolean);
+  if(!seriesDefs.length){_tsSetError('Add at least one vehicle.');return;}
 
   const xs=[];
   for(let i=0;i<steps;i++)xs.push(from+(to-from)*i/(steps-1));
@@ -273,17 +391,14 @@ function tsRunSweep(){
   if(csvBtn)csvBtn.disabled=true;
   _tsResult=null;
 
-  let xLabel=v.label,xUnit=v.unit,yLabel,yUnit,zeroLine=false;
+  let xLabel=v.label,xUnit=v.unit,yLabel=metricDef.label,yUnit=metricDef.unit,zeroLine=metricDef.zeroLine;
 
   if(key==='altitude'){
-    yLabel='Max Payload';yUnit='kg';
-    if(noteEl)noteEl.textContent='Varies: parking/target altitude (circular, apogee=perigee=parking). Holds constant: inclination, payload path, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV recomputed per point via the minimal circular-orbit plane-change formula (see 165-trade-study.js) — NOT calculate()\'s full elliptical logic.';
+    if(noteEl)noteEl.textContent=`Varies: parking/target altitude (circular, apogee=perigee=parking). Metric: ${metricDef.label}. Holds constant: inclination, payload path, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV recomputed per point via the minimal circular-orbit plane-change formula (see 165-trade-study.js) — NOT calculate()\'s full elliptical logic.`;
   }else if(key==='inclination'){
-    yLabel='Max Payload';yUnit='kg';
-    if(noteEl)noteEl.textContent='Varies: target inclination at the shared sweep parking altitude (circular orbit assumed). Holds constant: parking altitude, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV = plane-change only, via the minimal circular-orbit formula — NOT calculate()\'s full elliptical logic.';
+    if(noteEl)noteEl.textContent=`Varies: target inclination at the shared sweep parking altitude (circular orbit assumed). Metric: ${metricDef.label}. Holds constant: parking altitude, booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. On-orbit ΔV = plane-change only, via the minimal circular-orbit formula — NOT calculate()\'s full elliptical logic.`;
   }else{
-    yLabel='ΔV Margin';yUnit='m/s';zeroLine=true;
-    if(noteEl)noteEl.textContent='Varies: payload mass. Holds constant: parking altitude, inclination (on-orbit ΔV taken from the last Calculate run for the current vehicle, or 0 if none — same fixed value applied to all compared vehicles for a fair x-axis), booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle. Uses lvPerformance() margin directly (same math as Calculate).';
+    if(noteEl)noteEl.textContent=`Varies: payload mass. Metric: ${metricDef.label}. Holds constant: parking altitude, inclination (on-orbit ΔV taken from the last Calculate run for the current vehicle, or 0 if none — same fixed value applied to all compared vehicles for a fair x-axis), booster, all stage masses (per vehicle). Site latitude/azimuth is per-vehicle.`;
   }
 
   const fixedOnOrbitDV=(key==='payload')?((lastResult&&Number.isFinite(lastResult.onOrbitDV))?lastResult.onOrbitDV:0):null;
@@ -306,13 +421,12 @@ function tsRunSweep(){
       let y;
       if(key==='altitude'){
         const onOrbitDV=_tsOnOrbitDVCircular(x,curInc,base.siteLat);
-        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,x,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+        y=_tsMetricAt(metric,base,base.payload,x,onOrbitDV);
       }else if(key==='inclination'){
         const onOrbitDV=_tsOnOrbitDVCircular(sharedParkingAlt,x,base.siteLat);
-        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,sharedParkingAlt,onOrbitDV,base.siteLat,base.azMin,base.azMax);
+        y=_tsMetricAt(metric,base,base.payload,sharedParkingAlt,onOrbitDV);
       }else{
-        const r=lvPerformance(base.stages,base.boosterArg,x,base.fairingM,base.fairingJ,base.parkingAlt,fixedOnOrbitDV,base.siteLat,base.azMin,base.azMax);
-        y=r.margin;
+        y=_tsMetricAt(metric,base,x,base.parkingAlt,fixedOnOrbitDV);
       }
       pts.push({x,y:Number.isFinite(y)?y:0});
     }
@@ -324,10 +438,10 @@ function tsRunSweep(){
       setTimeout(chunk,0);
     }else{
       if(progEl)progEl.textContent='';
-      // Zero-clip capability curves (altitude/inclination): end the polyline at the
-      // last positive point, interpolating a clean zero-crossing x. The margin (payload)
-      // sweep is exempt — it legitimately has a negative region.
-      const clip=(key==='altitude'||key==='inclination');
+      // Zero-clip capability curves (altitude/inclination, maxpay/payfrac metrics only —
+      // these legitimately hit a hard zero; margin/tdv/tbt/tw are exempt, they may
+      // legitimately go negative (margin) or don't have a "capability cliff" meaning).
+      const clip=(key==='altitude'||key==='inclination')&&(metric==='maxpay'||metric==='payfrac');
       _tsResult={xLabel,xUnit,yLabel,yUnit,zeroLine,series,type:'line',clip};
       tsRenderChart(_tsResult);
       tsRenderTable(_tsResult);
@@ -348,21 +462,23 @@ function tsRunDestinationSweep(){
     });
   });
   if(!selected.length){_tsSetError('Select at least one destination.');return;}
+  if(!_tsCompareVehicles.length){_tsSetError('Add at least one vehicle.');return;}
 
-  const curName=(typeof loadedVehicleName!=='undefined'&&loadedVehicleName)?loadedVehicleName:'Worksheet';
-  const seriesDefs=[{name:'Current: '+curName,base:_tsCollectBase(),isCurrent:true}];
-  _tsCompareVehicles.forEach(cv=>{
-    const src=cv.kind==='builtin'?BUILTIN_PRESETS[cv.idx]:userLVs[cv.idx];
-    if(!src)return;
-    seriesDefs.push({name:cv.name,base:_tsVehicleToBase(src),isCurrent:false});
-  });
+  const metric=_tsSelectedMetric();
+  const metricDef=TS_METRICS[metric];
+
+  const seriesDefs=_tsCompareVehicles.map(cv=>{
+    const base=_tsResolveBase(cv);
+    return base?{name:_tsResolveLabel(cv),base}:null;
+  }).filter(Boolean);
+  if(!seriesDefs.length){_tsSetError('Add at least one vehicle.');return;}
 
   const token=++_tsRunToken;
   const noteEl=document.getElementById('ts-note');
   const csvBtn=document.getElementById('ts-csv-btn');
   if(csvBtn)csvBtn.disabled=true;
   _tsResult=null;
-  if(noteEl)noteEl.textContent='Varies: destination (per ORBIT_CATEGORIES). Holds constant: all stage masses, booster, fairing per vehicle. On-orbit ΔV per destination computed via the pinned pure destOnOrbitDV() (145-dest-dv.js) — same math as the main calculator. Impossible C3 (below escape minimum for the parking perigee) shows payload = 0.';
+  if(noteEl)noteEl.textContent=`Varies: destination (per ORBIT_CATEGORIES). Metric: ${metricDef.label} (margin/T:W/ΔV/burn-time metrics evaluated at each vehicle's current payload input). Holds constant: all stage masses, booster, fairing per vehicle. On-orbit ΔV per destination computed via the pinned pure destOnOrbitDV() (145-dest-dv.js) — same math as the main calculator. Impossible C3 (below escape minimum for the parking perigee) shows a blank/zero value.`;
 
   const progEl=document.getElementById('ts-progress');
   const series=seriesDefs.map(sd=>({name:sd.name,points:[]}));
@@ -382,8 +498,9 @@ function tsRunDestinationSweep(){
       const r=destOnOrbitDV(destArg,base.siteLat);
       let y=0;
       if(!r.error){
-        y=lvMaxPayload(base.stages,base.boosterArg,base.fairingM,base.fairingJ,r.parkingAlt,r.onOrbitDV,base.siteLat,base.azMin,base.azMax);
-        if(!Number.isFinite(y)||y<0)y=0;
+        y=_tsMetricAt(metric,base,base.payload,r.parkingAlt,r.onOrbitDV);
+        if(!Number.isFinite(y))y=0;
+        if((metric==='maxpay'||metric==='payfrac')&&y<0)y=0;
       }
       pts.push({x:dest.name,y,planet:dest.planet,error:r.error||null});
     }
@@ -395,8 +512,98 @@ function tsRunDestinationSweep(){
       setTimeout(chunk,0);
     }else{
       if(progEl)progEl.textContent='';
-      const anyNonzero=series.some(s=>s.points.some(p=>p.y>0));
-      _tsResult={xLabel:'Destination',xUnit:'',yLabel:'Max Payload',yUnit:'kg',zeroLine:false,series,type:'bar',anyNonzero};
+      const anyNonzero=series.some(s=>s.points.some(p=>!p.error&&p.y!==0));
+      _tsResult={xLabel:'Destination',xUnit:'',yLabel:metricDef.label,yUnit:metricDef.unit,zeroLine:false,series,type:'bar',anyNonzero};
+      tsRenderChart(_tsResult);
+      tsRenderTable(_tsResult);
+      if(csvBtn)csvBtn.disabled=false;
+    }
+  }
+  chunk();
+}
+
+// ── Sensitivity / tornado sweep ──────────
+// Single-vehicle: for each stage parameter (isp, dry, prop) and booster-group
+// parameter (prop, thrust, isp) if present, evaluate the chosen metric at
+// param*(1-p%) and param*(1+p%), holding everything else at baseline.
+
+function _tsSensParamList(base){
+  const params=[];
+  base.stages.forEach((sd,i)=>{
+    const label=`Stage ${i+1}`;
+    params.push({label:`${label} Isp`,path:['stages',i,'isp']});
+    params.push({label:`${label} Dry Mass`,path:['stages',i,'dry']});
+    params.push({label:`${label} Propellant`,path:['stages',i,'prop']});
+  });
+  (base.boosterArg||[]).forEach((g,i)=>{
+    const label=(base.boosterArg.length>1)?`Booster Group ${i+1}`:'Booster';
+    params.push({label:`${label} Propellant`,path:['boosterArg',i,'prop']});
+    params.push({label:`${label} Thrust`,path:['boosterArg',i,'thrust']});
+    params.push({label:`${label} Isp`,path:['boosterArg',i,'isp']});
+  });
+  return params;
+}
+
+// Deep-clone base + apply a fractional multiplier at `path`, return the perturbed base.
+function _tsPerturbBase(base,path,mult){
+  const clone={...base,stages:base.stages.map(s=>({...s})),boosterArg:base.boosterArg?base.boosterArg.map(g=>({...g})):null};
+  const [group,idx,field]=path;
+  const target=clone[group][idx];
+  target[field]=target[field]*mult;
+  return clone;
+}
+
+function tsRunSensitivitySweep(){
+  if(!_tsCompareVehicles.length){_tsSetError('Add at least one vehicle.');return;}
+  const vIdx=parseInt(document.getElementById('ts-sens-vehicle')?.value);
+  const cv=_tsCompareVehicles[Number.isFinite(vIdx)?vIdx:0];
+  if(!cv){_tsSetError('Add at least one vehicle.');return;}
+  const base=_tsResolveBase(cv);
+  if(!base){_tsSetError('Selected vehicle could not be resolved.');return;}
+  const pct=parseFloat(document.getElementById('ts-sens-pct')?.value);
+  if(!Number.isFinite(pct)||pct<=0||pct>=100){_tsSetError('Vary by ±% must be between 0 and 100.');return;}
+  const metric=_tsSelectedMetric();
+  const metricDef=TS_METRICS[metric];
+  const p=pct/100;
+
+  const params=_tsSensParamList(base);
+  if(!params.length){_tsSetError('Selected vehicle has no stages to vary.');return;}
+
+  const baselineY=_tsMetricAt(metric,base,base.payload,base.parkingAlt,
+    (lastResult&&Number.isFinite(lastResult.onOrbitDV))?lastResult.onOrbitDV:0);
+
+  const token=++_tsRunToken;
+  const noteEl=document.getElementById('ts-note');
+  const csvBtn=document.getElementById('ts-csv-btn');
+  if(csvBtn)csvBtn.disabled=true;
+  _tsResult=null;
+  if(noteEl)noteEl.textContent=`Sensitivity (tornado) for ${_tsEsc(_tsResolveLabel(cv))}. Metric: ${metricDef.label}. Each parameter varied independently by ±${pct}% around baseline; all others held at baseline (current payload input, on-orbit ΔV from the last Calculate run or 0).`;
+
+  const progEl=document.getElementById('ts-progress');
+  const rows=params.map(pr=>({param:pr.label,low:0,high:0}));
+  const fixedOnOrbitDV=(lastResult&&Number.isFinite(lastResult.onOrbitDV))?lastResult.onOrbitDV:0;
+  let i=0;
+
+  function chunk(){
+    if(token!==_tsRunToken)return;
+    const end=Math.min(i+2,params.length);
+    for(;i<end;i++){
+      const pr=params[i];
+      const lowBase=_tsPerturbBase(base,pr.path,1-p);
+      const highBase=_tsPerturbBase(base,pr.path,1+p);
+      const lowY=_tsMetricAt(metric,lowBase,lowBase.payload,lowBase.parkingAlt,fixedOnOrbitDV);
+      const highY=_tsMetricAt(metric,highBase,highBase.payload,highBase.parkingAlt,fixedOnOrbitDV);
+      rows[i].low=Number.isFinite(lowY)?lowY:0;
+      rows[i].high=Number.isFinite(highY)?highY:0;
+    }
+    if(progEl)progEl.textContent=`computing ${i}/${params.length} parameters`;
+    if(i<params.length){
+      setTimeout(chunk,0);
+    }else{
+      if(progEl)progEl.textContent='';
+      rows.forEach(r=>{r.swing=Math.abs(r.high-r.low);});
+      rows.sort((a,b)=>b.swing-a.swing);
+      _tsResult={type:'tornado',xLabel:'Parameter',xUnit:'',yLabel:metricDef.label,yUnit:metricDef.unit,baseline:baselineY,rows,vehicleName:_tsResolveLabel(cv),pct};
       tsRenderChart(_tsResult);
       tsRenderTable(_tsResult);
       if(csvBtn)csvBtn.disabled=false;
@@ -408,6 +615,7 @@ function tsRunDestinationSweep(){
 function tsRenderTable(res){
   const wrap=document.getElementById('ts-table-wrap');
   if(!wrap)return;
+  if(res.type==='tornado'){tsRenderTornadoTable(res);return;}
   const n=res.series.length;
   const maxLen=Math.max(...res.series.map(s=>s.points.length));
   let rows='';
@@ -429,6 +637,27 @@ function tsRenderTable(res){
     <tbody>${rows}</tbody></table>`;
 }
 
+function tsRenderTornadoTable(res){
+  const wrap=document.getElementById('ts-table-wrap');
+  const unitSuffix=res.yUnit?` (${res.yUnit})`:'';
+  const rows=res.rows.map(r=>`<tr>
+    <td style="padding:2px 8px;border-bottom:1px solid var(--border);">${_tsEsc(r.param)}</td>
+    <td style="padding:2px 8px;border-bottom:1px solid var(--border);">${_tsFmt(r.low)}</td>
+    <td style="padding:2px 8px;border-bottom:1px solid var(--border);">${_tsFmt(res.baseline)}</td>
+    <td style="padding:2px 8px;border-bottom:1px solid var(--border);">${_tsFmt(r.high)}</td>
+    <td style="padding:2px 8px;border-bottom:1px solid var(--border);">${_tsFmt(r.swing)}</td>
+  </tr>`).join('');
+  wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:9px;color:var(--text-bright);">
+    <thead><tr>
+      <th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">Parameter</th>
+      <th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">−${res.pct}%${unitSuffix}</th>
+      <th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">Baseline${unitSuffix}</th>
+      <th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">+${res.pct}%${unitSuffix}</th>
+      <th style="text-align:left;padding:2px 8px;color:var(--text-dim);border-bottom:1px solid var(--border-bright);">Swing${unitSuffix}</th>
+    </tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
 function _tsFmt(v){return Number.isFinite(v)?(Math.abs(v)>=1000?v.toLocaleString(undefined,{maximumFractionDigits:1}):v.toFixed(2)):'—';}
 function _tsFmtX(v){return typeof v==='string'?_tsEsc(v):_tsFmt(v);}
 
@@ -436,6 +665,7 @@ function tsRenderChart(res){
   const wrap=document.getElementById('ts-chart-wrap');
   if(!wrap)return;
   if(res.type==='bar'){tsRenderBarChart(res);return;}
+  if(res.type==='tornado'){tsRenderTornadoChart(res);return;}
   tsRenderLineChart(res);
 }
 
@@ -563,7 +793,7 @@ function tsRenderLineChart(res){
 function tsRenderBarChart(res){
   const wrap=document.getElementById('ts-chart-wrap');
   if(!res.anyNonzero){
-    wrap.innerHTML=`<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:24px;text-align:center;border:1px dashed var(--border);">No capability at these destinations — every compared vehicle returns zero payload (ΔV insufficient or destination C3 unreachable). Try fewer/closer destinations or a bigger vehicle.</div>`;
+    wrap.innerHTML=`<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:24px;text-align:center;border:1px dashed var(--border);">No capability at these destinations — every compared vehicle returns zero for this metric (ΔV insufficient or destination C3 unreachable). Try fewer/closer destinations, a different metric, or a bigger vehicle.</div>`;
     return;
   }
   const W=960,H=380,ML=70,MR=24,MT=16,MB=90;
@@ -571,11 +801,13 @@ function tsRenderBarChart(res){
   const dests=res.series[0].points.map(p=>p.x);
   const nGroups=dests.length;
   const nSeries=res.series.length;
-  let yMax=0;
-  res.series.forEach(s=>s.points.forEach(p=>{if(p.y>yMax)yMax=p.y;}));
-  if(yMax<=0)yMax=1;
-  yMax*=1.15;
-  const yToPx=y=>MT+plotH-(y/yMax)*plotH;
+  let yMin=0,yMax=0;
+  res.series.forEach(s=>s.points.forEach(p=>{if(p.y>yMax)yMax=p.y;if(p.y<yMin)yMin=p.y;}));
+  if(yMax<=0&&yMin>=0)yMax=1;
+  const range=(yMax-yMin)||1;
+  yMax+=range*0.15; if(yMin<0)yMin-=range*0.05;
+  const yToPx=y=>MT+plotH-(y-yMin)/(yMax-yMin)*plotH;
+  const zeroPx=yToPx(0);
 
   const groupW=plotW/nGroups;
   const barPad=groupW*0.12;
@@ -585,7 +817,7 @@ function tsRenderBarChart(res){
   const nTicks=6;
   let yTicks='';
   for(let i=0;i<=nTicks;i++){
-    const yv=yMax*i/nTicks;
+    const yv=yMin+(yMax-yMin)*i/nTicks;
     const py=yToPx(yv);
     yTicks+=`<line x1="${ML}" y1="${py}" x2="${ML+plotW}" y2="${py}" stroke="var(--border)" stroke-width="1"/>`;
     yTicks+=`<text x="${ML-6}" y="${py+3}" font-size="9" fill="var(--text-dim)" text-anchor="end" font-family="var(--mono)">${_tsFmt(yv)}</text>`;
@@ -599,11 +831,11 @@ function tsRenderBarChart(res){
       const p=res.series[si].points[g];
       const color=TS_SERIES_COLORS[si%TS_SERIES_COLORS.length];
       const bx=gx+barPad+si*barW;
-      const by=yToPx(p.y);
-      const bh=(MT+plotH)-by;
-      const title=p.error?_tsEsc(p.error):`${_tsEsc(res.series[si].name)}: ${_tsFmt(p.y)} kg`;
+      const by=Math.min(yToPx(p.y),zeroPx);
+      const bh=Math.abs(yToPx(p.y)-zeroPx);
+      const title=p.error?_tsEsc(p.error):`${_tsEsc(res.series[si].name)}: ${_tsFmt(p.y)} ${res.yUnit||''}`;
       bars+=`<g><title>${title}</title><rect x="${bx}" y="${by}" width="${Math.max(barW-1.5,0.5)}" height="${Math.max(bh,0)}" fill="${color}"/>
-        ${p.y>0?`<text x="${bx+barW/2}" y="${by-3}" font-size="8" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(p.y)}</text>`:''}</g>`;
+        ${p.y!==0?`<text x="${bx+barW/2}" y="${by-3}" font-size="8" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(p.y)}</text>`:''}</g>`;
     }
   }
 
@@ -617,7 +849,7 @@ function tsRenderBarChart(res){
     <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
     ${yTicks}
     <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
-    <line x1="${ML}" y1="${MT+plotH}" x2="${ML+plotW}" y2="${MT+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    <line x1="${ML}" y1="${zeroPx}" x2="${ML+plotW}" y2="${zeroPx}" stroke="var(--border-bright)" stroke-width="1"/>
     ${bars}
     ${xLabels}
     <text x="12" y="${MT+plotH/2}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" transform="rotate(-90 12 ${MT+plotH/2})">${res.yLabel} (${res.yUnit})</text>
@@ -625,8 +857,76 @@ function tsRenderBarChart(res){
   wrap.innerHTML=svg;
 }
 
+// Horizontal tornado chart for the Sensitivity sweep. One bar per parameter,
+// sorted by |high-low| descending, spanning low->high around a baseline vertical line.
+function tsRenderTornadoChart(res){
+  const wrap=document.getElementById('ts-chart-wrap');
+  const rows=res.rows;
+  const rowH=26,padTop=16,padBot=40,ML=200,MR=30;
+  const H=padTop+padBot+rowH*rows.length;
+  const W=960;
+  const plotW=W-ML-MR,plotH=H-padTop-padBot;
+
+  let xMin=Math.min(res.baseline,...rows.map(r=>Math.min(r.low,r.high)));
+  let xMax=Math.max(res.baseline,...rows.map(r=>Math.max(r.low,r.high)));
+  if(xMin===xMax){xMin-=1;xMax+=1;}
+  const xPad=(xMax-xMin)*0.08||1;
+  xMin-=xPad;xMax+=xPad;
+  const xToPx=x=>ML+(x-xMin)/(xMax-xMin)*plotW;
+
+  const nTicks=6;
+  let xTicks='';
+  for(let i=0;i<=nTicks;i++){
+    const xv=xMin+(xMax-xMin)*i/nTicks;
+    const px=xToPx(xv);
+    xTicks+=`<line x1="${px}" y1="${padTop}" x2="${px}" y2="${padTop+plotH}" stroke="var(--border)" stroke-width="1"/>`;
+    xTicks+=`<text x="${px}" y="${padTop+plotH+16}" font-size="9" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(xv)}</text>`;
+  }
+
+  const baselinePx=xToPx(res.baseline);
+  const baselineLine=`<line x1="${baselinePx}" y1="${padTop}" x2="${baselinePx}" y2="${padTop+plotH}" stroke="var(--border-bright)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+
+  let bars='',labels='';
+  rows.forEach((r,i)=>{
+    const cy=padTop+i*rowH+rowH/2;
+    const bh=rowH*0.55;
+    const lowPx=xToPx(Math.min(r.low,r.high)), highPx=xToPx(Math.max(r.low,r.high));
+    const color=TS_SERIES_COLORS[0];
+    const title=`${_tsEsc(r.param)}: −${res.pct}%=${_tsFmt(r.low)}, baseline=${_tsFmt(res.baseline)}, +${res.pct}%=${_tsFmt(r.high)}`;
+    bars+=`<g><title>${title}</title><rect x="${lowPx}" y="${cy-bh/2}" width="${Math.max(highPx-lowPx,0.5)}" height="${bh}" fill="${color}" opacity="0.85"/></g>`;
+    labels+=`<text x="${ML-8}" y="${cy+3}" font-size="9" fill="var(--text-bright)" text-anchor="end" font-family="var(--mono)">${_tsEsc(r.param)}</text>`;
+  });
+
+  const svg=`<svg id="ts-svg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+    ${xTicks}
+    <line x1="${ML}" y1="${padTop}" x2="${ML}" y2="${padTop+plotH}" stroke="var(--border-bright)" stroke-width="1"/>
+    ${baselineLine}
+    ${bars}
+    ${labels}
+    <text x="${ML+plotW/2}" y="${H-4}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${res.yLabel} (${res.yUnit})</text>
+  </svg>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:6px;">each parameter varied independently; all others at baseline.</div>`;
+  wrap.innerHTML=svg;
+}
+
 function tsDownloadCSV(){
   if(!_tsResult){showAlert('Run a sweep first.','No Data');return;}
+  if(_tsResult.type==='tornado'){
+    const unitSuffix=_tsResult.yUnit?` (${_tsResult.yUnit})`:'';
+    const header=['Parameter',`-${_tsResult.pct}%${unitSuffix}`,`Baseline${unitSuffix}`,`+${_tsResult.pct}%${unitSuffix}`,`Swing${unitSuffix}`];
+    const lines=[header.join(',')];
+    _tsResult.rows.forEach(r=>{
+      lines.push([`"${r.param.replace(/"/g,'""')}"`,r.low,_tsResult.baseline,r.high,r.swing].join(','));
+    });
+    const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='trade_study_tornado.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return;
+  }
   const seriesNames=_tsResult.series.map(s=>s.name.replace(/"/g,'""'));
   const header=[`${_tsResult.xLabel} (${_tsResult.xUnit})`,...seriesNames.map(n=>`"${n}" — ${_tsResult.yLabel} (${_tsResult.yUnit})`)];
   const lines=[header.join(',')];
