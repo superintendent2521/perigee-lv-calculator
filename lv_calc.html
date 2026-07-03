@@ -4678,7 +4678,7 @@ function tsRenderBarChart(res){
       const bh=Math.abs(yToPx(p.y)-zeroPx);
       const title=p.error?_tsEsc(p.error):`${_tsEsc(res.series[si].name)}: ${_tsFmt(p.y)} ${res.yUnit||''}`;
       bars+=`<g><title>${title}</title><rect x="${bx}" y="${by}" width="${Math.max(barW-1.5,0.5)}" height="${Math.max(bh,0)}" fill="${color}"/>
-        ${p.y!==0?`<text x="${bx+barW/2}" y="${by-3}" font-size="8" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${_tsFmt(p.y)}</text>`:''}</g>`;
+        ${p.y!==0?`<text x="${bx+barW/2+3}" y="${by-4}" font-size="8" fill="var(--text-dim)" text-anchor="start" font-family="var(--mono)" transform="rotate(-90 ${bx+barW/2+3} ${by-4})">${_tsFmt(p.y)}</text>`:''}</g>`;
     }
   }
 
