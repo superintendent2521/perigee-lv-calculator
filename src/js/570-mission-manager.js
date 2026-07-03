@@ -1203,6 +1203,13 @@ function _missionStageOptions(fv, detailFn) {
 // match or joined stage names for stages that were never owner-tagged.
 function _missionVehicleBaseName(fv) {
   if (!fv || !fv.stages || !fv.stages.length) return fv ? fv.name : '?';
+  // a vehicle with exactly ONE stage is named by that stage's own label (e.g. a
+  // separated "LM Descent Stage"), not the parent spacecraft + counter — whether
+  // it's an LV stage or a lone spacecraft stage.
+  if (fv.stages.length === 1) {
+    const s = fv.stages[0];
+    return s._ownerLabel || _missionStageLabelById(s.stageDefinitionId);
+  }
   // summarise: the vehicle's TOPMOST launch stage (the part leading it) + each
   // distinct spacecraft payload aboard. A lone S-II reads "S-II", an S-IVB+CSM
   // stack reads "S-IVB + Apollo CSM", and it stays correct after LV stages split.
@@ -1686,9 +1693,16 @@ function missionRecompute(m) {
     fv.stages.forEach((st, i) => {
       const sc = _missionStageOwner(st.stageDefinitionId);
       if (sc) {
-        // a whole spacecraft is ONE owner (CSM stays one track / name)
-        st._ownerKey = 'sc:' + sc.spacecraftId + '#' + kid;
-        st._ownerLabel = sc.name;
+        // each SC stage is its OWN owner (keyed by its stage definition, i.e. the
+        // specific ascent/descent/service module), so separating a multi-stage
+        // spacecraft (e.g. LM ascent/descent) yields distinctly-named, distinctly-
+        // tracked vehicles instead of "Apollo LM #1 / #2". An intact multi-stage
+        // spacecraft still renders as one band track (co-located owners collapse),
+        // and its display name falls back to the spacecraft name via
+        // _missionVehicleBaseName for as long as it has >1 stage aboard.
+        st._ownerKey = 'sc:' + sc.spacecraftId + ':' + st.stageDefinitionId + '#' + kid;
+        const stDef = (sc.stages || []).find(d => d.stageId === st.stageDefinitionId);
+        st._ownerLabel = (stDef && stDef.name) || sc.name;
       } else {
         // each LAUNCH-VEHICLE stage is its OWN owner, so separating LV stages
         // (e.g. S-IVB from S-II) yields two distinctly-named vehicles instead of
@@ -2449,9 +2463,73 @@ function _missionDockLogCardHTML(entry) {
 // matching event card — it never rewinds vehicle state), so this preserves that
 // semantic unchanged.
 function _missionMultiVehicleHTML(m) {
+  const id = m.missionId;
+  const sel = _missionSelectedEventSnapshotEntry(m);   // non-null = show state AS OF that event
+
+  if (sel) {
+    // ── event-scoped view: read the per-event snapshot captured during recompute
+    //    instead of live vehicle state. ──
+    const entry = sel.entry;
+    const snap = entry.snapshot || [];
+    if (!snap.length) return '';
+    const rows = snap.map(v => {
+      const isActive = entry.activeOriginKey && v.originKey === entry.activeOriginKey;
+      const expended = v.status === 'EXPENDED';
+      const os = v.orbit || null;
+      const orbitLine = os
+        ? `<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">${os.surface ? (os.body || 'Earth') + ' surface' : `${os.body || 'Earth'} · ${Math.round(os.perigee ?? os.apogee ?? 0).toLocaleString()}×${Math.round(os.apogee ?? os.perigee ?? 0).toLocaleString()} km · ${(os.inclination || 0)}&deg;`}</span>`
+        : '';
+      return `<div style="display:flex;flex-direction:column;gap:4px;padding:6px 8px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-left:3px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin-bottom:4px;background:${isActive ? 'rgba(136,198,87,.14)' : 'transparent'};${expended ? 'opacity:.6;' : ''}">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          <span style="flex-shrink:0;width:12px;font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-dim)'};">${isActive ? '●' : '○'}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:${isActive ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isActive ? '600' : '400'};flex:1 1 100px;min-width:80px;white-space:normal;word-break:break-word;line-height:1.3;">${v.name}</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${(v.stages || []).length} stages</span>
+          ${expended ? `<span style="font-family:var(--mono);font-size:9px;color:var(--error,#e06c75)">${v.status}</span>` : ''}
+        </div>
+        ${orbitLine ? `<div>${orbitLine}</div>` : ''}
+        <div style="display:flex;gap:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);">
+          <span>&Delta;V left: <span style="color:${v.remDv > 0 ? 'var(--accent3)' : 'var(--accent2)'}">${v.remDv.toLocaleString()} m/s</span></span>
+          <span>Prop left: <span style="color:var(--text-bright)">${v.remProp.toLocaleString()} kg</span></span>
+        </div>
+      </div>`;
+    }).join('');
+
+    // mission totals AS OF this event: sum m.log contributions up to & including this
+    // event's authored index (same accounting missionBudget() does, just truncated).
+    const authIdx = entry._authIdx != null ? entry._authIdx : sel.index;
+    let dvExpended = 0, propConsumed = 0, payloadMass = 0;
+    for (let i = 0; i <= authIdx && i < m.log.length; i++) {
+      const e = m.log[i];
+      if (e.type === 'LAUNCH') {
+        const sr = e.stagingResult || {};
+        dvExpended += sr.dvDelivered || 0;
+        propConsumed += (sr.stages || []).reduce((s, st) => s + (st.propBurned || 0), 0);
+        payloadMass = e.payloadMass || payloadMass;
+      } else if (e.type === 'BURN' || e.type === 'MANEUVER') {
+        dvExpended += e.dv_actual || 0;
+        propConsumed += e.prop_consumed || 0;
+      }
+    }
+    const activeSnap = entry.activeOriginKey ? snap.find(v => v.originKey === entry.activeOriginKey) : null;
+    const capRem = activeSnap ? activeSnap.remDv : 0;
+    const capColor = capRem > 0 ? 'var(--accent3)' : 'var(--accent2)';
+    const totals = `<div style="display:flex;flex-wrap:wrap;gap:4px 14px;padding-top:6px;margin-top:4px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text-dim);">
+        <span>&Delta;V expended: <span style="color:var(--text-bright)">${Math.round(dvExpended).toLocaleString()} m/s</span></span>
+        <span>Prop consumed: <span style="color:var(--text-bright)">${Math.round(propConsumed).toLocaleString()} kg</span></span>
+        <span>&Delta;V left (active): <span style="color:${capColor}">${Math.round(capRem).toLocaleString()} m/s</span></span>
+        <span>Payload: <span style="color:var(--text-bright)">${Math.round(payloadMass).toLocaleString()} kg</span></span>
+      </div>`;
+
+    const evLabel = entry.type + (sel.index != null && m._expanded ? ' ' + (sel.index + 1) : '');
+    return `<div class="mcc-box">
+        <div class="mcc-box-hdr">Vehicles &amp; Mission State — at ${evLabel}</div>
+        ${rows}
+        ${totals}
+      </div>`;
+  }
+
   const live = _missionLiveVehicles(m);
   if (!live.length) return '';
-  const id = m.missionId;
 
   const rows = live.map(({ id: vid, fv }) => {
     const isActive = vid === m.vehicleId;
@@ -2494,7 +2572,7 @@ function _missionMultiVehicleHTML(m) {
   // Selecting a row sets the focused vehicle that the Orbit Map edits and that new
   // events default to.
   return `<div class="mcc-box">
-      <div class="mcc-box-hdr">Vehicles &amp; Mission State</div>
+      <div class="mcc-box-hdr">Vehicles &amp; Mission State — current</div>
       ${rows}
       ${totals}
     </div>`;
@@ -3095,6 +3173,28 @@ function missionBandPickVehicle(id, vid, idx) {
   _missionBandOpenEvent(id, idx);
 }
 
+// Resolve the currently "selected" event for the left panel's state-as-of display:
+// prefers an expanded EVENTS-panel card (authored m.log entry), falling back to the
+// band-view scrub position. Returns the EXPANDED-log entry (has .snapshot) or null
+// (meaning: no selection — show live/current state). Selecting the LAST event (or
+// nothing) is treated as "current".
+function _missionSelectedEventSnapshotEntry(m) {
+  if (!m) return null;
+  const exp = (m._expanded && m._expanded.length) ? m._expanded : m.log;
+  if (!exp.length) return null;
+  let authIdx = m.log.findIndex(e => e && e._expanded);
+  let expIdx = -1;
+  if (authIdx >= 0) {
+    expIdx = exp.findIndex(e => e._authIdx === authIdx && !e._rep);
+    if (expIdx < 0) expIdx = exp.findIndex(e => e._authIdx === authIdx);
+  } else if (_missionBandScrub != null) {
+    expIdx = _missionBandScrub;
+  }
+  if (expIdx < 0 || expIdx == null) return null;
+  if (expIdx >= exp.length - 1) return null;   // last event === current/live
+  return { entry: exp[expIdx], index: expIdx };
+}
+
 // Selecting a state in the band view opens the matching event card (expanded + scrolled
 // into view). idx is an index into the EXPANDED log; map it back to the authored card.
 function _missionBandOpenEvent(id, idx) {
@@ -3478,37 +3578,10 @@ function _missionBandViewHTML(m) {
   }
   legendHTML += '</div>';
 
-  // ── state monitor: the per-event snapshot of EVERY vehicle at the scrubbed event ──
-  const _explog = (m._expanded && m._expanded.length) ? m._expanded : m.log;
-  const scrubEvent = _explog[scrub];
-  const snap = scrubEvent && scrubEvent.snapshot ? scrubEvent.snapshot : null;
-  const activeKey = scrubEvent ? scrubEvent.activeOriginKey : null;
-  const fmtOrbit = o => !o ? '—' : (o.surface ? o.body + ' surface'
-    : `${o.body} ${Math.round(o.perigee).toLocaleString()}${(o.apogee && o.apogee !== o.perigee) ? '×' + Math.round(o.apogee).toLocaleString() : ''} km · ${Math.round(o.inclination || 0)}°`);
-  let monitorHTML = '';
-  if (snap && snap.length) {
-    const rows = snap.map(v => {
-      const isAct = activeKey && v.originKey === activeKey;
-      const dead = v.status === 'EXPENDED' || v.status === 'RECOVERED';
-      return `<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);${dead ? 'opacity:.5;' : ''}">
-        <span style="font-size:11px;color:${isAct ? 'var(--accent3)' : 'var(--text-bright)'};font-weight:${isAct ? '700' : '400'};min-width:120px;">${isAct ? '● ' : ''}${v.name}${dead ? ' (' + v.status.toLowerCase() + ')' : ''}</span>
-        <span>${fmtOrbit(v.orbit)}</span>
-        <span style="margin-left:auto;">ΔV <span style="color:var(--accent)">${v.remDv.toLocaleString()}</span> m/s</span>
-        <span>prop <span style="color:var(--accent)">${v.remProp.toLocaleString()}</span> kg</span>
-      </div>`;
-    }).join('');
-    monitorHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">
-      <div style="font-size:9px;letter-spacing:.1em;margin-bottom:4px;">CURRENT STATE${scrubEvent ? ' @ ' + scrubEvent.type + (model.events[scrub] ? ' — ' + model.events[scrub].label : '') : ''}</div>
-      ${rows}
-    </div>`;
-  } else {
-    monitorHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">// no vehicle state at this event</div>`;
-  }
-
   const zf = _missionBandZoom;
   const svgHTML = `<svg viewBox="0 0 ${totalW} ${totalH}" width="${Math.round(totalW * zf)}" height="${Math.round(totalH * zf)}" style="background:var(--panel);display:block;">${gridHTML}${branchHTML}${lanesHTML}${scrubberHTML}</svg>`;
 
-  return `<div class="band-root">${legendHTML}<div class="band-scroll" onwheel="missionBandWheel(event,'${id}')">${svgHTML}</div><div class="band-monitor">${monitorHTML}</div></div>`;
+  return `<div class="band-root">${legendHTML}<div class="band-scroll" onwheel="missionBandWheel(event,'${id}')">${svgHTML}</div></div>`;
 }
 
 // ── Custom node-map nodes (orbit palette + manual creation) ─────────────────
